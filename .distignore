@@ -1,0 +1,26 @@
+# Exclude Version Control files
+.git
+.github
+.gitignore
+.gitattributes
+.distignore
+
+# Exclude Development metadata & configuration files
+node_modules/
+package.json
+package-lock.json
+webpack.config.js
+composer.json
+composer.lock
+vendor/
+scratch/
+
+# Exclude Documentation (retained under docs/ in repo but excluded from distribution build)
+docs/
+
+# Exclude generated CSV and JSON export files (retaining security placeholders)
+exports/*.csv
+exports/*.json
+
+# Exclude release packages
+*.zip

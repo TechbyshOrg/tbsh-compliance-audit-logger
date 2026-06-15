@@ -1,0 +1,55 @@
+name: Create Release Zip
+
+on:
+  push:
+    tags:
+      - '*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Prepare release folder
+        run: |
+          mkdir -p tbsh-compliance-audit-logger
+          rsync -av ./ tbsh-compliance-audit-logger/ \
+            --exclude='tbsh-compliance-audit-logger' \
+            --exclude='.git' \
+            --exclude='.gitignore' \
+            --exclude='.gitattributes' \
+            --exclude='.github' \
+            --exclude='.distignore' \
+            --exclude='scratch' \
+            --exclude='docs' \
+            --exclude='composer.json' \
+            --exclude='composer.lock' \
+            --exclude='package.json' \
+            --exclude='package-lock.json' \
+            --exclude='node_modules' \
+            --exclude='vendor' \
+            --exclude='exports/*.csv' \
+            --exclude='exports/*.json' \
+            --exclude='tbsh-compliance-audit-logger_*.zip'
+
+      - name: Create zip file
+        run: |
+          TAG_NAME=${GITHUB_REF##*/}
+          ZIP_NAME="tbsh-compliance-audit-logger_${TAG_NAME}.zip"
+          zip -r "$ZIP_NAME" tbsh-compliance-audit-logger
+          echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
+
+      - name: Upload release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ github.ref_name }}
+          tag_name: ${{ github.ref_name }}
+          files: ${{ env.ZIP_NAME }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

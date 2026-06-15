@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Compliance Audit Trail & Evidence Logger Documentation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0b0f19;
+      --bg-secondary: #111827;
+      --bg-tertiary: #1f2937;
+      --text-primary: #f3f4f6;
+      --text-secondary: #9ca3af;
+      --text-muted: #6b7280;
+      --border-color: #1f2937;
+      --border-hover: #374151;
+      --primary: #3b82f6;
+      --primary-hover: #60a5fa;
+      --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --code-bg: #090d16;
+      --sidebar-width: 290px;
+    }
+
+    .light-theme {
+      --bg-primary: #f8fafc;
+      --bg-secondary: #ffffff;
+      --bg-tertiary: #f1f5f9;
+      --text-primary: #0f172a;
+      --text-secondary: #475569;
+      --text-muted: #94a3b8;
+      --border-color: #e2e8f0;
+      --border-hover: #cbd5e1;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --primary-gradient: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%);
+      --success: #10b981;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --code-bg: #f8fafc;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      line-height: 1.6;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    /* Layout Wrapper */
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: var(--sidebar-width);
+      background-color: var(--bg-secondary);
+      border-right: 1px solid var(--border-color);
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      overflow-y: auto;
+      padding: 32px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      z-index: 100;
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+
+    .logo-section {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 4px;
+    }
+
+    .logo-title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      line-height: 1.25;
+      background: var(--primary-gradient);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .logo-version {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    /* Search Container */
+    .search-container {
+      position: relative;
+      width: 100%;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 10px 14px;
+      padding-left: 36px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-size: 13px;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      outline: none;
+      transition: all 0.2s ease;
+    }
+
+    .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+    }
+
+    .search-container::before {
+      content: '';
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 14px;
+      height: 14px;
+      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236b7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'/%3E%3C/svg%3E");
+      background-size: contain;
+      background-repeat: no-repeat;
+      pointer-events: none;
+    }
+
+    .search-clear-btn {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 18px;
+      font-weight: bold;
+      line-height: 1;
+      display: none;
+    }
+
+    .search-clear-btn:hover {
+      color: var(--text-primary);
+    }
+
+    /* Navigation Menu */
+    .nav-menu {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px; /* Added spacing */
+    }
+
+    .nav-item a {
+      display: flex;
+      align-items: center;
+      padding: 11px 16px; /* Added padding */
+      color: var(--text-secondary);
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      border-left: 3px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .nav-item a:hover {
+      background-color: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .nav-item.active a {
+      background-color: var(--bg-tertiary);
+      color: var(--primary);
+      font-weight: 600;
+      border-left: 3px solid var(--primary);
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+    }
+
+    /* Main Content Area */
+    .main-content {
+      margin-left: var(--sidebar-width);
+      flex: 1;
+      padding: 56px 80px; /* Enhanced content padding */
+      max-width: 1060px;
+      box-sizing: border-box;
+    }
+
+    @media (max-width: 1024px) {
+      .sidebar {
+        display: none;
+      }
+      .main-content {
+        margin-left: 0;
+        padding: 32px 24px;
+      }
+    }
+
+    /* Header controls */
+    .top-controls {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 40px;
+      gap: 16px;
+    }
+
+    .theme-toggle-btn {
+      background: none;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      color: var(--text-primary);
+      cursor: pointer;
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .theme-toggle-btn:hover {
+      background-color: var(--bg-secondary);
+      border-color: var(--border-hover);
+    }
+
+    /* Sections Spacing */
+    section {
+      margin-bottom: 64px; /* Added section breathing room */
+      padding-top: 16px;
+    }
+
+    /* Typography & Content Styling */
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 38px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin: 0 0 20px 0;
+      line-height: 1.15;
+    }
+
+    h2 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin: 48px 0 24px 0;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    h3 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 19px;
+      font-weight: 600;
+      margin: 32px 0 16px 0;
+    }
+
+    p {
+      margin: 0 0 20px 0;
+      color: var(--text-secondary);
+      font-size: 15px;
+      line-height: 1.7;
+    }
+
+    ul, ol {
+      margin: 0 0 24px 0;
+      padding-left: 20px;
+      color: var(--text-secondary);
+      font-size: 15px;
+    }
+
+    li {
+      margin-bottom: 10px;
+    }
+
+    /* Code Block components */
+    .code-container {
+      position: relative;
+      margin: 24px 0;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+    }
+
+    .code-header {
+      background-color: var(--bg-secondary);
+      padding: 10px 18px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    .copy-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 6px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      background-color: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    pre {
+      margin: 0;
+      padding: 18px;
+      background-color: var(--code-bg);
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13.5px;
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      background-color: var(--bg-tertiary);
+      padding: 3px 6px;
+      border-radius: 4px;
+      color: var(--primary-hover);
+    }
+
+    pre code {
+      background-color: transparent;
+      padding: 0;
+      color: var(--text-primary);
+    }
+
+    /* Tables */
+    .table-wrapper {
+      overflow-x: auto;
+      margin: 28px 0;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 14.5px;
+    }
+
+    th {
+      background-color: var(--bg-secondary);
+      padding: 14px 18px;
+      font-weight: 600;
+      color: var(--text-primary);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-color);
+      color: var(--text-secondary);
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Info Alerts */
+    .alert {
+      padding: 18px;
+      border-radius: 8px;
+      margin: 28px 0;
+      border-left: 4px solid;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .alert-info {
+      background-color: rgba(59, 130, 246, 0.08);
+      border-left-color: var(--primary);
+      color: var(--text-primary);
+    }
+
+    .alert-info h4 {
+      margin: 0;
+      color: var(--primary-hover);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .alert-warning {
+      background-color: rgba(245, 158, 11, 0.08);
+      border-left-color: var(--warning);
+      color: var(--text-primary);
+    }
+
+    .alert-warning h4 {
+      margin: 0;
+      color: var(--warning);
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    /* Compliance Badges */
+    .compliance-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin: 28px 0;
+    }
+
+    .compliance-card {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 18px;
+      transition: all 0.2s ease;
+    }
+
+    .compliance-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+    }
+
+    .compliance-tag {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      background-color: var(--bg-tertiary);
+      margin-bottom: 10px;
+    }
+
+    .compliance-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0 0 6px 0;
+    }
+
+    .compliance-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin: 0;
+    }
+
+    /* Search Empty State */
+    .search-no-results {
+      padding: 48px;
+      text-align: center;
+      color: var(--text-muted);
+      border: 1px dashed var(--border-color);
+      border-radius: 8px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- Sticky Sidebar -->
+  <aside class="sidebar">
+    <div class="logo-section">
+      <div class="logo-title">Compliance Audit Trail & Evidence Logger</div>
+      <div class="logo-version">Documentation v1.0.0</div>
+    </div>
+
+    <!-- Search Box -->
+    <div class="search-container">
+      <input type="text" id="doc-search" placeholder="Search documentation..." class="search-input">
+      <span class="search-clear-btn" id="search-clear">&times;</span>
+    </div>
+    
+    <nav>
+      <ul class="nav-menu">
+        <li class="nav-item active" data-section="intro"><a href="#intro">Introduction</a></li>
+        <li class="nav-item" data-section="installation"><a href="#installation">Getting Started</a></li>
+        <li class="nav-item" data-section="how-it-works"><a href="#how-it-works">How Things Work</a></li>
+        <li class="nav-item" data-section="where-things-are"><a href="#where-things-are">Where Things Are</a></li>
+        <li class="nav-item" data-section="when-things-trigger"><a href="#when-things-trigger">When Things Trigger</a></li>
+        <li class="nav-item" data-section="core-architecture"><a href="#core-architecture">Core Architecture</a></li>
+        <li class="nav-item" data-section="hash-chaining"><a href="#hash-chaining">Cryptographic Chaining</a></li>
+        <li class="nav-item" data-section="privacy"><a href="#privacy">Privacy & GDPR</a></li>
+        <li class="nav-item" data-section="evidence-vault"><a href="#evidence-vault">Evidence Vault</a></li>
+        <li class="nav-item" data-section="rest-api"><a href="#rest-api">REST API Endpoints</a></li>
+        <li class="nav-item" data-section="compliance"><a href="#compliance">Regulatory Mapping</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Main Content Pane -->
+  <main class="main-content">
+    <div class="top-controls">
+      <button id="theme-toggle" class="theme-toggle-btn">
+        <span id="theme-icon">🔆</span>
+        <span id="theme-text">Light Theme</span>
+      </button>
+    </div>
+    
+    <div id="search-results-empty" class="search-no-results">
+      <h3>No matches found</h3>
+      <p>Try searching for other terms like 'cron', 'SHA-256', 'REST API', or 'GDPR'.</p>
+    </div>
+
+    <!-- Section: Intro -->
+    <section id="intro">
+      <h1>Compliance Audit Trail & Evidence Logger</h1>
+      <p>
+        The <strong>Compliance Audit Trail & Evidence Logger</strong> is an enterprise-grade security monitoring, cryptographic verification, and audit-readiness logging platform designed for WordPress. Aligned with strict cybersecurity regulations (including <strong>NIS2</strong>, <strong>DORA</strong>, <strong>SOC 2</strong>, and <strong>ISO 27001</strong>), this plugin goes beyond typical activity logs by providing legally defensible, tamper-evident audit records.
+      </p>
+      
+      <div class="alert alert-info">
+        <h4>Legally Defensible Records</h4>
+        Every system transaction is cryptographically chained together using SHA-256 signatures, making unauthorized modifications or deletions immediately evident to security auditors.
+      </div>
+
+      <h3>Core Pillars & Features</h3>
+      <ul>
+        <li><strong>Tamper-Evident Chaining:</strong> Standard database records can be easily modified or deleted directly via SQL. This plugin hashes each entry with the hash signature of the preceding log record, establishing an unbroken cryptographic chain.</li>
+        <li><strong>Archival Evidence Vault:</strong> Automatically or manually capture full-system configuration snapshots (installed plugins, active themes, user roles, security configurations, database capacities) to serve as proof of system integrity during compliance audits.</li>
+        <li><strong>GDPR Privacy Shield:</strong> Client IP addresses and User Agents are hashed locally and irreversibly using HMAC-SHA-256 with a unique, cryptographically random site salt. Complete support for core WordPress Personal Data Exporters and Erasers is included.</li>
+        <li><strong>No Cloud Dependency:</strong> Built for high compliance. All log events, audit timelines, verification records, and snapshots are kept locally in custom SQL tables. No telemetry data or user footprints are ever offloaded.</li>
+      </ul>
+    </section>
+
+    <!-- Section: Installation -->
+    <section id="installation">
+      <h2>Getting Started & Installation</h2>
+      <p>Follow these steps to deploy the plugin on your WordPress instance:</p>
+      <ol>
+        <li>Upload the <code>tbsh-compliance-audit-logger</code> directory to your WordPress site's <code>/wp-content/plugins/</code> folder.</li>
+        <li>Log in as an Administrator and activate the plugin through the <strong>Plugins</strong> page in the WordPress admin panel.</li>
+        <li>Navigate to the new <strong>Compliance Logs</strong> sidebar menu to access the verification status, timeline, logs grid, and vaults.</li>
+        <li>Go to <strong>Settings</strong> to customize logging thresholds, automatic evidence vault snap frequencies, and log retention parameters.</li>
+      </ol>
+
+      <div class="alert alert-warning">
+        <h4>System Requirements</h4>
+        <ul>
+          <li>WordPress version <strong>6.2</strong> or higher.</li>
+          <li>PHP version <strong>8.0</strong> or higher.</li>
+          <li>MySQL / MariaDB database with standard transactional locking support.</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Section: How It Works -->
+    <section id="how-it-works">
+      <h2>How Things Work (Lifecycle & Flow)</h2>
+      <p>
+        The lifecycle of a logged event is built to maximize server efficiency while guaranteeing absolute cryptographic integrity:
+      </p>
+      <ol>
+        <li><strong>Event Capture:</strong> The plugin hooks into specific WordPress core actions (like logins, theme swaps, profile updates, and plugin upgrades) inside <code>EventTracker.php</code>.</li>
+        <li><strong>Runtime Queuing:</strong> To avoid interrupting page rendering, the logged event is not immediately written to the database. Instead, it is appended to an in-memory runtime queue managed by <code>Logger::$log_queue</code>.</li>
+        <li><strong>Flushing at Shutdown:</strong> When WordPress triggers the PHP <code>shutdown</code> hook (meaning the page has completed loading and is rendered for the client browser), the queue is flushed.</li>
+        <li><strong>Sequential Chaining:</strong> During the database flush:
+          <ul>
+            <li>A lock is requested to prevent race conditions from concurrent sessions.</li>
+            <li>The verifier retrieves the signature hash of the last successfully logged event in the database.</li>
+            <li>The new row is inserted, and a combined canonical SHA-256 hash is computed using the record's values and the retrieved previous hash.</li>
+            <li>The row is updated with its calculated signature hash, making it an integral link in the cryptographic chain.</li>
+          </ul>
+        </li>
+      </ol>
+    </section>
+
+    <!-- Section: Where Things Are -->
+    <section id="where-things-are">
+      <h2>Where Things Are (File Structure)</h2>
+      <p>The codebase is organized logically following PSR-4 standard naming conventions:</p>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Folder / File</th>
+              <th>Description / Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>/includes/API/</code></td>
+              <td>REST API route definitions, capability-locks, and base abstract controllers.</td>
+            </tr>
+            <tr>
+              <td><code>/includes/Admin/</code></td>
+              <td>WP Admin menu definitions and WordPress dashboard widget rendering logic.</td>
+            </tr>
+            <tr>
+              <td><code>/includes/Database/</code></td>
+              <td>Custom tables schemas, indexing parameters, and SQL installation scripts.</td>
+            </tr>
+            <tr>
+              <td><code>/includes/Evidence/</code></td>
+              <td>System metrics collection scripts and snapshots compiling engine.</td>
+            </tr>
+            <tr>
+              <td><code>/includes/Export/</code></td>
+              <td>Secure CSV and JSON report batch exporters.</td>
+            </tr>
+            <tr>
+              <td><code>/includes/Integrity/</code></td>
+              <td>Sequential chain verification verifier engine.</td>
+            </tr>
+            <tr>
+              <td><code>/includes/Logging/</code></td>
+              <td>Core logging hooks listeners and the shutdown flush queuing queue engine.</td>
+            </tr>
+            <tr>
+              <td><code>/includes/Privacy/</code></td>
+              <td>HMAC IP/UA hash anonymizer and WordPress personal data erasure hooks.</td>
+            </tr>
+            <tr>
+              <td><code>/assets/</code></td>
+              <td>Vanilla CSS stylesheets and custom local SVGs.</td>
+            </tr>
+            <tr>
+              <td><code>/src/</code></td>
+              <td>Original JSX and React frontend source files.</td>
+            </tr>
+            <tr>
+              <td><code>/build/</code></td>
+              <td>Compiled production JavaScript and script asset files generated by <code>@wordpress/scripts</code>.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section: When Things Trigger -->
+    <section id="when-things-trigger">
+      <h2>When Things Trigger (Timelines & Crons)</h2>
+      <p>The plugin manages background events dynamically:</p>
+      <ul>
+        <li><strong>Plugin Activation:</strong> Automatically builds/upgrades SQL schemas, generates a secure 64-character site salt for privacy masks, sets default logging preferences, schedules the daily evidence snapshots cron, and registers the initial activation log event.</li>
+        <li><strong>Plugin Deactivation:</strong> Cleans up scheduled cron tasks and logs a warning event.</li>
+        <li><strong>Plugin Uninstallation:</strong> If configured in the admin dashboard (<em>Delete All Tables and Settings</em>), the plugin drops all three custom SQL tables, deletes options records, and clears scheduled crons permanently.</li>
+        <li><strong>Daily / Weekly Background Task:</strong> A WordPress cron job (<code>tbsh_cal_cron_job</code>) executes every 24 hours (or weekly depending on settings) to compile system configuration snapshots and prune expired logs (if logs retention is set to a value greater than 0).</li>
+        <li><strong>GDPR Request Completion:</strong> When a user personal data erasure request is completed, the data is anonymized immediately, and a chain rebuild is triggered from the first altered ID onwards.</li>
+      </ul>
+    </section>
+
+    <!-- Section: Core Architecture -->
+    <section id="core-architecture">
+      <h2>Core Architecture & Developers API</h2>
+      <p>
+        The logging engine is accessible to third-party integrations, allowing custom tracking parameters to be injected directly.
+      </p>
+
+      <h3>Programmatic Logging API</h3>
+      <p>Developers can trigger compliance-focused events programmatically using the static <code>Logger::log()</code> method:</p>
+
+      <div class="code-container">
+        <div class="code-header">
+          <span>PHP API Usage</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code>use TBSHComplianceAuditLogger\Logging\Logger;
+
+Logger::log(
+    'config_alteration',                 // event_type
+    'Configuration Management',          // event_category
+    'warning',                           // severity (info, notice, warning, error, critical)
+    'Security Constant Modified',         // event_title
+    'Constant WP_DEBUG was modified.',   // event_message
+    [
+        'object_type'     => 'configuration',
+        'object_id'       => 'WP_DEBUG',
+        'compliance_tags' => 'ISO 27001 A.12, NIS2 Art 21',
+        'metadata'        => [
+            'previous_value' => true,
+            'current_value'  => false
+        ]
+    ]
+);</code></pre>
+      </div>
+
+      <h3>Custom Database Tables Created</h3>
+      <p>On activation, the plugin deploys three optimized, indexed tables using the default database schema:</p>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Table Name</th>
+              <th>Description / Purpose</th>
+              <th>Key Indexes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>{prefix}tbsh_cal_logs</code></td>
+              <td>Main audit trail records, including Actor info, event category, metadata context, and integrity hashes.</td>
+              <td><code>created_at</code>, <code>user_id</code>, <code>severity</code>, <code>event_category</code></td>
+            </tr>
+            <tr>
+              <td><code>{prefix}tbsh_cal_evidence</code></td>
+              <td>Storage vault for automatic and manual state snapshots (stored as compressed JSON payloads).</td>
+              <td><code>created_at</code>, <code>evidence_uuid</code></td>
+            </tr>
+            <tr>
+              <td><code>{prefix}tbsh_cal_integrity</code></td>
+              <td>Chronological records of database validation scans, anomalies detected, and validation metrics.</td>
+              <td><code>created_at</code>, <code>status</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section: Cryptographic Chaining -->
+    <section id="hash-chaining">
+      <h2>Cryptographic Hash Chaining & Verification</h2>
+      <p>
+        To protect records from unauthorized direct SQL manipulation, each database row is cryptographically linked to the previous row. A SHA-256 signature is calculated by combining row values with the preceding row's signature.
+      </p>
+
+      <h3>Canonical Hash String Structure</h3>
+      <p>The verification engine compiles a canonical pipe-separated string from the database columns in the exact order below:</p>
+      <div class="code-container">
+        <div class="code-header">
+          <span>Hash Spec</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code>$canonical_string = implode('|', [
+    $row_id,
+    $row_uuid,
+    $event_type,
+    $event_category,
+    $severity,
+    $event_title,
+    $event_message,
+    $user_id,
+    $site_id,
+    $object_type,
+    $object_id,
+    $ip_hash,
+    $user_agent_hash,
+    $request_method,
+    $request_uri,
+    $metadata_json,
+    $compliance_tags,
+    $previous_hash,
+    $created_at
+]);
+
+$integrity_hash = hash('sha256', $canonical_string);</code></pre>
+      </div>
+
+      <div class="alert alert-info">
+        <h4>Verification Logic</h4>
+        During an Integrity Scan, the verifier iterates through every log sequentially, recalculating the signature. If a row has been deleted, its ID sequence breaks, or if any cell is modified, the signature check fails immediately, flagging that specific ID and cascading failures down the rest of the trail.
+      </div>
+    </section>
+
+    <!-- Section: Privacy & GDPR -->
+    <section id="privacy">
+      <h2>GDPR Privacy Shield & Data Protection</h2>
+      <p>
+        Compliance logging requires recording the actor behind each event without violating strict data privacy laws. This plugin accomplishes this by employing irreversible local hash masking.
+      </p>
+      <ul>
+        <li><strong>Salted Anonymization:</strong> IP addresses and User Agents are hashed locally using <code>hash_hmac('sha256', $ip, $salt)</code>. The salt is generated on first activation using cryptographically secure random values and stored locally.</li>
+        <li><strong>GDPR Exporter Integration:</strong> Registers the plugin with WordPress personal data exporters to gather all logging actions mapped to a user's email.</li>
+        <li><strong>GDPR Eraser Integration:</strong> When personal data erasure is requested, the plugin anonymizes the actor columns (changing the username to "Anonymized User", user_id to 0, role to "none") and <strong>automatically rebuilds the cryptographic hash chain</strong> starting from that record to preserve audit trail integrity without breaking the chain.</li>
+      </ul>
+    </section>
+
+    <!-- Section: Evidence Vault -->
+    <section id="evidence-vault">
+      <h2>Evidence Vault & State Archiving</h2>
+      <p>
+        The Evidence Vault acts as a configuration snapshot collector. It archives the technical system footprint at regular intervals or manual triggers to prove that the environment was secure and uncompromised at the time.
+      </p>
+      <h3>Archived System Footprint Payload</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Component Group</th>
+              <th>Technical Metrics Captured</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Plugins & Themes</td>
+              <td>List of all installed plugins and themes, versions, stylesheets slugs, and active/inactive status.</td>
+            </tr>
+            <tr>
+              <td>User Roles</td>
+              <td>Definitions of all custom user roles and their associated capabilities mapping.</td>
+            </tr>
+            <tr>
+              <td>Database Status</td>
+              <td>Exact table names, row counts, data storage sizing, collation sets, and SQL engines.</td>
+            </tr>
+            <tr>
+              <td>Security Context</td>
+              <td>WordPress security constants (WP_DEBUG, script debugging, SSL enforcement), PHP version, and MySQL mode.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section: REST API -->
+    <section id="rest-api">
+      <h2>REST API Endpoints Reference</h2>
+      <p>All admin dashboards and external integrations interact securely via the namespace <code>wp-json/tbsh-compliance-audit-logger/v1</code>. Every endpoint is capability-locked and protected against CSRF.</p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Endpoint Path</th>
+              <th>HTTP Method</th>
+              <th>Required Capability</th>
+              <th>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>/dashboard</code></td>
+              <td>GET</td>
+              <td><code>tbsh_cal_view_logs</code></td>
+              <td>Aggregates KPIs, active users, common events, recent logs, and table capacities.</td>
+            </tr>
+            <tr>
+              <td><code>/logs</code></td>
+              <td>GET</td>
+              <td><code>tbsh_cal_view_logs</code></td>
+              <td>Paginates, filters (by severity, category, actor, or date), and sorts database logs.</td>
+            </tr>
+            <tr>
+              <td><code>/logs/&lt;id&gt;</code></td>
+              <td>GET</td>
+              <td><code>tbsh_cal_view_logs</code></td>
+              <td>Retrieves detailed JSON audit records, metadata, and signatures for a specific log ID.</td>
+            </tr>
+            <tr>
+              <td><code>/timeline</code></td>
+              <td>GET</td>
+              <td><code>tbsh_cal_view_logs</code></td>
+              <td>Generates chronological forensic feeds for compliance investigations.</td>
+            </tr>
+            <tr>
+              <td><code>/evidence</code></td>
+              <td>GET</td>
+              <td><code>tbsh_cal_view_evidence</code></td>
+              <td>List generated manual and automatic system snapshots.</td>
+            </tr>
+            <tr>
+              <td><code>/evidence</code></td>
+              <td>POST</td>
+              <td><code>tbsh_cal_verify_integrity</code></td>
+              <td>Triggers a manual snapshot configuration capture.</td>
+            </tr>
+            <tr>
+              <td><code>/integrity</code></td>
+              <td>GET</td>
+              <td><code>tbsh_cal_view_logs</code></td>
+              <td>Returns status metrics and chronological verification history logs.</td>
+            </tr>
+            <tr>
+              <td><code>/integrity</code></td>
+              <td>POST</td>
+              <td><code>tbsh_cal_verify_integrity</code></td>
+              <td>Triggers a sequential database tamper-evident check.</td>
+            </tr>
+            <tr>
+              <td><code>/exports</code></td>
+              <td>GET</td>
+              <td><code>tbsh_cal_export_data</code></td>
+              <td>List compiled CSV and JSON report downloads in the vault.</td>
+            </tr>
+            <tr>
+              <td><code>/exports</code></td>
+              <td>POST</td>
+              <td><code>tbsh_cal_export_data</code></td>
+              <td>Compiles a filtered logs export download payload.</td>
+            </tr>
+            <tr>
+              <td><code>/settings</code></td>
+              <td>POST</td>
+              <td><code>tbsh_cal_manage_settings</code></td>
+              <td>Saves settings policies, logging severity thresholds, and cron parameters.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section: Regulatory Mapping -->
+    <section id="compliance">
+      <h2>Regulatory Framework & Compliance Mapping</h2>
+      <p>
+        The dashboard maps logging scopes and verifications directly to key control standards under international frameworks:
+      </p>
+
+      <div class="compliance-grid">
+        <div class="compliance-card">
+          <div class="compliance-tag" style="color: #6366f1;">ISO 27001</div>
+          <div class="compliance-title">Annex A.12.4</div>
+          <p class="compliance-desc">Mandates tracking system alerts, logins, file activities, and configuration modifications securely.</p>
+        </div>
+        <div class="compliance-card">
+          <div class="compliance-tag" style="color: #10b981;">SOC 2</div>
+          <div class="compliance-title">CC6.1 & CC8.1</div>
+          <p class="compliance-desc">Covers access controls auditing, privilege escalations tracking, and change control logging.</p>
+        </div>
+        <div class="compliance-card">
+          <div class="compliance-tag" style="color: #f59e0b;">NIS 2</div>
+          <div class="compliance-title">Article 21</div>
+          <p class="compliance-desc">Demands incident tracking and resilience proofs. Satisfied through tamper-evident verifications.</p>
+        </div>
+        <div class="compliance-card">
+          <div class="compliance-tag" style="color: #0ea5e9;">DORA</div>
+          <div class="compliance-title">Article 17</div>
+          <p class="compliance-desc">Ensures ICT incident logging and configuration records are archived permanently.</p>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+  // Theme Switching Mechanism
+  const themeToggleBtn = document.getElementById('theme-toggle');
+  const themeIcon = document.getElementById('theme-icon');
+  const themeText = document.getElementById('theme-text');
+  
+  themeToggleBtn.addEventListener('click', () => {
+    document.body.classList.toggle('light-theme');
+    const isLight = document.body.classList.contains('light-theme');
+    themeIcon.innerText = isLight ? '🌙' : '🔆';
+    themeText.innerText = isLight ? 'Dark Theme' : 'Light Theme';
+  });
+
+  // Search logic filtering
+  const searchInput = document.getElementById('doc-search');
+  const searchClear = document.getElementById('search-clear');
+  const sectionsList = document.querySelectorAll('section');
+  const navItemsList = document.querySelectorAll('.nav-menu .nav-item');
+  const emptyState = document.getElementById('search-results-empty');
+
+  searchInput.addEventListener('input', (e) => {
+    const query = e.target.value.toLowerCase().trim();
+    if (query) {
+      searchClear.style.display = 'block';
+    } else {
+      searchClear.style.display = 'none';
+    }
+
+    let hasMatches = false;
+
+    sectionsList.forEach(section => {
+      const text = section.innerText.toLowerCase();
+      const id = section.getAttribute('id');
+      const matchingNavItem = document.querySelector(`.nav-menu .nav-item[data-section="${id}"]`);
+
+      if (text.includes(query)) {
+        section.style.display = 'block';
+        if (matchingNavItem) {
+          matchingNavItem.style.display = 'block';
+        }
+        hasMatches = true;
+      } else {
+        section.style.display = 'none';
+        if (matchingNavItem) {
+          matchingNavItem.style.display = 'none';
+        }
+      }
+    });
+
+    if (query !== '' && !hasMatches) {
+      emptyState.style.display = 'block';
+    } else {
+      emptyState.style.display = 'none';
+    }
+  });
+
+  searchClear.addEventListener('click', () => {
+    searchInput.value = '';
+    searchClear.style.display = 'none';
+    emptyState.style.display = 'none';
+    sectionsList.forEach(section => {
+      section.style.display = 'block';
+    });
+    navItemsList.forEach(item => {
+      item.style.display = 'block';
+    });
+    searchInput.focus();
+  });
+
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      searchInput.value = '';
+      searchClear.click();
+    }
+  });
+
+  // Sticky Sidebar Menu Item Highlighting on scroll
+  window.addEventListener('scroll', () => {
+    let current = '';
+    const scrollPosition = window.scrollY || window.pageYOffset;
+    
+    // Check if scrolled to bottom
+    const isAtBottom = (window.innerHeight + scrollPosition) >= document.documentElement.scrollHeight - 10;
+    
+    if (isAtBottom) {
+      const visibleSections = Array.from(sectionsList).filter(s => s.style.display !== 'none');
+      if (visibleSections.length > 0) {
+        current = visibleSections[visibleSections.length - 1].getAttribute('id');
+      }
+    } else {
+      sectionsList.forEach(section => {
+        if (section.style.display !== 'none') {
+          const sectionTop = section.offsetTop - 120;
+          if (scrollPosition >= sectionTop) {
+            current = section.getAttribute('id');
+          }
+        }
+      });
+    }
+
+    navItemsList.forEach(li => {
+      li.classList.remove('active');
+      const dataSect = li.getAttribute('data-section');
+      if (dataSect === current) {
+        li.classList.add('active');
+      }
+    });
+  });
+
+  // Copy to clipboard helper
+  function copyCode(btn) {
+    const pre = btn.parentElement.nextElementSibling;
+    const code = pre.querySelector('code');
+    navigator.clipboard.writeText(code.innerText).then(() => {
+      btn.innerText = 'Copied!';
+      setTimeout(() => {
+        btn.innerText = 'Copy';
+      }, 2000);
+    }).catch(err => {
+      console.error('Failed to copy text: ', err);
+    });
+  }
+</script>
+</body>
+</html>
