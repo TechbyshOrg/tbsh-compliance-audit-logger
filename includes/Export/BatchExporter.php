@@ -14,7 +14,8 @@ class BatchExporter {
 	 * Get the export directory path.
 	 */
 	public static function get_export_dir() {
-		$dir = TBSH_CAL_PATH . 'exports/';
+		$upload_dir = wp_upload_dir();
+		$dir        = $upload_dir['basedir'] . '/tbsh-compliance-exports/';
 		if ( ! file_exists( $dir ) ) {
 			wp_mkdir_p( $dir );
 			// Write an index.php and .htaccess to protect files from direct web access.

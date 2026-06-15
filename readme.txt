@@ -1,6 +1,6 @@
-=== Compliance Audit Trail & Evidence Logger ===
-Contributors: Techbysh
-Tags: audit-trail, compliance-log, security-audit, tamper-evident, nis2-dora
+=== Compliance Audit Log & Tamper-Evident Security Trail ===
+Contributors: techbysh
+Tags: compliance, audit-trail, security-log, tamper-evident, nis2
 Requires at least: 6.2
 Tested up to: 7.0
 Requires PHP: 8.0
@@ -8,36 +8,49 @@ Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Enterprises-grade tamper-evident compliance logging, audit trails, and evidence archiving for WordPress. Aligned with NIS2, DORA, and SOC 2.
+Tamper-evident compliance log & security audit trail. Cryptographic chain verification & evidence snapshots for NIS2, DORA, GDPR, and ISO 27001.
 
 == Description ==
 
-Compliance Audit Trail & Evidence Logger is a production-ready, compliance-focused audit trail, security monitoring, and evidence collection platform. Unlike simple activity logs, it is designed from the ground up for cybersecurity governance, providing legally defensible, tamper-evident audit records.
+Is your website ready for a cybersecurity audit? 
+
+When a website is hacked, the first thing intruders do is modify database logs to cover their tracks. Standard security plugins log user actions, but they do not guarantee that the logs themselves have not been altered or deleted.
+
+**Compliance Audit Log & Tamper-Evident Security Trail** transforms your WordPress dashboard into a secure GRC (Governance, Risk, and Compliance) platform. By combining real-time activity tracking with cryptographic SHA-256 chain verification, it ensures your security audit trails are immutable, verified, and legally defensible.
 
 = Cryptographic Log Integrity =
-Every log entry is protected using a blockchain-style cryptographic SHA-256 hash chain. Each log contains the hash of the preceding entry. If a database record is modified or deleted, subsequent records will fail validation. The built-in verifier identifies exactly when and where the audit trail was compromised.
+Every log entry calculates a SHA-256 signature containing its contents and the signature of the preceding row. If an unauthorized actor inserts, deletes, or edits a log record directly in the database, the cryptographic chain breaks. The built-in verifier identifies exactly when and where the compromise occurred.
 
-= Compliance Framework Alignment =
-Designed to assist compliance officers, developers, and system administrators in meeting the strict logging requirements of international regulatory standards:
-* **NIS2 Directive**: Meets continuous incident logging and system monitoring requirements.
-* **DORA (Digital Operational Resilience Act)**: Provides ICT incident tracking and reporting logs.
-* **SOC 2 & ISO/IEC 27001**: Satisfies logical access monitoring and change management controls.
-* **PCI DSS & HIPAA**: Creates secure, persistent audit trails of configuration changes.
+= Fulfill Global Compliance Regulations =
+Designed to assist compliance officers, developers, and security teams in meeting strict international guidelines:
+*   **NIS2 Directive (EU)**: Fulfill Article 21 risk management and operational logging.
+*   **DORA (Digital Operational Resilience Act)**: Monitor ICT incident events and operational resilience.
+*   **SOC 2 & ISO 27001**: Satisfy access control monitoring and configuration audit requirements.
+*   **GDPR & HIPAA**: Mask IPs using HMAC-SHA-256 salted hashes and support data erasures.
 
-= Evidence Vault Snapshots =
-The built-in Evidence Vault allows you to capture full system state archives. Automatically or manually archive installed plugins, active themes, user roles, database table sizes, PHP version, and security configurations. These snapshots serve as proof of system integrity during audits.
+= Features (Free Version) =
+*   **Tamper-Evident Chaining:** Link logs cryptographically using SHA-256 signatures.
+*   **Granular Activity Tracking:** Log logins, session failures, plugin edits, and file updates.
+*   **Evidence Vault:** Capture point-in-time snapshots of themes, active plugins, capabilities, and system configurations.
+*   **GDPR Privacy Masking:** Anonymize client IP addresses using local cryptographic salts.
+*   **Forensic Timeline:** Browse events chronologically through a responsive, filterable layout.
+*   **SIEM Export:** Compile logs into CSV or JSON formats for security analysis.
 
-= Privacy & Security Safeguards =
-* **Irreversible Masking**: Client IP addresses and User Agents are hashed using HMAC-SHA-256 with a unique local site salt.
-* **GDPR Compliance**: Integrates with core WordPress Personal Data Exporters and Erasers, automatically recalculating the hash chain when personal details are erased.
-* **No Cloud Dependency**: All data is stored locally in custom tables. No external logging servers are contacted.
+= Upgrade to Pro for Enterprise Governance =
+Unlock advanced features to manage cyber risks and supply chains networked across your organization:
+*   **Off-site Evidence Vaults:** Synchronize encrypted logs to AWS S3, Google Cloud, Azure, or SFTP.
+*   **Automated Incident Detection:** Trigger Slack, Discord, and Email alerts on brute force and privilege escalations.
+*   **AI Incident Analysis:** Suggest root-cause mitigations using integrated OpenAI, Claude, and Gemini models.
+*   **Auditor Portal:** Generate secure, expirable, read-only dashboard links for external compliance checkers.
+*   **Risk & Vendor registers:** Track supplier risk metrics using an interactive 5x5 Heat Map.
+*   **File Integrity Monitor:** Validate core system checksums using official WordPress.org APIs.
 
 == Installation ==
 
 1. Upload the `tbsh-compliance-audit-logger` folder to the `/wp-content/plugins/` directory.
 2. Activate the plugin through the 'Plugins' menu in WordPress.
 3. Navigate to 'Compliance Logs' in the admin sidebar.
-4. Go to the Settings tab to adjust logging policies and retention periods.
+4. Run your first database integrity check in the 'Integrity Center'.
 
 == Frequently Asked Questions ==
 
@@ -88,20 +101,20 @@ Yes. The Compliance Overview screen maps your active logs, settings, and verific
 
 == Screenshots ==
 
-1. Dashboard overview page showing compliance metrics, recent logs feeds, and the cryptographic verification status indicator.
-2. Advanced logs search grid with date filtering, user filter, category filter, and customizable visible columns checkboxes.
-3. Inspecting a log entry showing custom JSON metadata properties, client IP hashes, and SHA-256 sequence hashes.
-4. Forensic chronological timeline layout for site activities.
-5. Integrity Center verification history scan, listing detailed anomalies when database tables are altered.
-6. Evidence Vault listing active theme and plugin configuration snapshots.
-7. Compliance Framework alignment stats for audit checklists.
-8. Export Center config panel and list of compiled downloads.
+1. Executive compliance dashboard displaying security scores, database integrity states, and framework readiness checkers.
+2. Granular activity log grid displaying event parameters and SHA-256 cryptographic signatures.
+3. Forensic timeline view tracing administrative actions chronologically.
+4. Database integrity checks showing verification logs and success statuses.
+5. Cyber risk 5x5 Heat Map detailing supply chain vulnerabilities and criticality levels.
+6. Temporary auditor portals access configuration panel.
+7. Cloud vaults storage sync credentials and transfer logs.
+8. AI-assisted threat mitigation panel outlining remediation summaries.
 
 == Changelog ==
 
 = 1.0.0 =
 * Initial release.
-* Automated custom tables schema deployment on activation.
-* Cryptographic SHA-256 logs chaining.
-* Asynchronous shutdown logging.
-* Compliance indicators for NIS2, DORA, SOC 2, and ISO 27001.
+* Added cryptographic SHA-256 logs chaining.
+* Implemented point-in-time evidence snapshots.
+* Added GDPR-compliant IP masking controls.
+* Installed compliance checklists for DORA, NIS2, and ISO 27001.

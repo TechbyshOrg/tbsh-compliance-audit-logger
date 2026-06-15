@@ -16,21 +16,20 @@ class DashboardWidget {
 	 * Register widget init hook.
 	 */
 	public static function init() {
-		// Only register widget if user has appropriate capability.
-		if ( current_user_can( 'tbsh_cal_view_logs' ) ) {
-			add_action( 'wp_dashboard_setup', array( __CLASS__, 'add_widget' ) );
-		}
+		add_action( 'wp_dashboard_setup', array( __CLASS__, 'add_widget' ) );
 	}
 
 	/**
 	 * Add dashboard widget.
 	 */
 	public static function add_widget() {
-		wp_add_dashboard_widget(
-			'tbsh_cal_integrity_status_widget',
-			__( 'Audit Trail Integrity Status', 'tbsh-compliance-audit-logger' ),
-			array( __CLASS__, 'render_widget' )
-		);
+		if ( current_user_can( 'tbsh_cal_view_logs' ) ) {
+			wp_add_dashboard_widget(
+				'tbsh_cal_integrity_status_widget',
+				__( 'Audit Trail Integrity Status', 'tbsh-compliance-audit-logger' ),
+				array( __CLASS__, 'render_widget' )
+			);
+		}
 	}
 
 	/**

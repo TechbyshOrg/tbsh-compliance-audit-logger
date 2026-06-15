@@ -114,6 +114,9 @@ class TBSH_Compliance_Audit_Logger {
 		// Install/upgrade DB tables.
 		\TBSHComplianceAuditLogger\Database\Schema::install();
 
+		// Setup capabilities.
+		\TBSHComplianceAuditLogger\Security\AccessControl::init();
+
 		// Generate a secure salt for hashing IPs and User Agents if not already done.
 		if ( ! get_option( 'tbsh_cal_privacy_salt' ) ) {
 			update_option( 'tbsh_cal_privacy_salt', wp_generate_password( 64, true, true ) );
@@ -168,9 +171,6 @@ class TBSH_Compliance_Audit_Logger {
 	 * Run when all plugins are loaded.
 	 */
 	public function plugins_loaded() {
-		// Setup capabilities.
-		\TBSHComplianceAuditLogger\Security\AccessControl::init();
-
 		// Register REST API endpoints.
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 
