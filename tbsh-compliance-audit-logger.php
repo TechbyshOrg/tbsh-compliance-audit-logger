@@ -76,9 +76,6 @@ class TBSH_Compliance_Audit_Logger {
 	 * Initialize components.
 	 */
 	private function init() {
-		// Load textdomain.
-		add_action( 'init', array( $this, 'load_textdomain' ) );
-
 		// Register Activation/Deactivation hooks.
 		register_activation_hook( __FILE__, array( $this, 'activate' ) );
 		register_deactivation_hook( __FILE__, array( $this, 'deactivate' ) );
@@ -96,14 +93,6 @@ class TBSH_Compliance_Audit_Logger {
 
 		// Add settings link on plugins listing page.
 		add_filter( 'plugin_action_links_' . TBSH_CAL_BASENAME, array( $this, 'add_plugin_action_links' ) );
-	}
-
-	/**
-	 * Load translation files.
-	 */
-	public function load_textdomain() {
-		// phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound
-		load_plugin_textdomain( 'tbsh-compliance-audit-logger', false, dirname( TBSH_CAL_BASENAME ) . '/languages' );
 	}
 
 	/**
