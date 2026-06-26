@@ -9,15 +9,15 @@ if ( ! defined( 'WP_UNINSTALL_PLUGIN' ) ) {
 	exit;
 }
 
-$settings = get_option( 'tbsh_cal_settings', array() );
+$tbsh_cal_settings = get_option( 'tbsh_cal_settings', array() );
 
 // Check if cleanup is requested.
-if ( isset( $settings['cleanup_on_uninstall'] ) && 'delete' === $settings['cleanup_on_uninstall'] ) {
+if ( isset( $tbsh_cal_settings['cleanup_on_uninstall'] ) && 'delete' === $tbsh_cal_settings['cleanup_on_uninstall'] ) {
 	global $wpdb;
 
 	if ( is_multisite() ) {
-		$sites = get_sites( array( 'fields' => 'ids', 'number' => 0 ) );
-		foreach ( $sites as $blog_id ) {
+		$tbsh_cal_sites = get_sites( array( 'fields' => 'ids', 'number' => 0 ) );
+		foreach ( $tbsh_cal_sites as $blog_id ) {
 			switch_to_blog( $blog_id );
 			tbsh_cal_drop_tables();
 			restore_current_blog();
@@ -49,7 +49,10 @@ if ( isset( $settings['cleanup_on_uninstall'] ) && 'delete' === $settings['clean
  */
 function tbsh_cal_drop_tables() {
 	global $wpdb;
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}tbsh_cal_logs" );
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}tbsh_cal_evidence" );
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.SchemaChange
 	$wpdb->query( "DROP TABLE IF EXISTS {$wpdb->prefix}tbsh_cal_integrity" );
 }

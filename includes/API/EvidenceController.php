@@ -56,11 +56,13 @@ class EvidenceController extends BaseController {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'tbsh_cal_evidence';
 
-		$results = $wpdb->get_results(
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$results = $wpdb->get_results( $wpdb->prepare(
 			"SELECT id, evidence_uuid, evidence_type, evidence_title, created_at 
-			 FROM $table_name 
-			 ORDER BY id DESC"
-		);
+			 FROM %i 
+			 ORDER BY id DESC",
+			$table_name
+		) );
 
 		return $this->success( $results );
 	}
@@ -90,7 +92,8 @@ class EvidenceController extends BaseController {
 		$table_name = $wpdb->prefix . 'tbsh_cal_evidence';
 		$id         = intval( $request['id'] );
 
-		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_name WHERE id = %d", $id ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM %i WHERE id = %d", $table_name, $id ) );
 
 		if ( ! $row ) {
 			return $this->error( 'tbsh_cal_not_found', __( 'Evidence snapshot not found.', 'tbsh-compliance-audit-logger' ), 404 );

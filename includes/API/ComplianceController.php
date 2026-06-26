@@ -40,7 +40,8 @@ class ComplianceController extends BaseController {
 		$table_logs = $wpdb->prefix . 'tbsh_cal_logs';
 
 		// 1. Gather Category counts in a single query.
-		$results = $wpdb->get_results( "SELECT event_category, COUNT(*) as count FROM $table_logs GROUP BY event_category" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$results = $wpdb->get_results( $wpdb->prepare( "SELECT event_category, COUNT(*) as count FROM %i GROUP BY event_category", $table_logs ) );
 
 		$counts = array(
 			'Access Control'           => 0,
@@ -114,7 +115,8 @@ class ComplianceController extends BaseController {
 		// 3. Evidence Coverage Indicators.
 		// Assess whether major configuration snapshots are registered.
 		$table_evidence   = $wpdb->prefix . 'tbsh_cal_evidence';
-		$snapshots_recent = intval( $wpdb->get_var( "SELECT COUNT(*) FROM $table_evidence" ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$snapshots_recent = intval( $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i", $table_evidence ) ) );
 
 		$coverage_score = 0;
 		if ( $snapshots_recent > 0 ) {

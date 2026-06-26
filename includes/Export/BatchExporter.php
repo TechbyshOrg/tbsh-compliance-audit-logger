@@ -75,6 +75,7 @@ class BatchExporter {
 		$filename = 'export_' . $uuid . '.' . $format;
 		$filepath = self::get_export_dir() . $filename;
 
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 		$file_handle = fopen( $filepath, 'w' );
 		if ( ! $file_handle ) {
 			return false;
@@ -111,6 +112,7 @@ class BatchExporter {
 				'Previous Hash',
 			) );
 		} elseif ( 'json' === $format ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite
 			fwrite( $file_handle, "[\n" );
 		}
 
@@ -118,10 +120,12 @@ class BatchExporter {
 
 		// 4. Batch Query and Write.
 		while ( true ) {
-			$sql = "SELECT * FROM $table_name WHERE $where_clause ORDER BY id DESC LIMIT %d OFFSET %d";
-			$query_args = array_merge( $args, array( $batch_size, $offset ) );
+			$sql = "SELECT * FROM %i WHERE $where_clause ORDER BY id DESC LIMIT %d OFFSET %d";
+			$query_args = array_merge( array( $table_name ), $args, array( $batch_size, $offset ) );
+			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			$sql = $wpdb->prepare( $sql, $query_args );
 
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 			$logs = $wpdb->get_results( $sql );
 
 			if ( empty( $logs ) ) {
@@ -155,8 +159,10 @@ class BatchExporter {
 					) );
 				} elseif ( 'json' === $format ) {
 					if ( ! $first_row ) {
+						// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite
 						fwrite( $file_handle, ",\n" );
 					}
+					// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite
 					fwrite( $file_handle, wp_json_encode( $log, JSON_PRETTY_PRINT ) );
 					$first_row = false;
 				}
@@ -171,9 +177,11 @@ class BatchExporter {
 
 		// Close format.
 		if ( 'json' === $format ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite
 			fwrite( $file_handle, "\n]\n" );
 		}
 
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 		fclose( $file_handle );
 
 		return $filename;
@@ -193,7 +201,7 @@ class BatchExporter {
 			$ext      = end( $parts );
 			$list[]   = array(
 				'filename'   => $basename,
-				'created_at' => date( 'Y-m-d H:i:s', filemtime( $file ) ),
+				'created_at' => gmdate( 'Y-m-d H:i:s', filemtime( $file ) ),
 				'size'       => filesize( $file ),
 				'format'     => $ext,
 			);
@@ -217,7 +225,7 @@ class BatchExporter {
 
 		foreach ( $files as $file ) {
 			if ( $now - filemtime( $file ) > 7200 ) { // 2 hours
-				@unlink( $file );
+				wp_delete_file( $file );
 			}
 		}
 	}

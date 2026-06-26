@@ -41,7 +41,7 @@ class PrivacyManager {
 	 */
 	public static function hash_user_agent( $ua = '' ) {
 		if ( empty( $ua ) ) {
-			$ua = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( $_SERVER['HTTP_USER_AGENT'] ) : '';
+			$ua = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
 		}
 		return hash_hmac( 'sha256', $ua, self::get_salt() );
 	}
@@ -52,13 +52,13 @@ class PrivacyManager {
 	public static function get_user_ip() {
 		$ip = '127.0.0.1';
 		if ( ! empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
-			$ip = $_SERVER['HTTP_CLIENT_IP'];
+			$ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_CLIENT_IP'] ) );
 		} elseif ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-			$ip = $_SERVER['HTTP_X_FORWARDED_FOR'];
+			$ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) );
 		} elseif ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
-			$ip = $_SERVER['REMOTE_ADDR'];
+			$ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
 		}
-		return sanitize_text_field( $ip );
+		return $ip;
 	}
 
 	/**
@@ -108,8 +108,10 @@ class PrivacyManager {
 		$limit      = 100;
 		$offset     = ( $page - 1 ) * $limit;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$logs = $wpdb->get_results( $wpdb->prepare(
-			"SELECT * FROM $table_name WHERE user_id = %d ORDER BY id ASC LIMIT %d OFFSET %d",
+			"SELECT * FROM %i WHERE user_id = %d ORDER BY id ASC LIMIT %d OFFSET %d",
+			$table_name,
 			$user->ID,
 			$limit,
 			$offset
@@ -168,8 +170,10 @@ class PrivacyManager {
 		$limit      = 50; // Smaller batch for CPU intensive hash recalculation
 		$offset     = ( $page - 1 ) * $limit;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$logs = $wpdb->get_results( $wpdb->prepare(
-			"SELECT * FROM $table_name WHERE user_id = %d ORDER BY id ASC LIMIT %d OFFSET %d",
+			"SELECT * FROM %i WHERE user_id = %d ORDER BY id ASC LIMIT %d OFFSET %d",
+			$table_name,
 			$user->ID,
 			$limit,
 			$offset
@@ -179,6 +183,7 @@ class PrivacyManager {
 		if ( ! empty( $logs ) ) {
 			foreach ( $logs as $log ) {
 				// Anonymize user info
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 				$wpdb->update(
 					$table_name,
 					array(
@@ -214,13 +219,16 @@ class PrivacyManager {
 		$table_name = $wpdb->prefix . 'tbsh_cal_logs';
 
 		// Start transaction to avoid race conditions during rebuild.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->query( 'START TRANSACTION' );
 
 		$transaction_success = true;
 
 		// Fetch all rows from start_id
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$rows = $wpdb->get_results( $wpdb->prepare(
-			"SELECT * FROM $table_name WHERE id >= %d ORDER BY id ASC",
+			"SELECT * FROM %i WHERE id >= %d ORDER BY id ASC",
+			$table_name,
 			$start_id
 		) );
 
@@ -228,8 +236,10 @@ class PrivacyManager {
 			// Fetch previous hash
 			$previous_hash = '0000000000000000000000000000000000000000000000000000000000000000';
 			if ( $row->id > 1 ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 				$prev = $wpdb->get_var( $wpdb->prepare(
-					"SELECT integrity_hash FROM $table_name WHERE id < %d ORDER BY id DESC LIMIT 1",
+					"SELECT integrity_hash FROM %i WHERE id < %d ORDER BY id DESC LIMIT 1",
+					$table_name,
 					$row->id
 				) );
 				if ( $prev ) {
@@ -262,6 +272,7 @@ class PrivacyManager {
 
 			$new_hash = hash( 'sha256', $canonical_string );
 
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			$updated = $wpdb->update(
 				$table_name,
 				array(
@@ -278,8 +289,10 @@ class PrivacyManager {
 		}
 
 		if ( $transaction_success ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->query( 'COMMIT' );
 		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->query( 'ROLLBACK' );
 		}
 	}

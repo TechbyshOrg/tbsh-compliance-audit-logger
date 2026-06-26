@@ -62,6 +62,7 @@ class EventTracker {
 			'Authentication',
 			'info',
 			__( 'User logged in', 'tbsh-compliance-audit-logger' ),
+			/* translators: %s: username */
 			sprintf( __( 'User "%s" logged in successfully.', 'tbsh-compliance-audit-logger' ), $user_login ),
 			array(
 				'object_type' => 'user',
@@ -88,6 +89,7 @@ class EventTracker {
 			'Authentication',
 			'info',
 			__( 'User logged out', 'tbsh-compliance-audit-logger' ),
+			/* translators: %s: username */
 			sprintf( __( 'User "%s" logged out.', 'tbsh-compliance-audit-logger' ), $user->user_login ),
 			array(
 				'object_type' => 'user',
@@ -106,6 +108,7 @@ class EventTracker {
 			'Authentication',
 			'warning',
 			__( 'Failed login attempt', 'tbsh-compliance-audit-logger' ),
+			/* translators: %s: username */
 			sprintf( __( 'Failed login attempt for username "%s".', 'tbsh-compliance-audit-logger' ), $username ),
 			array(
 				'object_type' => 'user',
@@ -125,9 +128,11 @@ class EventTracker {
 		$table_name = $wpdb->prefix . 'tbsh_cal_logs';
 
 		// Query failures for this username in the last 15 minutes.
-		$time_limit = date( 'Y-m-d H:i:s', strtotime( '-15 minutes' ) );
+		$time_limit = gmdate( 'Y-m-d H:i:s', time() - 900 );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$failures   = $wpdb->get_var( $wpdb->prepare(
-			"SELECT COUNT(*) FROM $table_name WHERE event_type = 'failed_login' AND username = %s AND created_at > %s",
+			"SELECT COUNT(*) FROM %i WHERE event_type = 'failed_login' AND username = %s AND created_at > %s",
+			$table_name,
 			$username,
 			$time_limit
 		) );
@@ -138,6 +143,7 @@ class EventTracker {
 				'Security Monitoring',
 				'critical',
 				__( 'Excessive login failures detected', 'tbsh-compliance-audit-logger' ),
+				/* translators: 1: number of failures, 2: username */
 				sprintf( __( 'Multiple failed login attempts (%1$d) detected for user "%2$s" in the last 15 minutes.', 'tbsh-compliance-audit-logger' ), $failures, $username ),
 				array(
 					'compliance_tags' => 'Security Monitoring, Incident Detection',
@@ -160,7 +166,8 @@ class EventTracker {
 			'Identity Management',
 			'info',
 			__( 'New user registered', 'tbsh-compliance-audit-logger' ),
-			sprintf( __( 'New user registered: "%s" (ID: %d).', 'tbsh-compliance-audit-logger' ), $user->user_login, $user_id ),
+			/* translators: 1: username, 2: user ID */
+			sprintf( __( 'New user registered: "%1$s" (ID: %2$d).', 'tbsh-compliance-audit-logger' ), $user->user_login, $user_id ),
 			array(
 				'object_type'     => 'user',
 				'object_id'       => $user_id,
@@ -181,7 +188,8 @@ class EventTracker {
 			'Access Control',
 			'warning',
 			__( 'User deleted', 'tbsh-compliance-audit-logger' ),
-			sprintf( __( 'User account deleted: "%s" (ID: %d).', 'tbsh-compliance-audit-logger' ), $name, $user_id ),
+			/* translators: 1: username, 2: user ID */
+			sprintf( __( 'User account deleted: "%1$s" (ID: %2$d).', 'tbsh-compliance-audit-logger' ), $name, $user_id ),
 			array(
 				'object_type'     => 'user',
 				'object_id'       => $user_id,
@@ -208,6 +216,7 @@ class EventTracker {
 				'Identity Management',
 				'warning',
 				__( 'User password changed', 'tbsh-compliance-audit-logger' ),
+				/* translators: %s: username */
 				sprintf( __( 'Password was changed for user "%s".', 'tbsh-compliance-audit-logger' ), $user->user_login ),
 				array(
 					'object_type' => 'user',
@@ -228,6 +237,7 @@ class EventTracker {
 				'Identity Management',
 				'info',
 				__( 'User profile updated', 'tbsh-compliance-audit-logger' ),
+				/* translators: %s: username */
 				sprintf( __( 'Profile details updated for user "%s".', 'tbsh-compliance-audit-logger' ), $user->user_login ),
 				array(
 					'object_type' => 'user',
@@ -252,7 +262,8 @@ class EventTracker {
 			'Access Control',
 			'warning',
 			__( 'User role modified', 'tbsh-compliance-audit-logger' ),
-			sprintf( __( 'Role changed for user "%s" from [%s] to [%s].', 'tbsh-compliance-audit-logger' ), $username, $old_role_str, $role ),
+			/* translators: 1: username, 2: old role(s), 3: new role */
+			sprintf( __( 'Role changed for user "%1$s" from [%2$s] to [%3$s].', 'tbsh-compliance-audit-logger' ), $username, $old_role_str, $role ),
 			array(
 				'object_type'     => 'user',
 				'object_id'       => $user_id,
@@ -271,6 +282,7 @@ class EventTracker {
 				'Security Monitoring',
 				'critical',
 				__( 'Privilege escalation detected', 'tbsh-compliance-audit-logger' ),
+				/* translators: %s: username */
 				sprintf( __( 'User "%s" was granted Administrator privileges.', 'tbsh-compliance-audit-logger' ), $username ),
 				array(
 					'object_type'     => 'user',
@@ -290,6 +302,7 @@ class EventTracker {
 			'Identity Management',
 			'warning',
 			__( 'Password reset completed', 'tbsh-compliance-audit-logger' ),
+			/* translators: %s: username */
 			sprintf( __( 'Password was reset for user "%s".', 'tbsh-compliance-audit-logger' ), $user->user_login ),
 			array(
 				'object_type' => 'user',
@@ -307,6 +320,7 @@ class EventTracker {
 			'Change Management',
 			'info',
 			__( 'Plugin activated', 'tbsh-compliance-audit-logger' ),
+			/* translators: %s: plugin file path */
 			sprintf( __( 'Plugin activated: "%s".', 'tbsh-compliance-audit-logger' ), $plugin ),
 			array(
 				'object_type' => 'plugin',
@@ -324,6 +338,7 @@ class EventTracker {
 			'Change Management',
 			'warning',
 			__( 'Plugin deactivated', 'tbsh-compliance-audit-logger' ),
+			/* translators: %s: plugin file path */
 			sprintf( __( 'Plugin deactivated: "%s".', 'tbsh-compliance-audit-logger' ), $plugin ),
 			array(
 				'object_type' => 'plugin',
@@ -341,6 +356,7 @@ class EventTracker {
 			'Change Management',
 			'info',
 			__( 'Theme switched', 'tbsh-compliance-audit-logger' ),
+			/* translators: %s: theme name */
 			sprintf( __( 'Active theme changed to "%s".', 'tbsh-compliance-audit-logger' ), $new_name ),
 			array(
 				'object_type' => 'theme',
@@ -371,7 +387,8 @@ class EventTracker {
 					'Change Management',
 					'info',
 					'plugin' === $action ? __( 'Plugin installed', 'tbsh-compliance-audit-logger' ) : __( 'Plugin updated', 'tbsh-compliance-audit-logger' ),
-					sprintf( __( 'Plugin %s: "%s".', 'tbsh-compliance-audit-logger' ), $action, $plugin ),
+					/* translators: 1: action performed, 2: plugin file path */
+					sprintf( __( 'Plugin %1$s: "%2$s".', 'tbsh-compliance-audit-logger' ), $action, $plugin ),
 					array(
 						'object_type' => 'plugin',
 						'object_id'   => $plugin,
@@ -389,7 +406,8 @@ class EventTracker {
 					'Change Management',
 					'info',
 					'theme' === $action ? __( 'Theme installed', 'tbsh-compliance-audit-logger' ) : __( 'Theme updated', 'tbsh-compliance-audit-logger' ),
-					sprintf( __( 'Theme %s: "%s".', 'tbsh-compliance-audit-logger' ), $action, $theme ),
+					/* translators: 1: action performed, 2: theme name */
+					sprintf( __( 'Theme %1$s: "%2$s".', 'tbsh-compliance-audit-logger' ), $action, $theme ),
 					array(
 						'object_type' => 'theme',
 						'object_id'   => $theme,
@@ -408,6 +426,7 @@ class EventTracker {
 			'Change Management',
 			'info',
 			__( 'WordPress Core updated', 'tbsh-compliance-audit-logger' ),
+			/* translators: %s: WordPress version number */
 			sprintf( __( 'WordPress updated to version %s.', 'tbsh-compliance-audit-logger' ), $wp_version ),
 			array(
 				'object_type'     => 'core',
@@ -434,6 +453,7 @@ class EventTracker {
 			'Configuration Management',
 			'info',
 			__( 'System setting changed', 'tbsh-compliance-audit-logger' ),
+			/* translators: 1: option name, 2: old value, 3: new value */
 			sprintf( __( 'Setting "%1$s" updated from "%2$s" to "%3$s".', 'tbsh-compliance-audit-logger' ), $option, $old_disp, $new_disp ),
 			array(
 				'object_type' => 'option',

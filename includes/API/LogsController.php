@@ -125,16 +125,19 @@ class LogsController extends BaseController {
 		$where_clause = implode( ' AND ', $where );
 
 		// Count Query.
-		$count_sql = "SELECT COUNT(*) FROM $table_name WHERE $where_clause";
-		if ( ! empty( $args ) ) {
-			$count_sql = $wpdb->prepare( $count_sql, $args );
-		}
+		$count_sql = "SELECT COUNT(*) FROM %i WHERE $where_clause";
+		$count_args = array_merge( array( $table_name ), $args );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
+		$count_sql = $wpdb->prepare( $count_sql, $count_args );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$total_items = intval( $wpdb->get_var( $count_sql ) );
 
 		// Items Query.
-		$items_sql = "SELECT * FROM $table_name WHERE $where_clause ORDER BY $orderby $order LIMIT %d OFFSET %d";
-		$query_args = array_merge( $args, array( $per_page, $offset ) );
+		$items_sql = "SELECT * FROM %i WHERE $where_clause ORDER BY $orderby $order LIMIT %d OFFSET %d";
+		$query_args = array_merge( array( $table_name ), $args, array( $per_page, $offset ) );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		$items_sql  = $wpdb->prepare( $items_sql, $query_args );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$logs       = $wpdb->get_results( $items_sql );
 
 		// Decode metadata JSON safely.
@@ -160,7 +163,8 @@ class LogsController extends BaseController {
 		$table_name = $wpdb->prefix . 'tbsh_cal_logs';
 		$id         = intval( $request['id'] );
 
-		$log = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM $table_name WHERE id = %d", $id ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$log = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM %i WHERE id = %d", $table_name, $id ) );
 
 		if ( ! $log ) {
 			return $this->error( 'tbsh_cal_not_found', __( 'Log not found.', 'tbsh-compliance-audit-logger' ), 404 );

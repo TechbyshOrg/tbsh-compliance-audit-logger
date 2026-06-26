@@ -52,10 +52,12 @@ class DashboardWidget {
 		} elseif ( 'warning' === $status ) {
 			$class = 'tbsh-status-warning';
 			$label = __( 'Warning', 'tbsh-compliance-audit-logger' );
+			/* translators: %d: number of issues */
 			$desc  = sprintf( __( 'Some sequence checks failed (%d issues).', 'tbsh-compliance-audit-logger' ), $issues );
 		} elseif ( 'compromised' === $status ) {
 			$class = 'tbsh-status-compromised';
 			$label = __( 'Compromised', 'tbsh-compliance-audit-logger' );
+			/* translators: %d: number of tampering issues */
 			$desc  = sprintf( __( 'CRITICAL: Cryptographic chain validation failed! %d tampering issues found.', 'tbsh-compliance-audit-logger' ), $issues );
 		}
 
@@ -64,7 +66,7 @@ class DashboardWidget {
 			<span class="tbsh-widget-badge <?php echo esc_attr( $class ); ?>"><?php echo esc_html( $label ); ?></span>
 			<p><strong><?php echo esc_html( $desc ); ?></strong></p>
 			<?php if ( $date ) : ?>
-				<p class="tbsh-widget-meta"><?php echo esc_html( sprintf( __( 'Last Scan: %s', 'tbsh-compliance-audit-logger' ), $date ) ); ?></p>
+				<p class="tbsh-widget-meta"><?php /* translators: %s: verification date */ echo esc_html( sprintf( __( 'Last Scan: %s', 'tbsh-compliance-audit-logger' ), $date ) ); ?></p>
 			<?php endif; ?>
 			<p style="margin-top: 15px; margin-bottom: 0;">
 				<a href="<?php echo esc_url( admin_url( 'admin.php?page=tbsh-compliance-audit-logger#/integrity' ) ); ?>" class="button button-primary">

@@ -1,14 +1,16 @@
 <?php
 /**
- * Plugin Name: Compliance Audit Trail & Evidence Logger
+ * Plugin Name: TBSH Compliance Audit Trail & Evidence Logger
  * Description: Enterprise-grade compliance logging, audit evidence, security monitoring, and integrity verification platform.
  * Version: 1.0.0
- * Author: Techbysh
+ * Author: techbysh
  * Author URI: https://techbysh.com
  * Text Domain: tbsh-compliance-audit-logger
  * Domain Path: /languages
  * Requires PHP: 8.0
  * Requires at least: 6.2
+ * License: GPL-2.0-or-later
+ * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  *
  * @package TBSHComplianceAuditLogger
  */
@@ -100,6 +102,7 @@ class TBSH_Compliance_Audit_Logger {
 	 * Load translation files.
 	 */
 	public function load_textdomain() {
+		// phpcs:ignore PluginCheck.CodeAnalysis.DiscouragedFunctions.load_plugin_textdomainFound
 		load_plugin_textdomain( 'tbsh-compliance-audit-logger', false, dirname( TBSH_CAL_BASENAME ) . '/languages' );
 	}
 
@@ -267,8 +270,9 @@ class TBSH_Compliance_Audit_Logger {
 		if ( $retention_days > 0 ) {
 			global $wpdb;
 			$table_name = $wpdb->prefix . 'tbsh_cal_logs';
-			$date_limit = date( 'Y-m-d H:i:s', strtotime( "-{$retention_days} days" ) );
-			$wpdb->query( $wpdb->prepare( "DELETE FROM {$table_name} WHERE created_at < %s", $date_limit ) );
+			$date_limit = gmdate( 'Y-m-d H:i:s', time() - ( $retention_days * DAY_IN_SECONDS ) );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE created_at < %s", $table_name, $date_limit ) );
 		}
 	}
 }

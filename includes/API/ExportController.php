@@ -125,6 +125,7 @@ class ExportController extends BaseController {
 		header( 'Pragma: public' );
 		header( 'Content-Length: ' . filesize( $filepath ) );
 
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_readfile
 		readfile( $filepath );
 		exit;
 	}

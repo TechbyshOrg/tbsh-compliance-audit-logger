@@ -50,14 +50,16 @@ class ForensicTimeline {
 		// Default to DESC to show recent first, but easy paging.
 		$limit  = 100;
 		$sql    = "SELECT id, created_at, event_uuid, event_type, event_category, severity, event_title, event_message, user_id, username, role, ip_hash, request_method, request_uri 
-		           FROM $table_name 
+		           FROM %i 
 		           WHERE $where_clause 
 		           ORDER BY id DESC 
 		           LIMIT %d";
 
-		$query_args = array_merge( $args, array( $limit ) );
+		$query_args = array_merge( array( $table_name ), $args, array( $limit ) );
+		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		$sql = $wpdb->prepare( $sql, $query_args );
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		return $wpdb->get_results( $sql );
 	}
 }

@@ -30,6 +30,7 @@ class Vault {
 		$snapshot_data = self::gather_system_info();
 		$uuid          = self::generate_uuid();
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$inserted = $wpdb->insert(
 			$table_name,
 			array(
@@ -47,6 +48,7 @@ class Vault {
 				'Security Monitoring',
 				'info',
 				__( 'Evidence snapshot captured', 'tbsh-compliance-audit-logger' ),
+				/* translators: %s: evidence title */
 				sprintf( __( 'System evidence snapshot "%s" was successfully recorded.', 'tbsh-compliance-audit-logger' ), $title ),
 				array(
 					'object_type'     => 'evidence',
@@ -114,6 +116,7 @@ class Vault {
 		// 4. DB Sizing.
 		$db_size = 0;
 		$tables  = array();
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$status  = $wpdb->get_results( "SHOW TABLE STATUS LIKE '{$wpdb->prefix}%'" );
 		if ( ! empty( $status ) ) {
 			foreach ( $status as $table ) {
@@ -136,6 +139,7 @@ class Vault {
 			'force_ssl_admin'   => defined( 'FORCE_SSL_ADMIN' ) && FORCE_SSL_ADMIN,
 			'php_version'       => PHP_VERSION,
 			'db_version'        => $wpdb->db_version(),
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			'mysql_mode'        => $wpdb->get_var( "SELECT @@sql_mode" ),
 		);
 
@@ -171,11 +175,11 @@ class Vault {
 	 */
 	private static function generate_uuid() {
 		return sprintf( '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-			mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ),
-			mt_rand( 0, 0xffff ),
-			mt_rand( 0, 0x0fff ) | 0x4000,
-			mt_rand( 0, 0x3fff ) | 0x8000,
-			mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff )
+			wp_rand( 0, 0xffff ), wp_rand( 0, 0xffff ),
+			wp_rand( 0, 0xffff ),
+			wp_rand( 0, 0x0fff ) | 0x4000,
+			wp_rand( 0, 0x3fff ) | 0x8000,
+			wp_rand( 0, 0xffff ), wp_rand( 0, 0xffff ), wp_rand( 0, 0xffff )
 		);
 	}
 }

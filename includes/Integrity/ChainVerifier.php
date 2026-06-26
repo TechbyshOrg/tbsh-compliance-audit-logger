@@ -28,7 +28,8 @@ class ChainVerifier {
 		$total_logs    = 0;
 
 		// Fetch the total count of logs.
-		$total_logs = intval( $wpdb->get_var( "SELECT COUNT(*) FROM $table_logs" ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$total_logs = intval( $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i", $table_logs ) ) );
 
 		// Cap the verification scan to the latest 5,000 logs to prevent PHP execution timeouts.
 		$max_scan = 5000;
@@ -36,8 +37,10 @@ class ChainVerifier {
 
 		if ( $total_logs > $max_scan ) {
 			// Find the boundary row ID at the offset.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$boundary_row = $wpdb->get_row( $wpdb->prepare(
-				"SELECT id, integrity_hash FROM $table_logs ORDER BY id DESC LIMIT 1 OFFSET %d",
+				"SELECT id, integrity_hash FROM %i ORDER BY id DESC LIMIT 1 OFFSET %d",
+				$table_logs,
 				$max_scan
 			) );
 			if ( $boundary_row ) {
@@ -50,8 +53,10 @@ class ChainVerifier {
 
 		if ( $total_logs > 0 ) {
 			while ( true ) {
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 				$rows = $wpdb->get_results( $wpdb->prepare(
-					"SELECT * FROM $table_logs WHERE id > %d ORDER BY id ASC LIMIT %d OFFSET %d",
+					"SELECT * FROM %i WHERE id > %d ORDER BY id ASC LIMIT %d OFFSET %d",
+					$table_logs,
 					$start_id,
 					$batch_size,
 					$offset
@@ -68,6 +73,7 @@ class ChainVerifier {
 						$broken_logs[] = array(
 							'id'      => $row->id,
 							'title'   => $row->event_title,
+							/* translators: 1: stored previous hash, 2: calculated previous hash */
 							'reason'  => sprintf( __( 'Previous hash mismatch. Stored: "%1$s", Calculated: "%2$s"', 'tbsh-compliance-audit-logger' ), $row->previous_hash, $previous_hash ),
 							'type'    => 'previous_hash_mismatch',
 						);
@@ -104,6 +110,7 @@ class ChainVerifier {
 						$broken_logs[] = array(
 							'id'      => $row->id,
 							'title'   => $row->event_title,
+							/* translators: 1: stored hash, 2: calculated hash */
 							'reason'  => sprintf( __( 'Hash mismatch. Stored: "%1$s", Calculated: "%2$s"', 'tbsh-compliance-audit-logger' ), $row->integrity_hash, $calculated_hash ),
 							'type'    => 'hash_mismatch',
 						);
@@ -135,6 +142,7 @@ class ChainVerifier {
 		);
 
 		// Record result in integrity table.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$wpdb->insert(
 			$table_integrity,
 			array(
@@ -160,7 +168,8 @@ class ChainVerifier {
 	public static function get_latest_status() {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'tbsh_cal_integrity';
-		$row        = $wpdb->get_row( "SELECT * FROM $table_name ORDER BY id DESC LIMIT 1" );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$row        = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM %i ORDER BY id DESC LIMIT 1", $table_name ) );
 
 		if ( ! $row ) {
 			return array(

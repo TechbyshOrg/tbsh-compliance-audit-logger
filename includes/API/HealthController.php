@@ -43,13 +43,17 @@ class HealthController extends BaseController {
 		$table_integrity = $wpdb->prefix . 'tbsh_cal_integrity';
 
 		// Counts.
-		$log_count      = intval( $wpdb->get_var( "SELECT COUNT(*) FROM $table_logs" ) );
-		$evidence_count = intval( $wpdb->get_var( "SELECT COUNT(*) FROM $table_evidence" ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$log_count      = intval( $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i", $table_logs ) ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$evidence_count = intval( $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i", $table_evidence ) ) );
 
 		// Error/Critical count.
-		$recent_errors = intval( $wpdb->get_var(
-			"SELECT COUNT(*) FROM $table_logs WHERE severity IN ('critical', 'error')"
-		) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$recent_errors = intval( $wpdb->get_var( $wpdb->prepare(
+			"SELECT COUNT(*) FROM %i WHERE severity IN ('critical', 'error')",
+			$table_logs
+		) ) );
 
 		// Integrity.
 		$integrity = ChainVerifier::get_latest_status();
@@ -60,6 +64,7 @@ class HealthController extends BaseController {
 
 		$total_raw_size = 0;
 		foreach ( $custom_tables as $table ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$status = $wpdb->get_row( $wpdb->prepare( "SHOW TABLE STATUS LIKE %s", $table ) );
 			if ( $status ) {
 				$size = intval( $status->Data_length ) + intval( $status->Index_length );

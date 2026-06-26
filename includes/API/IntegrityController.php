@@ -49,12 +49,14 @@ class IntegrityController extends BaseController {
 		$table_integrity = $wpdb->prefix . 'tbsh_cal_integrity';
 
 		$latest  = ChainVerifier::get_latest_status();
-		$history = $wpdb->get_results(
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$history = $wpdb->get_results( $wpdb->prepare(
 			"SELECT id, verification_date, status, issues_found 
-			 FROM $table_integrity 
+			 FROM %i 
 			 ORDER BY id DESC 
-			 LIMIT 20"
-		);
+			 LIMIT 20",
+			$table_integrity
+		) );
 
 		return $this->success( array(
 			'latest'  => $latest,

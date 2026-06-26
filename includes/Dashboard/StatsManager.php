@@ -22,57 +22,72 @@ class StatsManager {
 		$table_logs     = $wpdb->prefix . 'tbsh_cal_logs';
 		$table_evidence = $wpdb->prefix . 'tbsh_cal_evidence';
 
-		$today = date( 'Y-m-d' );
+		$today = gmdate( 'Y-m-d' );
 
 		// 1. Counts.
-		$total_events = intval( $wpdb->get_var( "SELECT COUNT(*) FROM $table_logs" ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$total_events = intval( $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i", $table_logs ) ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$events_today = intval( $wpdb->get_var( $wpdb->prepare(
-			"SELECT COUNT(*) FROM $table_logs WHERE created_at >= %s",
+			"SELECT COUNT(*) FROM %i WHERE created_at >= %s",
+			$table_logs,
 			$today . ' 00:00:00'
 		) ) );
 
-		$critical_events = intval( $wpdb->get_var(
-			"SELECT COUNT(*) FROM $table_logs WHERE severity IN ('critical', 'error')"
-		) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$critical_events = intval( $wpdb->get_var( $wpdb->prepare(
+			"SELECT COUNT(*) FROM %i WHERE severity IN ('critical', 'error')",
+			$table_logs
+		) ) );
 
-		$failed_logins = intval( $wpdb->get_var(
-			"SELECT COUNT(*) FROM $table_logs WHERE event_type = 'failed_login'"
-		) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$failed_logins = intval( $wpdb->get_var( $wpdb->prepare(
+			"SELECT COUNT(*) FROM %i WHERE event_type = 'failed_login'",
+			$table_logs
+		) ) );
 
-		$evidence_count = intval( $wpdb->get_var( "SELECT COUNT(*) FROM $table_evidence" ) );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$evidence_count = intval( $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i", $table_evidence ) ) );
 
 		// 2. Integrity.
 		$integrity = ChainVerifier::get_latest_status();
 
 		// 3. Most Active Users (Limit 5).
-		$active_users = $wpdb->get_results(
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$active_users = $wpdb->get_results( $wpdb->prepare(
 			"SELECT username, user_id, COUNT(*) as count 
-			 FROM $table_logs 
+			 FROM %i 
 			 WHERE username != 'system' 
 			 GROUP BY username, user_id 
 			 ORDER BY count DESC 
-			 LIMIT 5"
-		);
+			 LIMIT 5",
+			$table_logs
+		) );
 
 		// 4. Most Common Events (Limit 5).
-		$common_events = $wpdb->get_results(
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$common_events = $wpdb->get_results( $wpdb->prepare(
 			"SELECT event_title as name, COUNT(*) as count 
-			 FROM $table_logs 
+			 FROM %i 
 			 GROUP BY event_title 
 			 ORDER BY count DESC 
-			 LIMIT 5"
-		);
+			 LIMIT 5",
+			$table_logs
+		) );
 
 		// 5. Recent Activity (Limit 10).
-		$recent_activity = $wpdb->get_results(
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$recent_activity = $wpdb->get_results( $wpdb->prepare(
 			"SELECT id, created_at, username, event_title, severity, event_category, compliance_tags 
-			 FROM $table_logs 
+			 FROM %i 
 			 ORDER BY id DESC 
-			 LIMIT 10"
-		);
+			 LIMIT 10",
+			$table_logs
+		) );
 
 		// 6. DB Size.
 		$db_size = 0;
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$status  = $wpdb->get_results( "SHOW TABLE STATUS LIKE '{$wpdb->prefix}tbsh_cal_%'" );
 		if ( ! empty( $status ) ) {
 			foreach ( $status as $table ) {

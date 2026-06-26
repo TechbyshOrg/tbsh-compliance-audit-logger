@@ -67,9 +67,9 @@ class Logger {
 		$user_agent_hash = PrivacyManager::hash_user_agent();
 
 		// Request info.
-		$request_method = isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_text_field( $_SERVER['REQUEST_METHOD'] ) : '';
-		$request_uri    = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( $_SERVER['REQUEST_URI'] ) : '';
-		$referrer       = isset( $_SERVER['HTTP_REFERER'] ) ? esc_url_raw( $_SERVER['HTTP_REFERER'] ) : '';
+		$request_method = isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) : '';
+		$request_uri    = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+		$referrer       = isset( $_SERVER['HTTP_REFERER'] ) ? esc_url_raw( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) : '';
 
 		// Extra args.
 		$object_type     = isset( $args['object_type'] ) ? sanitize_text_field( $args['object_type'] ) : '';
@@ -114,6 +114,7 @@ class Logger {
 		$table_name = $wpdb->prefix . 'tbsh_cal_logs';
 
 		// Start transaction to prevent race conditions during insertion and hashing.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->query( 'START TRANSACTION' );
 
 		$transaction_success = true;
@@ -121,7 +122,8 @@ class Logger {
 		foreach ( self::$log_queue as $log ) {
 			// Get previous hash.
 			$previous_hash = '0000000000000000000000000000000000000000000000000000000000000000';
-			$last_entry    = $wpdb->get_row( "SELECT id, integrity_hash FROM $table_name ORDER BY id DESC LIMIT 1" );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$last_entry    = $wpdb->get_row( $wpdb->prepare( "SELECT id, integrity_hash FROM %i ORDER BY id DESC LIMIT 1", $table_name ) );
 			if ( $last_entry && ! empty( $last_entry->integrity_hash ) ) {
 				$previous_hash = $last_entry->integrity_hash;
 			}
@@ -139,6 +141,7 @@ class Logger {
 			}
 
 			// Insert log entry.
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			$inserted = $wpdb->insert( $table_name, $log, $formats );
 
 			if ( $inserted ) {
@@ -170,6 +173,7 @@ class Logger {
 				$integrity_hash = hash( 'sha256', $canonical_string );
 
 				// Update log with hash.
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 				$updated = $wpdb->update(
 					$table_name,
 					array( 'integrity_hash' => $integrity_hash ),
@@ -187,8 +191,10 @@ class Logger {
 		}
 
 		if ( $transaction_success ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->query( 'COMMIT' );
 		} else {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$wpdb->query( 'ROLLBACK' );
 		}
 
@@ -215,11 +221,11 @@ class Logger {
 	 */
 	private static function generate_uuid() {
 		return sprintf( '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
-			mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ),
-			mt_rand( 0, 0xffff ),
-			mt_rand( 0, 0x0fff ) | 0x4000,
-			mt_rand( 0, 0x3fff ) | 0x8000,
-			mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff ), mt_rand( 0, 0xffff )
+			wp_rand( 0, 0xffff ), wp_rand( 0, 0xffff ),
+			wp_rand( 0, 0xffff ),
+			wp_rand( 0, 0x0fff ) | 0x4000,
+			wp_rand( 0, 0x3fff ) | 0x8000,
+			wp_rand( 0, 0xffff ), wp_rand( 0, 0xffff ), wp_rand( 0, 0xffff )
 		);
 	}
 }
