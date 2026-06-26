@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: TBSH Compliance Audit Trail & Evidence Logger
+ * Plugin Name: Compliance Audit Trail & Evidence Logger
  * Description: Enterprise-grade compliance logging, audit evidence, security monitoring, and integrity verification platform.
  * Version: 1.0.0
  * Author: techbysh

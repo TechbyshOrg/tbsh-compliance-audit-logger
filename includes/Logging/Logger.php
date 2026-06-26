@@ -173,7 +173,7 @@ class Logger {
 				$integrity_hash = hash( 'sha256', $canonical_string );
 
 				// Update log with hash.
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 				$updated = $wpdb->update(
 					$table_name,
 					array( 'integrity_hash' => $integrity_hash ),

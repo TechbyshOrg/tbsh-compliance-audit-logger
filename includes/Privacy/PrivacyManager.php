@@ -183,7 +183,7 @@ class PrivacyManager {
 		if ( ! empty( $logs ) ) {
 			foreach ( $logs as $log ) {
 				// Anonymize user info
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 				$wpdb->update(
 					$table_name,
 					array(
@@ -272,7 +272,7 @@ class PrivacyManager {
 
 			$new_hash = hash( 'sha256', $canonical_string );
 
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$updated = $wpdb->update(
 				$table_name,
 				array(

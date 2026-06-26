@@ -125,7 +125,7 @@ class BatchExporter {
 			// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 			$sql = $wpdb->prepare( $sql, $query_args );
 
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared
 			$logs = $wpdb->get_results( $sql );
 
 			if ( empty( $logs ) ) {

@@ -129,7 +129,7 @@ class LogsController extends BaseController {
 		$count_args = array_merge( array( $table_name ), $args );
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		$count_sql = $wpdb->prepare( $count_sql, $count_args );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared
 		$total_items = intval( $wpdb->get_var( $count_sql ) );
 
 		// Items Query.
@@ -137,7 +137,7 @@ class LogsController extends BaseController {
 		$query_args = array_merge( array( $table_name ), $args, array( $per_page, $offset ) );
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		$items_sql  = $wpdb->prepare( $items_sql, $query_args );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared
 		$logs       = $wpdb->get_results( $items_sql );
 
 		// Decode metadata JSON safely.
