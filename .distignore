@@ -4,6 +4,7 @@
 .gitignore
 .gitattributes
 .distignore
+.wordpress-org/
 
 # Exclude Development metadata & configuration files
 node_modules/
@@ -14,13 +15,13 @@ composer.json
 composer.lock
 vendor/
 scratch/
+src/
 
 # Exclude Documentation (retained under docs/ in repo but excluded from distribution build)
 docs/
 
-# Exclude generated CSV and JSON export files (retaining security placeholders)
-exports/*.csv
-exports/*.json
+# Exclude exports directory
+exports/
 
 # Exclude release packages
 *.zip

@@ -127,7 +127,8 @@ class EventTracker {
 		// Query failures for this username in the last 15 minutes.
 		$time_limit = date( 'Y-m-d H:i:s', strtotime( '-15 minutes' ) );
 		$failures   = $wpdb->get_var( $wpdb->prepare(
-			"SELECT COUNT(*) FROM $table_name WHERE event_type = 'failed_login' AND created_at > %s",
+			"SELECT COUNT(*) FROM $table_name WHERE event_type = 'failed_login' AND username = %s AND created_at > %s",
+			$username,
 			$time_limit
 		) );
 
@@ -137,7 +138,7 @@ class EventTracker {
 				'Security Monitoring',
 				'critical',
 				__( 'Excessive login failures detected', 'tbsh-compliance-audit-logger' ),
-				sprintf( __( 'Multiple failed login attempts (%d) detected in the last 15 minutes.', 'tbsh-compliance-audit-logger' ), $failures ),
+				sprintf( __( 'Multiple failed login attempts (%1$d) detected for user "%2$s" in the last 15 minutes.', 'tbsh-compliance-audit-logger' ), $failures, $username ),
 				array(
 					'compliance_tags' => 'Security Monitoring, Incident Detection',
 				)

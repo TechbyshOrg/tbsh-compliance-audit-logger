@@ -30,10 +30,29 @@ class ChainVerifier {
 		// Fetch the total count of logs.
 		$total_logs = intval( $wpdb->get_var( "SELECT COUNT(*) FROM $table_logs" ) );
 
+		// Cap the verification scan to the latest 5,000 logs to prevent PHP execution timeouts.
+		$max_scan = 5000;
+		$start_id = 0;
+
+		if ( $total_logs > $max_scan ) {
+			// Find the boundary row ID at the offset.
+			$boundary_row = $wpdb->get_row( $wpdb->prepare(
+				"SELECT id, integrity_hash FROM $table_logs ORDER BY id DESC LIMIT 1 OFFSET %d",
+				$max_scan
+			) );
+			if ( $boundary_row ) {
+				$start_id      = intval( $boundary_row->id );
+				$previous_hash = $boundary_row->integrity_hash ?: $previous_hash;
+			}
+		}
+
+		$total_checked = ( $total_logs > $max_scan ) ? $max_scan : $total_logs;
+
 		if ( $total_logs > 0 ) {
 			while ( true ) {
 				$rows = $wpdb->get_results( $wpdb->prepare(
-					"SELECT * FROM $table_logs ORDER BY id ASC LIMIT %d OFFSET %d",
+					"SELECT * FROM $table_logs WHERE id > %d ORDER BY id ASC LIMIT %d OFFSET %d",
+					$start_id,
 					$batch_size,
 					$offset
 				) );
@@ -110,7 +129,7 @@ class ChainVerifier {
 		}
 
 		$details = array(
-			'total_checked' => $total_logs,
+			'total_checked' => $total_checked,
 			'broken_count'  => $issues_found,
 			'broken_logs'   => $broken_logs,
 		);

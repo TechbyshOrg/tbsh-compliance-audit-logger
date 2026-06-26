@@ -26,6 +26,7 @@ jobs:
             --exclude='.gitattributes' \
             --exclude='.github' \
             --exclude='.distignore' \
+            --exclude='.wordpress-org' \
             --exclude='scratch' \
             --exclude='docs' \
             --exclude='composer.json' \
@@ -34,8 +35,7 @@ jobs:
             --exclude='package-lock.json' \
             --exclude='node_modules' \
             --exclude='vendor' \
-            --exclude='exports/*.csv' \
-            --exclude='exports/*.json' \
+            --exclude='exports' \
             --exclude='tbsh-compliance-audit-logger_*.zip'
 
       - name: Create zip file

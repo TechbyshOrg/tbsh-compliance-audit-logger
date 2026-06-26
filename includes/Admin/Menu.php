@@ -47,21 +47,16 @@ class Menu {
 	 * Enqueue styles and JS assets.
 	 */
 	public static function enqueue_assets( $hook ) {
-		// Only enqueue on our specific admin page.
-		if ( 'toplevel_page_tbsh-compliance-audit-logger' !== $hook ) {
+		// Enqueue on our specific admin page or the main dashboard page (for the widget styles).
+		if ( 'toplevel_page_tbsh-compliance-audit-logger' !== $hook && 'index.php' !== $hook ) {
 			return;
 		}
 
-		$build_path = TBSH_CAL_PATH . 'build/index.js';
-		$build_url  = TBSH_CAL_URL . 'build/index.js';
-
-		$asset_file  = TBSH_CAL_PATH . 'build/index.asset.php';
-		$deps        = array( 'wp-element', 'wp-i18n', 'wp-api-fetch' );
 		$ver         = TBSH_CAL_VERSION;
+		$asset_file  = TBSH_CAL_PATH . 'build/index.asset.php';
 
 		if ( file_exists( $asset_file ) ) {
 			$assets = require $asset_file;
-			$deps   = $assets['dependencies'];
 			$ver    = $assets['version'];
 		}
 
@@ -73,36 +68,47 @@ class Menu {
 			$ver
 		);
 
-		// Enqueue built JS file.
-		if ( file_exists( $build_path ) ) {
-			wp_enqueue_script(
-				'tbsh-cal-admin-js',
-				$build_url,
-				$deps,
-				$ver,
-				true
-			);
+		// Only enqueue React script and settings on our specific page.
+		if ( 'toplevel_page_tbsh-compliance-audit-logger' === $hook ) {
+			$build_path = TBSH_CAL_PATH . 'build/index.js';
+			$build_url  = TBSH_CAL_URL . 'build/index.js';
+			$deps        = array( 'wp-element', 'wp-i18n', 'wp-api-fetch' );
 
-			// Gather user capabilities list.
-			$capabilities = array(
-				'view_logs'       => AccessControl::check( 'tbsh_cal_view_logs' ),
-				'view_evidence'   => AccessControl::check( 'tbsh_cal_view_evidence' ),
-				'export_data'     => AccessControl::check( 'tbsh_cal_export_data' ),
-				'manage_settings' => AccessControl::check( 'tbsh_cal_manage_settings' ),
-				'verify_integrity'=> AccessControl::check( 'tbsh_cal_verify_integrity' ),
-			);
+			if ( file_exists( $asset_file ) ) {
+				$assets = require $asset_file;
+				$deps   = $assets['dependencies'];
+			}
 
-			// Localize variables.
-			wp_localize_script( 'tbsh-cal-admin-js', 'tbshCalApiSettings', array(
-				'root'         => esc_url_raw( get_rest_url() ),
-				'namespace'    => 'tbsh-compliance-audit-logger/v1',
-				'nonce'        => wp_create_nonce( 'wp_rest' ),
-				'site_id'      => get_current_blog_id(),
-				'capabilities' => $capabilities,
-				'settings'     => get_option( 'tbsh_cal_settings', array() ),
-			) );
+			if ( file_exists( $build_path ) ) {
+				wp_enqueue_script(
+					'tbsh-cal-admin-js',
+					$build_url,
+					$deps,
+					$ver,
+					true
+				);
 
-			wp_localize_script( 'tbsh-cal-admin-js', 'tbshCalIcons', SVGHelper::get_icons() );
+				// Gather user capabilities list.
+				$capabilities = array(
+					'view_logs'       => AccessControl::check( 'tbsh_cal_view_logs' ),
+					'view_evidence'   => AccessControl::check( 'tbsh_cal_view_evidence' ),
+					'export_data'     => AccessControl::check( 'tbsh_cal_export_data' ),
+					'manage_settings' => AccessControl::check( 'tbsh_cal_manage_settings' ),
+					'verify_integrity'=> AccessControl::check( 'tbsh_cal_verify_integrity' ),
+				);
+
+				// Localize variables.
+				wp_localize_script( 'tbsh-cal-admin-js', 'tbshCalApiSettings', array(
+					'root'         => esc_url_raw( get_rest_url() ),
+					'namespace'    => 'tbsh-compliance-audit-logger/v1',
+					'nonce'        => wp_create_nonce( 'wp_rest' ),
+					'site_id'      => get_current_blog_id(),
+					'capabilities' => $capabilities,
+					'settings'     => get_option( 'tbsh_cal_settings', array() ),
+				) );
+
+				wp_localize_script( 'tbsh-cal-admin-js', 'tbshCalIcons', SVGHelper::get_icons() );
+			}
 		}
 	}
 }

@@ -39,17 +39,40 @@ class ComplianceController extends BaseController {
 		global $wpdb;
 		$table_logs = $wpdb->prefix . 'tbsh_cal_logs';
 
-		// 1. Gather Category counts.
-		$access_control_events  = intval( $wpdb->get_var( "SELECT COUNT(*) FROM $table_logs WHERE event_category = 'Access Control'" ) );
-		$identity_events        = intval( $wpdb->get_var( "SELECT COUNT(*) FROM $table_logs WHERE event_category = 'Identity Management'" ) );
-		$authentication_events  = intval( $wpdb->get_var( "SELECT COUNT(*) FROM $table_logs WHERE event_category = 'Authentication'" ) );
-		$authorization_events   = intval( $wpdb->get_var( "SELECT COUNT(*) FROM $table_logs WHERE event_category = 'Authorization'" ) );
-		$change_events          = intval( $wpdb->get_var( "SELECT COUNT(*) FROM $table_logs WHERE event_category = 'Change Management'" ) );
-		$configuration_events   = intval( $wpdb->get_var( "SELECT COUNT(*) FROM $table_logs WHERE event_category = 'Configuration Management'" ) );
-		$security_events        = intval( $wpdb->get_var( "SELECT COUNT(*) FROM $table_logs WHERE event_category = 'Security Monitoring'" ) );
-		$incident_events        = intval( $wpdb->get_var( "SELECT COUNT(*) FROM $table_logs WHERE event_category = 'Incident Detection'" ) );
-		$operational_events     = intval( $wpdb->get_var( "SELECT COUNT(*) FROM $table_logs WHERE event_category = 'Operational Security'" ) );
-		$audit_trail_events     = intval( $wpdb->get_var( "SELECT COUNT(*) FROM $table_logs WHERE event_category = 'Audit Trail'" ) );
+		// 1. Gather Category counts in a single query.
+		$results = $wpdb->get_results( "SELECT event_category, COUNT(*) as count FROM $table_logs GROUP BY event_category" );
+
+		$counts = array(
+			'Access Control'           => 0,
+			'Identity Management'      => 0,
+			'Authentication'           => 0,
+			'Authorization'            => 0,
+			'Change Management'        => 0,
+			'Configuration Management' => 0,
+			'Security Monitoring'      => 0,
+			'Incident Detection'       => 0,
+			'Operational Security'     => 0,
+			'Audit Trail'              => 0,
+		);
+
+		if ( ! empty( $results ) ) {
+			foreach ( $results as $row ) {
+				if ( isset( $counts[ $row->event_category ] ) ) {
+					$counts[ $row->event_category ] = intval( $row->count );
+				}
+			}
+		}
+
+		$access_control_events  = $counts['Access Control'];
+		$identity_events        = $counts['Identity Management'];
+		$authentication_events  = $counts['Authentication'];
+		$authorization_events   = $counts['Authorization'];
+		$change_events          = $counts['Change Management'];
+		$configuration_events   = $counts['Configuration Management'];
+		$security_events        = $counts['Security Monitoring'];
+		$incident_events        = $counts['Incident Detection'];
+		$operational_events     = $counts['Operational Security'];
+		$audit_trail_events     = $counts['Audit Trail'];
 
 		// 2. Compute Audit Readiness Indicators.
 		$settings = get_option( 'tbsh_cal_settings', array() );

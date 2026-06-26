@@ -60,15 +60,6 @@ class DashboardWidget {
 		}
 
 		?>
-		<style>
-			.tbsh-widget-container { padding: 5px 0; }
-			.tbsh-widget-badge { display: inline-block; padding: 4px 12px; font-weight: bold; border-radius: 4px; text-transform: uppercase; font-size: 11px; margin-bottom: 10px; }
-			.tbsh-status-unverified { background-color: #f3f4f6; color: #374151; }
-			.tbsh-status-verified { background-color: #d1fae5; color: #065f46; }
-			.tbsh-status-warning { background-color: #fef3c7; color: #92400e; }
-			.tbsh-status-compromised { background-color: #fee2e2; color: #991b1b; }
-			.tbsh-widget-meta { font-size: 12px; color: #64748b; margin-top: 12px; }
-		</style>
 		<div class="tbsh-widget-container">
 			<span class="tbsh-widget-badge <?php echo esc_attr( $class ); ?>"><?php echo esc_html( $label ); ?></span>
 			<p><strong><?php echo esc_html( $desc ); ?></strong></p>

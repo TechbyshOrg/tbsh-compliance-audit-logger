@@ -113,8 +113,10 @@ class Logger {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'tbsh_cal_logs';
 
-		// Lock tables to prevent race conditions during insertion and hashing.
-		$wpdb->query( "LOCK TABLES $table_name WRITE" );
+		// Start transaction to prevent race conditions during insertion and hashing.
+		$wpdb->query( 'START TRANSACTION' );
+
+		$transaction_success = true;
 
 		foreach ( self::$log_queue as $log ) {
 			// Get previous hash.
@@ -168,15 +170,27 @@ class Logger {
 				$integrity_hash = hash( 'sha256', $canonical_string );
 
 				// Update log with hash.
-				$wpdb->update(
+				$updated = $wpdb->update(
 					$table_name,
 					array( 'integrity_hash' => $integrity_hash ),
 					array( 'id' => $insert_id )
 				);
+
+				if ( false === $updated ) {
+					$transaction_success = false;
+					break;
+				}
+			} else {
+				$transaction_success = false;
+				break;
 			}
 		}
 
-		$wpdb->query( 'UNLOCK TABLES' );
+		if ( $transaction_success ) {
+			$wpdb->query( 'COMMIT' );
+		} else {
+			$wpdb->query( 'ROLLBACK' );
+		}
 
 		// Clear queue.
 		self::$log_queue = array();

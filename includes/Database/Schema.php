@@ -12,14 +12,16 @@ class Schema {
 
 	/**
 	 * Run the installation process.
+	 *
+	 * @param bool $network_wide Whether the plugin is activated network-wide.
 	 */
-	public static function install() {
+	public static function install( $network_wide = false ) {
 		global $wpdb;
 
-		if ( is_multisite() ) {
+		if ( is_multisite() && $network_wide ) {
 			// Get all blogs and install tables for each.
-			$blog_ids = $wpdb->get_col( "SELECT blog_id FROM {$wpdb->blogs} LIMIT 100" ); // Limit for safety or batching
-			foreach ( $blog_ids as $blog_id ) {
+			$sites = get_sites( array( 'fields' => 'ids', 'number' => 0 ) );
+			foreach ( $sites as $blog_id ) {
 				switch_to_blog( $blog_id );
 				self::create_tables();
 				restore_current_blog();
@@ -64,7 +66,7 @@ class Schema {
 			integrity_hash varchar(64) DEFAULT '',
 			previous_hash varchar(64) DEFAULT '',
 			created_at datetime NOT NULL,
-			PRIMARY KEY (id),
+			PRIMARY KEY  (id),
 			KEY created_at (created_at),
 			KEY user_id (user_id),
 			KEY event_type (event_type),
@@ -83,7 +85,7 @@ class Schema {
 			evidence_title varchar(255) NOT NULL,
 			snapshot_data longtext NOT NULL,
 			created_at datetime NOT NULL,
-			PRIMARY KEY (id),
+			PRIMARY KEY  (id),
 			KEY created_at (created_at)
 		) $charset_collate;";
 
@@ -98,7 +100,7 @@ class Schema {
 			issues_found int(11) DEFAULT 0,
 			verification_details longtext DEFAULT NULL,
 			created_at datetime NOT NULL,
-			PRIMARY KEY (id),
+			PRIMARY KEY  (id),
 			KEY created_at (created_at)
 		) $charset_collate;";
 

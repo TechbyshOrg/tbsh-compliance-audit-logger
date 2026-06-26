@@ -1,4 +1,4 @@
-=== Compliance Audit Log & Tamper-Evident Security Trail ===
+=== TBSH Compliance Audit Trail & Evidence Logger ===
 Contributors: techbysh
 Tags: compliance, audit-trail, security-log, tamper-evident, nis2
 Requires at least: 6.2

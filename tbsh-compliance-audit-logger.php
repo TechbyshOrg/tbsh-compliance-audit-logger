@@ -67,7 +67,7 @@ class TBSH_Compliance_Audit_Logger {
 	 * Constructor.
 	 */
 	private function __construct() {
-		$this?->init();
+		$this->init();
 	}
 
 	/**
@@ -80,6 +80,14 @@ class TBSH_Compliance_Audit_Logger {
 		// Register Activation/Deactivation hooks.
 		register_activation_hook( __FILE__, array( $this, 'activate' ) );
 		register_deactivation_hook( __FILE__, array( $this, 'deactivate' ) );
+
+		// Add custom cron schedules.
+		add_filter( 'cron_schedules', array( $this, 'add_cron_schedules' ) );
+
+		// Hook for newly created sites on multisite.
+		if ( is_multisite() ) {
+			add_action( 'wp_initialize_site', array( $this, 'new_site_created' ) );
+		}
 
 		// Initialize backend components.
 		add_action( 'plugins_loaded', array( $this, 'plugins_loaded' ) );
@@ -109,10 +117,12 @@ class TBSH_Compliance_Audit_Logger {
 
 	/**
 	 * Run on plugin activation.
+	 *
+	 * @param bool $network_wide Whether the plugin is activated network-wide.
 	 */
-	public function activate() {
+	public function activate( $network_wide = false ) {
 		// Install/upgrade DB tables.
-		\TBSHComplianceAuditLogger\Database\Schema::install();
+		\TBSHComplianceAuditLogger\Database\Schema::install( $network_wide );
 
 		// Setup capabilities.
 		\TBSHComplianceAuditLogger\Security\AccessControl::init();
@@ -148,6 +158,39 @@ class TBSH_Compliance_Audit_Logger {
 			__( 'Compliance Audit Trail & Evidence Logger plugin was activated.', 'tbsh-compliance-audit-logger' ),
 			__( 'Plugin was activated successfully.', 'tbsh-compliance-audit-logger' )
 		);
+	}
+
+	/**
+	 * Register weekly schedule for cron.
+	 *
+	 * @param array $schedules Existing cron schedules.
+	 * @return array Modified cron schedules.
+	 */
+	public function add_cron_schedules( $schedules ) {
+		if ( ! isset( $schedules['weekly'] ) ) {
+			$schedules['weekly'] = array(
+				'interval' => 604800,
+				'display'  => __( 'Once Weekly', 'tbsh-compliance-audit-logger' ),
+			);
+		}
+		return $schedules;
+	}
+
+	/**
+	 * Run on new site creation in multisite network.
+	 *
+	 * @param \WP_Site $site New site object.
+	 */
+	public function new_site_created( $site ) {
+		if ( ! function_exists( 'is_plugin_active_for_network' ) ) {
+			require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		}
+
+		if ( is_plugin_active_for_network( TBSH_CAL_BASENAME ) ) {
+			switch_to_blog( $site->blog_id );
+			\TBSHComplianceAuditLogger\Database\Schema::install( false );
+			restore_current_blog();
+		}
 	}
 
 	/**

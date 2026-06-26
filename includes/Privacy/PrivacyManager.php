@@ -213,8 +213,10 @@ class PrivacyManager {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'tbsh_cal_logs';
 
-		// Lock table to avoid race conditions during rebuild.
-		$wpdb->query( 'LOCK TABLES ' . $table_name . ' WRITE' );
+		// Start transaction to avoid race conditions during rebuild.
+		$wpdb->query( 'START TRANSACTION' );
+
+		$transaction_success = true;
 
 		// Fetch all rows from start_id
 		$rows = $wpdb->get_results( $wpdb->prepare(
@@ -260,7 +262,7 @@ class PrivacyManager {
 
 			$new_hash = hash( 'sha256', $canonical_string );
 
-			$wpdb->update(
+			$updated = $wpdb->update(
 				$table_name,
 				array(
 					'previous_hash'  => $previous_hash,
@@ -268,8 +270,17 @@ class PrivacyManager {
 				),
 				array( 'id' => $row->id )
 			);
+
+			if ( false === $updated ) {
+				$transaction_success = false;
+				break;
+			}
 		}
 
-		$wpdb->query( 'UNLOCK TABLES' );
+		if ( $transaction_success ) {
+			$wpdb->query( 'COMMIT' );
+		} else {
+			$wpdb->query( 'ROLLBACK' );
+		}
 	}
 }

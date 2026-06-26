@@ -16,14 +16,24 @@ if ( isset( $settings['cleanup_on_uninstall'] ) && 'delete' === $settings['clean
 	global $wpdb;
 
 	if ( is_multisite() ) {
-		$blog_ids = $wpdb->get_col( "SELECT blog_id FROM {$wpdb->blogs} LIMIT 100" );
-		foreach ( $blog_ids as $blog_id ) {
+		$sites = get_sites( array( 'fields' => 'ids', 'number' => 0 ) );
+		foreach ( $sites as $blog_id ) {
 			switch_to_blog( $blog_id );
 			tbsh_cal_drop_tables();
 			restore_current_blog();
 		}
 	} else {
 		tbsh_cal_drop_tables();
+	}
+
+	// Remove capabilities from roles.
+	$role = get_role( 'administrator' );
+	if ( $role ) {
+		$role->remove_cap( 'tbsh_cal_view_logs' );
+		$role->remove_cap( 'tbsh_cal_view_evidence' );
+		$role->remove_cap( 'tbsh_cal_export_data' );
+		$role->remove_cap( 'tbsh_cal_manage_settings' );
+		$role->remove_cap( 'tbsh_cal_verify_integrity' );
 	}
 
 	// Delete general option entries.
