@@ -57,11 +57,15 @@ class PrivacyManager {
 		}
 
 		// Only check client-supplied headers if they are valid IP addresses.
-		if ( ! empty( $_SERVER['HTTP_CLIENT_IP'] ) && filter_var( $_SERVER['HTTP_CLIENT_IP'], FILTER_VALIDATE_IP ) ) {
-			$ip = $_SERVER['HTTP_CLIENT_IP'];
+		if ( ! empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
+			$client_ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_CLIENT_IP'] ) );
+			if ( filter_var( $client_ip, FILTER_VALIDATE_IP ) ) {
+				$ip = $client_ip;
+			}
 		} elseif ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-			$ips      = explode( ',', $_SERVER['HTTP_X_FORWARDED_FOR'] );
-			$first_ip = trim( reset( $ips ) );
+			$forwarded_ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) );
+			$ips          = explode( ',', $forwarded_ip );
+			$first_ip     = trim( reset( $ips ) );
 			if ( filter_var( $first_ip, FILTER_VALIDATE_IP ) ) {
 				$ip = $first_ip;
 			}
