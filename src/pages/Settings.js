@@ -15,6 +15,10 @@ export default function Settings() {
 	const hasManageCapability = window.tbshCalApiSettings && window.tbshCalApiSettings.capabilities.manage_settings;
 
 	useEffect(() => {
+		if ( ! hasManageCapability ) {
+			setLoading(false);
+			return;
+		}
 		apiFetch({ path: '/tbsh-compliance-audit-logger/v1/settings' })
 			.then((data) => {
 				setSettings(data);
@@ -24,7 +28,7 @@ export default function Settings() {
 				console.error(err);
 				setLoading(false);
 			});
-	}, []);
+	}, [hasManageCapability]);
 
 	const handleChange = (field, val) => {
 		setSettings((prev) => ({
@@ -61,6 +65,16 @@ export default function Settings() {
 
 	if (loading) {
 		return <SkeletonLoader rows={4} cols={3} />;
+	}
+
+	if ( ! hasManageCapability ) {
+		return (
+			<EmptyState
+				title={__('Access Denied', 'tbsh-compliance-audit-logger')}
+				description={__('You do not have the required permissions to view or manage settings.', 'tbsh-compliance-audit-logger')}
+				icon="lock"
+			/>
+		);
 	}
 
 	return (

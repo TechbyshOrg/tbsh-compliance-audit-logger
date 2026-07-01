@@ -32,7 +32,7 @@ class SettingsController extends BaseController {
 	 * Permissions.
 	 */
 	public function check_read_permission() {
-		return $this->check_permission( 'tbsh_cal_view_logs' );
+		return $this->check_permission( 'tbsh_cal_manage_settings' );
 	}
 
 	public function check_write_permission() {

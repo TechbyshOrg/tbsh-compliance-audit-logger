@@ -88,7 +88,7 @@ class StatsManager {
 		// 6. DB Size.
 		$db_size = 0;
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$status  = $wpdb->get_results( "SHOW TABLE STATUS LIKE '{$wpdb->prefix}tbsh_cal_%'" );
+		$status  = $wpdb->get_results( $wpdb->prepare( "SHOW TABLE STATUS LIKE %s", $wpdb->esc_like( $wpdb->prefix . 'tbsh_cal_' ) . '%' ) );
 		if ( ! empty( $status ) ) {
 			foreach ( $status as $table ) {
 				$db_size += intval( $table->Data_length ) + intval( $table->Index_length );

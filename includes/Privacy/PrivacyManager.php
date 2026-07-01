@@ -51,14 +51,23 @@ class PrivacyManager {
 	 */
 	public static function get_user_ip() {
 		$ip = '127.0.0.1';
-		if ( ! empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
-			$ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_CLIENT_IP'] ) );
-		} elseif ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-			$ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) );
-		} elseif ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
+
+		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
 			$ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
 		}
-		return $ip;
+
+		// Only check client-supplied headers if they are valid IP addresses.
+		if ( ! empty( $_SERVER['HTTP_CLIENT_IP'] ) && filter_var( $_SERVER['HTTP_CLIENT_IP'], FILTER_VALIDATE_IP ) ) {
+			$ip = $_SERVER['HTTP_CLIENT_IP'];
+		} elseif ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+			$ips      = explode( ',', $_SERVER['HTTP_X_FORWARDED_FOR'] );
+			$first_ip = trim( reset( $ips ) );
+			if ( filter_var( $first_ip, FILTER_VALIDATE_IP ) ) {
+				$ip = $first_ip;
+			}
+		}
+
+		return filter_var( $ip, FILTER_VALIDATE_IP ) ? $ip : '127.0.0.1';
 	}
 
 	/**
@@ -224,6 +233,20 @@ class PrivacyManager {
 
 		$transaction_success = true;
 
+		// Fetch previous hash once before loop starts
+		$previous_hash = '0000000000000000000000000000000000000000000000000000000000000000';
+		if ( $start_id > 1 ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$prev = $wpdb->get_var( $wpdb->prepare(
+				"SELECT integrity_hash FROM %i WHERE id < %d ORDER BY id DESC LIMIT 1",
+				$table_name,
+				$start_id
+			) );
+			if ( $prev ) {
+				$previous_hash = $prev;
+			}
+		}
+
 		// Fetch all rows from start_id
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$rows = $wpdb->get_results( $wpdb->prepare(
@@ -233,20 +256,6 @@ class PrivacyManager {
 		) );
 
 		foreach ( $rows as $row ) {
-			// Fetch previous hash
-			$previous_hash = '0000000000000000000000000000000000000000000000000000000000000000';
-			if ( $row->id > 1 ) {
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-				$prev = $wpdb->get_var( $wpdb->prepare(
-					"SELECT integrity_hash FROM %i WHERE id < %d ORDER BY id DESC LIMIT 1",
-					$table_name,
-					$row->id
-				) );
-				if ( $prev ) {
-					$previous_hash = $prev;
-				}
-			}
-
 			// Calculate canonical hash.
 			$canonical_string = implode( '|', array(
 				$row->id,
@@ -266,7 +275,7 @@ class PrivacyManager {
 				$row->request_uri,
 				$row->metadata_json,
 				$row->compliance_tags,
-				$previous_hash,
+				$previous_hash, // Use the carried over previous hash
 				$row->created_at,
 			) );
 
@@ -286,6 +295,9 @@ class PrivacyManager {
 				$transaction_success = false;
 				break;
 			}
+
+			// Move current hash forward
+			$previous_hash = $new_hash;
 		}
 
 		if ( $transaction_success ) {

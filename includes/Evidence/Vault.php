@@ -117,7 +117,7 @@ class Vault {
 		$db_size = 0;
 		$tables  = array();
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$status  = $wpdb->get_results( "SHOW TABLE STATUS LIKE '{$wpdb->prefix}%'" );
+		$status  = $wpdb->get_results( $wpdb->prepare( "SHOW TABLE STATUS LIKE %s", $wpdb->esc_like( $wpdb->prefix ) . '%' ) );
 		if ( ! empty( $status ) ) {
 			foreach ( $status as $table ) {
 				$size = intval( $table->Data_length ) + intval( $table->Index_length );

@@ -119,15 +119,15 @@ class Logger {
 
 		$transaction_success = true;
 
-		foreach ( self::$log_queue as $log ) {
-			// Get previous hash.
-			$previous_hash = '0000000000000000000000000000000000000000000000000000000000000000';
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$last_entry    = $wpdb->get_row( $wpdb->prepare( "SELECT id, integrity_hash FROM %i ORDER BY id DESC LIMIT 1", $table_name ) );
-			if ( $last_entry && ! empty( $last_entry->integrity_hash ) ) {
-				$previous_hash = $last_entry->integrity_hash;
-			}
+		// Fetch the last stored hash once before entering the loop.
+		$previous_hash = '0000000000000000000000000000000000000000000000000000000000000000';
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$last_entry    = $wpdb->get_row( $wpdb->prepare( "SELECT id, integrity_hash FROM %i ORDER BY id DESC LIMIT 1", $table_name ) );
+		if ( $last_entry && ! empty( $last_entry->integrity_hash ) ) {
+			$previous_hash = $last_entry->integrity_hash;
+		}
 
+		foreach ( self::$log_queue as $log ) {
 			$log['previous_hash'] = $previous_hash;
 
 			// Enforce formats to prevent WordPress from casting object_id to integer (%d).
@@ -184,6 +184,9 @@ class Logger {
 					$transaction_success = false;
 					break;
 				}
+
+				// Cascade current stored hash as previous for next iteration.
+				$previous_hash = $integrity_hash;
 			} else {
 				$transaction_success = false;
 				break;
