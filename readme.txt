@@ -104,11 +104,13 @@ Yes. The Compliance Overview screen maps your active logs, settings, and verific
 1. Executive compliance dashboard displaying security scores, database integrity states, and framework readiness checkers.
 2. Granular activity log grid displaying event parameters and SHA-256 cryptographic signatures.
 3. Forensic timeline view tracing administrative actions chronologically.
-4. Database integrity checks showing verification logs and success statuses.
-5. Cyber risk 5x5 Heat Map detailing supply chain vulnerabilities and criticality levels.
-6. Temporary auditor portals access configuration panel.
-7. Cloud vaults storage sync credentials and transfer logs.
-8. AI-assisted threat mitigation panel outlining remediation summaries.
+4. Evidence Vault for capturing and storing technical configuration snapshots as audit evidence.
+5. Integrity Center showing cryptographic hash chain verification scan histories and database status.
+6. Compliance Overview mapping active audit logs and controls to global compliance frameworks (NIS2, DORA, GDPR, ISO 27001).
+7. System Health checkup showcasing technical diagnostics and environment settings logs.
+8. Export Center compiling logs into CSV or JSON exports with customized parameters.
+9. Settings Module configuring retention limits, IP anonymization, and automatic cron triggers.
+10. Help and Technical Reference page containing implementation details and support guidelines.
 
 == Changelog ==
 
