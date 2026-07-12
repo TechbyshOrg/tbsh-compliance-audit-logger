@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Compliance Audit Trail & Evidence Logger
  * Description: Enterprise-grade compliance logging, audit evidence, security monitoring, and integrity verification platform.
- * Version: 1.0.0
+ * Version: 1.0.1
  * Author: Techbysh
  * Author URI: https://techbysh.com
  * Text Domain: tbsh-compliance-audit-logger
@@ -20,7 +20,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 // Define Constants.
-define( 'TBSH_CAL_VERSION', '1.0.0' );
+define( 'TBSH_CAL_VERSION', '1.0.1' );
 define( 'TBSH_CAL_PATH', plugin_dir_path( __FILE__ ) );
 define( 'TBSH_CAL_URL', plugin_dir_url( __FILE__ ) );
 define( 'TBSH_CAL_BASENAME', plugin_basename( __FILE__ ) );

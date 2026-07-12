@@ -4,7 +4,7 @@ Tags: compliance, audit-trail, security-log, tamper-evident, nis2
 Requires at least: 6.2
 Tested up to: 7.0.1
 Requires PHP: 8.0
-Stable tag: 1.0.0
+Stable tag: 1.0.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -113,6 +113,9 @@ Yes. The Compliance Overview screen maps your active logs, settings, and verific
 10. Help and Technical Reference page containing implementation details and support guidelines.
 
 == Changelog ==
+
+= 1.0.1 =
+* General Bug Fixes and Improvements.
 
 = 1.0.0 =
 * Initial release.
