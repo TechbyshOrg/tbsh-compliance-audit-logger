@@ -45,6 +45,11 @@ Unlock advanced features to manage cyber risks and supply chains networked acros
 *   **Risk & Vendor registers:** Track supplier risk metrics using an interactive 5x5 Heat Map.
 *   **File Integrity Monitor:** Validate core system checksums using official WordPress.org APIs.
 
+== Source Code ==
+
+The complete, unminified source code and build tooling for this plugin can be found in our public repository at:
+https://github.com/TechbyshOrg/tbsh-compliance-audit-logger
+
 == Installation ==
 
 1. Upload the `tbsh-compliance-audit-logger` folder to the `/wp-content/plugins/` directory.
