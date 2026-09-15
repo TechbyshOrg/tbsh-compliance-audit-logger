@@ -11,24 +11,40 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Schema {
 
 	/**
+	 * Current database schema version.
+	 */
+	const DB_VERSION = '1.0.1';
+
+	/**
 	 * Run the installation process.
 	 *
 	 * @param bool $network_wide Whether the plugin is activated network-wide.
 	 */
 	public static function install( $network_wide = false ) {
-		global $wpdb;
-
 		if ( is_multisite() && $network_wide ) {
-			// Get all blogs and install tables for each.
 			$sites = get_sites( array( 'fields' => 'ids', 'number' => 0 ) );
 			foreach ( $sites as $blog_id ) {
 				switch_to_blog( $blog_id );
 				self::create_tables();
+				update_option( 'tbsh_cal_db_version', self::DB_VERSION );
 				restore_current_blog();
 			}
 		} else {
 			self::create_tables();
+			update_option( 'tbsh_cal_db_version', self::DB_VERSION );
 		}
+	}
+
+	/**
+	 * Upgrade tables when plugin version/schema changes without reactivation.
+	 */
+	public static function maybe_upgrade() {
+		$installed = get_option( 'tbsh_cal_db_version', '' );
+		if ( self::DB_VERSION === $installed ) {
+			return;
+		}
+		self::create_tables();
+		update_option( 'tbsh_cal_db_version', self::DB_VERSION );
 	}
 
 	/**

@@ -1,33 +1,70 @@
 import { useState, useEffect } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import SkeletonLoader from '../components/SkeletonLoader';
 import EmptyState from '../components/EmptyState';
+import Notice from '../components/Notice';
 import Icon from '../components/Icon';
 
 export default function SystemHealth() {
 	const [health, setHealth] = useState(null);
 	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
+	const [checksumLoading, setChecksumLoading] = useState(false);
+	const [notice, setNotice] = useState({ type: '', message: '' });
 
-	useEffect(() => {
+	const caps = ( window.tbshCalApiSettings && window.tbshCalApiSettings.capabilities ) || {};
+
+	const fetchHealth = () => {
+		setLoading(true);
+		setError(null);
 		apiFetch({ path: '/tbsh-compliance-audit-logger/v1/health' })
 			.then((res) => {
 				setHealth(res);
 				setLoading(false);
 			})
 			.catch((err) => {
-				console.error(err);
+				setError(err.message || __('Failed to load system health.', 'tbsh-compliance-audit-logger'));
 				setLoading(false);
 			});
+	};
+
+	useEffect(() => {
+		fetchHealth();
 	}, []);
+
+	const runChecksum = () => {
+		setChecksumLoading(true);
+		setNotice({ type: '', message: '' });
+		apiFetch({ path: '/tbsh-compliance-audit-logger/v1/checksums', method: 'POST' })
+			.then((res) => {
+				setNotice({
+					type: res.status === 'ok' ? 'success' : 'error',
+					message: res.message,
+				});
+				fetchHealth();
+				setChecksumLoading(false);
+			})
+			.catch((err) => {
+				setNotice({ type: 'error', message: err.message || __('Checksum scan failed.', 'tbsh-compliance-audit-logger') });
+				setChecksumLoading(false);
+			});
+	};
 
 	if (loading) {
 		return <SkeletonLoader rows={4} cols={4} />;
 	}
 
+	if (error || !health) {
+		return <EmptyState title={__('Error Loading Data', 'tbsh-compliance-audit-logger')} description={error || __('No health data available.', 'tbsh-compliance-audit-logger')} icon="alert" />;
+	}
+
+	const checksum = health.core_checksum || {};
+
 	return (
 		<div className="tbsh-health-page">
-			{/* Health Overview Row */}
+			{notice.message && <Notice type={notice.type} message={notice.message} />}
+
 			<div className="tbsh-dashboard-grid" style={{ marginBottom: '24px' }}>
 				<div className="tbsh-card">
 					<div className="tbsh-card-header">
@@ -49,11 +86,15 @@ export default function SystemHealth() {
 
 				<div className="tbsh-card">
 					<div className="tbsh-card-header">
-						<span>{__('Evidence Snapshots Count', 'tbsh-compliance-audit-logger')}</span>
-						<Icon name="evidence" />
+						<span>{__('Integrity Status', 'tbsh-compliance-audit-logger')}</span>
+						<Icon name="integrity" />
 					</div>
-					<div className="tbsh-card-value">{health.evidence_count}</div>
-					<div className="tbsh-card-desc">{__('Stored in tbsh_cal_evidence table', 'tbsh-compliance-audit-logger')}</div>
+					<div className="tbsh-card-value" style={{ fontSize: '20px', textTransform: 'capitalize' }}>{health.integrity_status || '—'}</div>
+					<div className="tbsh-card-desc">
+						{health.last_verification
+							? sprintf(__('Last check: %s', 'tbsh-compliance-audit-logger'), health.last_verification)
+							: __('No verification run yet', 'tbsh-compliance-audit-logger')}
+					</div>
 				</div>
 
 				<div className="tbsh-card">
@@ -68,7 +109,37 @@ export default function SystemHealth() {
 				</div>
 			</div>
 
-			{/* Environment Settings Card */}
+			<div className="tbsh-card" style={{ padding: '20px', marginBottom: '24px' }}>
+				<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
+					<h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>
+						{__('Core File Checksums & Cron', 'tbsh-compliance-audit-logger')}
+					</h3>
+					{caps.verify_integrity && (
+						<button type="button" className="tbsh-btn tbsh-btn-primary" onClick={runChecksum} disabled={checksumLoading}>
+							{checksumLoading ? __('Scanning…', 'tbsh-compliance-audit-logger') : __('Run Core Checksum Scan', 'tbsh-compliance-audit-logger')}
+						</button>
+					)}
+				</div>
+				<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '20px' }}>
+					<div style={{ padding: '12px', border: '1px solid var(--tbsh-border-color)', borderRadius: '6px' }}>
+						<span style={{ fontSize: '12px', color: 'var(--tbsh-text-muted)', display: 'block' }}>{__('Core checksum status', 'tbsh-compliance-audit-logger')}</span>
+						<strong style={{ fontSize: '16px', color: 'var(--tbsh-text-primary)', textTransform: 'capitalize' }}>{checksum.status || 'unverified'}</strong>
+					</div>
+					<div style={{ padding: '12px', border: '1px solid var(--tbsh-border-color)', borderRadius: '6px' }}>
+						<span style={{ fontSize: '12px', color: 'var(--tbsh-text-muted)', display: 'block' }}>{__('Last checksum run', 'tbsh-compliance-audit-logger')}</span>
+						<strong style={{ fontSize: '16px', color: 'var(--tbsh-text-primary)' }}>{checksum.date || '—'}</strong>
+					</div>
+					<div style={{ padding: '12px', border: '1px solid var(--tbsh-border-color)', borderRadius: '6px' }}>
+						<span style={{ fontSize: '12px', color: 'var(--tbsh-text-muted)', display: 'block' }}>{__('Next scheduled cron', 'tbsh-compliance-audit-logger')}</span>
+						<strong style={{ fontSize: '16px', color: 'var(--tbsh-text-primary)' }}>{health.cron_next_run || __('Not scheduled', 'tbsh-compliance-audit-logger')}</strong>
+					</div>
+					<div style={{ padding: '12px', border: '1px solid var(--tbsh-border-color)', borderRadius: '6px' }}>
+						<span style={{ fontSize: '12px', color: 'var(--tbsh-text-muted)', display: 'block' }}>{__('Evidence snapshots', 'tbsh-compliance-audit-logger')}</span>
+						<strong style={{ fontSize: '16px', color: 'var(--tbsh-text-primary)' }}>{health.evidence_count}</strong>
+					</div>
+				</div>
+			</div>
+
 			<div className="tbsh-card" style={{ padding: '20px', marginBottom: '24px' }}>
 				<h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>
 					{__('Operational Server Environment', 'tbsh-compliance-audit-logger')}
@@ -93,7 +164,6 @@ export default function SystemHealth() {
 				</div>
 			</div>
 
-			{/* Database Table Health */}
 			<div className="tbsh-card" style={{ padding: '20px' }}>
 				<h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>
 					{__('Custom Tables Integrity & Health Status', 'tbsh-compliance-audit-logger')}
@@ -111,7 +181,7 @@ export default function SystemHealth() {
 							</tr>
 						</thead>
 						<tbody>
-							{Object.keys(health.table_health).map((key) => {
+							{Object.keys(health.table_health || {}).map((key) => {
 								const tbl = health.table_health[key];
 								return (
 									<tr key={key}>

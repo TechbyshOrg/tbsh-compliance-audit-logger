@@ -8,6 +8,7 @@ import Icon from '../components/Icon';
 export default function ComplianceOverview() {
 	const [data, setData] = useState(null);
 	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
 
 	useEffect(() => {
 		apiFetch({ path: '/tbsh-compliance-audit-logger/v1/compliance' })
@@ -16,13 +17,17 @@ export default function ComplianceOverview() {
 				setLoading(false);
 			})
 			.catch((err) => {
-				console.error(err);
+				setError(err.message || __('Failed to load compliance overview.', 'tbsh-compliance-audit-logger'));
 				setLoading(false);
 			});
 	}, []);
 
 	if (loading) {
 		return <SkeletonLoader rows={5} cols={4} />;
+	}
+
+	if (error || !data || !data.categories) {
+		return <EmptyState title={__('Error Loading Data', 'tbsh-compliance-audit-logger')} description={error || __('No compliance data available.', 'tbsh-compliance-audit-logger')} icon="alert" />;
 	}
 
 	const cats = data.categories;

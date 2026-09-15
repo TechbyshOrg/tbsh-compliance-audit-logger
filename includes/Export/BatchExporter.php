@@ -133,6 +133,17 @@ class BatchExporter {
 			}
 
 			foreach ( $logs as $log ) {
+				/**
+				 * Filter a single export row before writing.
+				 *
+				 * @param object $log    Log row.
+				 * @param string $format csv|json.
+				 */
+				$log = apply_filters( 'tbsh_cal_export_row', $log, $format );
+				if ( ! $log ) {
+					continue;
+				}
+
 				if ( 'csv' === $format ) {
 					fputcsv( $file_handle, array(
 						$log->id,

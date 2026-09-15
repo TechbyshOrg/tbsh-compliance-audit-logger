@@ -20,10 +20,42 @@ class Logger {
 	private static $log_queue = array();
 
 	/**
+	 * Whether the shutdown flush hook is registered.
+	 *
+	 * @var bool
+	 */
+	private static $initialized = false;
+
+	/**
 	 * Register hooks.
 	 */
 	public static function init() {
+		if ( self::$initialized ) {
+			return;
+		}
+		self::$initialized = true;
 		add_action( 'shutdown', array( __CLASS__, 'flush_logs' ) );
+	}
+
+	/**
+	 * Count queued events matching type and username (for same-request checks).
+	 *
+	 * @param string $event_type Event type slug.
+	 * @param string $username   Username to match.
+	 * @return int
+	 */
+	public static function count_queued( $event_type, $username = '' ) {
+		$count = 0;
+		foreach ( self::$log_queue as $log ) {
+			if ( $log['event_type'] !== $event_type ) {
+				continue;
+			}
+			if ( '' !== $username && $log['username'] !== $username ) {
+				continue;
+			}
+			$count++;
+		}
+		return $count;
 	}
 
 	/**
@@ -39,6 +71,18 @@ class Logger {
 	public static function log( $event_type, $event_category, $severity, $event_title, $event_message, $args = array() ) {
 		$settings = get_option( 'tbsh_cal_settings', array() );
 
+		/**
+		 * Filter whether an event should be logged.
+		 *
+		 * @param bool   $should_log Whether to log.
+		 * @param string $event_type Event type.
+		 * @param array  $args       Context args.
+		 */
+		$should_log = apply_filters( 'tbsh_cal_should_log', true, $event_type, $args );
+		if ( ! $should_log ) {
+			return;
+		}
+
 		// Check if logging is enabled.
 		if ( isset( $settings['enable_logging'] ) && ! $settings['enable_logging'] ) {
 			return;
@@ -50,14 +94,26 @@ class Logger {
 			return;
 		}
 
+		/**
+		 * Filter log context args before queueing.
+		 *
+		 * @param array  $args           Context args.
+		 * @param string $event_type     Event type.
+		 * @param string $event_category Category.
+		 * @param string $severity       Severity.
+		 */
+		$args = apply_filters( 'tbsh_cal_log_args', $args, $event_type, $event_category, $severity );
+
 		// Gather current request context.
 		$current_user = wp_get_current_user();
-		$user_id      = $current_user && $current_user->ID ? $current_user->ID : 0;
-		$username     = $current_user && $current_user->ID ? $current_user->user_login : 'system';
+		$user_id      = isset( $args['user_id'] ) ? intval( $args['user_id'] ) : ( $current_user && $current_user->ID ? $current_user->ID : 0 );
+		$username     = isset( $args['username'] ) ? sanitize_text_field( $args['username'] ) : ( $current_user && $current_user->ID ? $current_user->user_login : 'system' );
 		$role         = 'system';
 
-		if ( $user_id > 0 && ! empty( $current_user->roles ) ) {
+		if ( $user_id > 0 && $current_user && $current_user->ID === $user_id && ! empty( $current_user->roles ) ) {
 			$role = reset( $current_user->roles );
+		} elseif ( isset( $args['role'] ) ) {
+			$role = sanitize_text_field( $args['role'] );
 		}
 
 		$site_id = get_current_blog_id();
@@ -112,6 +168,12 @@ class Logger {
 
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'tbsh_cal_logs';
+		$lock_name  = 'tbsh_cal_log_flush_' . $wpdb->blogid;
+
+		// Advisory lock so concurrent requests cannot fork the hash chain.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$got_lock = $wpdb->get_var( $wpdb->prepare( 'SELECT GET_LOCK(%s, 10)', $lock_name ) );
+		$has_lock = ( '1' === (string) $got_lock );
 
 		// Start transaction to prevent race conditions during insertion and hashing.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -119,10 +181,10 @@ class Logger {
 
 		$transaction_success = true;
 
-		// Fetch the last stored hash once before entering the loop.
+		// Lock tip of chain and fetch last hash.
 		$previous_hash = '0000000000000000000000000000000000000000000000000000000000000000';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$last_entry    = $wpdb->get_row( $wpdb->prepare( "SELECT id, integrity_hash FROM %i ORDER BY id DESC LIMIT 1", $table_name ) );
+		$last_entry = $wpdb->get_row( $wpdb->prepare( "SELECT id, integrity_hash FROM %i ORDER BY id DESC LIMIT 1 FOR UPDATE", $table_name ) );
 		if ( $last_entry && ! empty( $last_entry->integrity_hash ) ) {
 			$previous_hash = $last_entry->integrity_hash;
 		}
@@ -201,8 +263,20 @@ class Logger {
 			$wpdb->query( 'ROLLBACK' );
 		}
 
+		if ( $has_lock ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$wpdb->query( $wpdb->prepare( 'SELECT RELEASE_LOCK(%s)', $lock_name ) );
+		}
+
 		// Clear queue.
 		self::$log_queue = array();
+	}
+
+	/**
+	 * Immediately flush any queued logs (activation/deactivation).
+	 */
+	public static function flush_now() {
+		self::flush_logs();
 	}
 
 	/**

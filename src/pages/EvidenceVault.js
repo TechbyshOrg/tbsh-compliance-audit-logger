@@ -10,30 +10,41 @@ import Icon from '../components/Icon';
 export default function EvidenceVault() {
 	const [snapshots, setSnapshots] = useState([]);
 	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
 	const [selectedSnapshot, setSelectedSnapshot] = useState(null);
 	const [selectedDetails, setSelectedDetails] = useState(null);
 	const [detailsLoading, setDetailsLoading] = useState(false);
 	const [notice, setNotice] = useState({ type: '', message: '' });
 	const [btnLoading, setBtnLoading] = useState(false);
+	const [page, setPage] = useState(1);
+	const [totalPages, setTotalPages] = useState(1);
+
+	const caps = ( window.tbshCalApiSettings && window.tbshCalApiSettings.capabilities ) || {};
+	const canCapture = !!caps.verify_integrity;
 
 	const fetchSnapshots = () => {
 		setLoading(true);
-		apiFetch({ path: '/tbsh-compliance-audit-logger/v1/evidence' })
+		setError(null);
+		apiFetch({ path: `/tbsh-compliance-audit-logger/v1/evidence?page=${page}&per_page=20` })
 			.then((data) => {
-				setSnapshots(data || []);
+				const items = Array.isArray(data) ? data : ( data.items || [] );
+				setSnapshots(items);
+				setTotalPages(data.total_pages || 1);
 				setLoading(false);
 			})
 			.catch((err) => {
-				console.error(err);
+				setError(err.message || __('Failed to load evidence snapshots.', 'tbsh-compliance-audit-logger'));
+				setSnapshots([]);
 				setLoading(false);
 			});
 	};
 
 	useEffect(() => {
 		fetchSnapshots();
-	}, []);
+	}, [page]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const triggerSnapshot = () => {
+		if ( ! canCapture ) return;
 		setBtnLoading(true);
 		setNotice({ type: '', message: '' });
 
@@ -107,20 +118,26 @@ export default function EvidenceVault() {
 				<h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
 					{__('Evidence Snapshots', 'tbsh-compliance-audit-logger')}
 				</h3>
-				<button 
-					className="tbsh-btn tbsh-btn-primary" 
-					disabled={btnLoading}
-					onClick={triggerSnapshot}
-				>
-					<Icon name="shield" />
-					{btnLoading ? __('Capturing...', 'tbsh-compliance-audit-logger') : __('Record State Snapshot', 'tbsh-compliance-audit-logger')}
-				</button>
+				{canCapture && (
+					<button 
+						type="button"
+						className="tbsh-btn tbsh-btn-primary" 
+						disabled={btnLoading}
+						onClick={triggerSnapshot}
+					>
+						<Icon name="shield" />
+						{btnLoading ? __('Capturing...', 'tbsh-compliance-audit-logger') : __('Record State Snapshot', 'tbsh-compliance-audit-logger')}
+					</button>
+				)}
 			</div>
 
 			<div className="tbsh-table-container">
 				{loading ? (
 					<SkeletonLoader rows={5} cols={4} />
+				) : error ? (
+					<EmptyState title={__('Error Loading Data', 'tbsh-compliance-audit-logger')} description={error} icon="alert" />
 				) : snapshots.length > 0 ? (
+					<>
 					<table className="tbsh-table">
 						<thead>
 							<tr>
@@ -144,6 +161,7 @@ export default function EvidenceVault() {
 									<td>{snap.created_at}</td>
 									<td style={{ textAlign: 'right' }}>
 										<button 
+											type="button"
 											className="tbsh-btn tbsh-btn-secondary"
 											onClick={() => inspectSnapshot(snap.id)}
 											style={{ padding: '4px 8px', fontSize: '12px' }}
@@ -155,6 +173,16 @@ export default function EvidenceVault() {
 							))}
 						</tbody>
 					</table>
+					<div className="tbsh-pagination" style={{ marginTop: '16px' }}>
+						<button type="button" className="tbsh-btn tbsh-btn-secondary" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+							{__('Previous', 'tbsh-compliance-audit-logger')}
+						</button>
+						<span style={{ fontSize: '13px', padding: '0 12px' }}>{page} / {totalPages}</span>
+						<button type="button" className="tbsh-btn tbsh-btn-secondary" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+							{__('Next', 'tbsh-compliance-audit-logger')}
+						</button>
+					</div>
+					</>
 				) : (
 					<EmptyState title={__('Evidence Vault is Empty', 'tbsh-compliance-audit-logger')} description={__('No state snapshots have been saved yet.', 'tbsh-compliance-audit-logger')} icon="evidence" />
 				)}

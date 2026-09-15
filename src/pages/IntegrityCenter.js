@@ -9,18 +9,23 @@ import Icon from '../components/Icon';
 export default function IntegrityCenter() {
 	const [integrityData, setIntegrityData] = useState(null);
 	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
 	const [scanLoading, setScanLoading] = useState(false);
 	const [notice, setNotice] = useState({ type: '', message: '' });
 
+	const caps = ( window.tbshCalApiSettings && window.tbshCalApiSettings.capabilities ) || {};
+	const canVerify = !!caps.verify_integrity;
+
 	const fetchIntegrity = () => {
 		setLoading(true);
+		setError(null);
 		apiFetch({ path: '/tbsh-compliance-audit-logger/v1/integrity' })
 			.then((data) => {
 				setIntegrityData(data);
 				setLoading(false);
 			})
 			.catch((err) => {
-				console.error(err);
+				setError(err.message || __('Failed to load integrity data.', 'tbsh-compliance-audit-logger'));
 				setLoading(false);
 			});
 	};
@@ -57,8 +62,12 @@ export default function IntegrityCenter() {
 		return <SkeletonLoader rows={5} cols={4} />;
 	}
 
+	if (error || !integrityData || !integrityData.latest) {
+		return <EmptyState title={__('Error Loading Data', 'tbsh-compliance-audit-logger')} description={error || __('No integrity data available.', 'tbsh-compliance-audit-logger')} icon="alert" />;
+	}
+
 	const latest = integrityData.latest;
-	const history = integrityData.history;
+	const history = integrityData.history || [];
 
 	// Visual indicators mapping.
 	let statusClass = 'tbsh-integrity-banner-success';
@@ -98,7 +107,9 @@ export default function IntegrityCenter() {
 							{__('Verify log authenticity using blockchain-style SHA-256 hash chains.', 'tbsh-compliance-audit-logger')}
 						</p>
 					</div>
+					{canVerify && (
 					<button 
+						type="button"
 						className="tbsh-btn tbsh-btn-primary" 
 						disabled={scanLoading}
 						onClick={runScan}
@@ -106,6 +117,7 @@ export default function IntegrityCenter() {
 						<Icon name="shield" />
 						{scanLoading ? __('Running Verification Scan...', 'tbsh-compliance-audit-logger') : __('Run Integrity Verification', 'tbsh-compliance-audit-logger')}
 					</button>
+					)}
 				</div>
 			</div>
 

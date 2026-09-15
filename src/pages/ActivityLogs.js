@@ -13,6 +13,7 @@ export default function ActivityLogs() {
 	const [page, setPage] = useState(1);
 	const [perPage, setPerPage] = useState(20);
 	const [loading, setLoading] = useState(true);
+	const [error, setError] = useState(null);
 
 	// Filters.
 	const [search, setSearch] = useState('');
@@ -56,10 +57,12 @@ export default function ActivityLogs() {
 				setLogs(data.logs || []);
 				setTotalItems(data.total || 0);
 				setTotalPages(data.pages || 1);
+				setError(null);
 				setLoading(false);
 			})
 			.catch((err) => {
-				console.error(err);
+				setError(err.message || __('Failed to load activity logs.', 'tbsh-compliance-audit-logger'));
+				setLogs([]);
 				setLoading(false);
 			});
 	};
@@ -218,6 +221,8 @@ export default function ActivityLogs() {
 			<div className="tbsh-table-container">
 				{loading ? (
 					<SkeletonLoader rows={8} cols={5} />
+				) : error ? (
+					<EmptyState title={__('Error Loading Data', 'tbsh-compliance-audit-logger')} description={error} icon="alert" />
 				) : logs.length > 0 ? (
 					<table className="tbsh-table">
 						<thead>

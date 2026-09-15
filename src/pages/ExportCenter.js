@@ -11,6 +11,8 @@ export default function ExportCenter() {
 	const [loading, setLoading] = useState(true);
 	const [btnLoading, setBtnLoading] = useState(false);
 	const [notice, setNotice] = useState({ type: '', message: '' });
+	const [error, setError] = useState(null);
+	const [shareUrl, setShareUrl] = useState('');
 
 	// Filter Form States.
 	const [format, setFormat] = useState('csv');
@@ -23,13 +25,15 @@ export default function ExportCenter() {
 
 	const fetchExports = () => {
 		setLoading(true);
+		setError(null);
 		apiFetch({ path: '/tbsh-compliance-audit-logger/v1/exports' })
 			.then((data) => {
 				setExportsList(data || []);
 				setLoading(false);
 			})
 			.catch((err) => {
-				console.error(err);
+				setError(err.message || __('Failed to load exports.', 'tbsh-compliance-audit-logger'));
+				setExportsList([]);
 				setLoading(false);
 			});
 	};
@@ -64,6 +68,22 @@ export default function ExportCenter() {
 		.catch((err) => {
 			setNotice({ type: 'error', message: err.message || __('Failed to generate export file.', 'tbsh-compliance-audit-logger') });
 			setBtnLoading(false);
+		});
+	};
+
+	const createShareLink = (filename) => {
+		setShareUrl('');
+		apiFetch({
+			path: '/tbsh-compliance-audit-logger/v1/exports/share',
+			method: 'POST',
+			data: { file: filename },
+		})
+		.then((res) => {
+			setShareUrl(res.url);
+			setNotice({ type: 'success', message: res.message });
+		})
+		.catch((err) => {
+			setNotice({ type: 'error', message: err.message || __('Failed to create share link.', 'tbsh-compliance-audit-logger') });
 		});
 	};
 
@@ -164,12 +184,21 @@ export default function ExportCenter() {
 						{__('Available Compliance Exports', 'tbsh-compliance-audit-logger')}
 					</h3>
 					<p style={{ fontSize: '13px', color: 'var(--tbsh-text-secondary)', marginBottom: '16px' }}>
-						{__('Generated files are capability-protected and expire after 2 hours for security.', 'tbsh-compliance-audit-logger')}
+						{__('Generated files are capability-protected and expire after 2 hours for security. You can also mint a temporary share link for auditors.', 'tbsh-compliance-audit-logger')}
 					</p>
+
+					{shareUrl && (
+						<div style={{ marginBottom: '16px', padding: '12px', background: 'var(--tbsh-bg-secondary)', borderRadius: '6px', wordBreak: 'break-all' }}>
+							<strong>{__('Share link:', 'tbsh-compliance-audit-logger')}</strong>{' '}
+							<a href={shareUrl} target="_blank" rel="noopener noreferrer">{shareUrl}</a>
+						</div>
+					)}
 
 					<div className="tbsh-table-container" style={{ margin: 0 }}>
 						{loading ? (
 							<SkeletonLoader rows={4} cols={3} />
+						) : error ? (
+							<EmptyState title={__('Error Loading Data', 'tbsh-compliance-audit-logger')} description={error} icon="alert" />
 						) : exportsList.length > 0 ? (
 							<table className="tbsh-table">
 								<thead>
@@ -177,12 +206,11 @@ export default function ExportCenter() {
 										<th>{__('Date Compiled', 'tbsh-compliance-audit-logger')}</th>
 										<th>{__('Format', 'tbsh-compliance-audit-logger')}</th>
 										<th>{__('File Size', 'tbsh-compliance-audit-logger')}</th>
-										<th style={{ textAlign: 'right' }}>{__('Download link', 'tbsh-compliance-audit-logger')}</th>
+										<th style={{ textAlign: 'right' }}>{__('Actions', 'tbsh-compliance-audit-logger')}</th>
 									</tr>
 								</thead>
 								<tbody>
 									{exportsList.map((item, idx) => {
-										// Format file sizes.
 										let sizeStr = '0 B';
 										if (item.size > 1024 * 1024) {
 											sizeStr = `${(item.size / (1024 * 1024)).toFixed(2)} MB`;
@@ -201,7 +229,7 @@ export default function ExportCenter() {
 													</span>
 												</td>
 												<td><code>{sizeStr}</code></td>
-												<td style={{ textAlign: 'right' }}>
+												<td style={{ textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
 													<a 
 														href={getDownloadUrl(item.filename)} 
 														className="tbsh-btn tbsh-btn-secondary"
@@ -210,6 +238,14 @@ export default function ExportCenter() {
 														<Icon name="download" />
 														{__('Download', 'tbsh-compliance-audit-logger')}
 													</a>
+													<button
+														type="button"
+														className="tbsh-btn tbsh-btn-secondary"
+														style={{ padding: '4px 8px', fontSize: '12px' }}
+														onClick={() => createShareLink(item.filename)}
+													>
+														{__('Share Link', 'tbsh-compliance-audit-logger')}
+													</button>
 												</td>
 											</tr>
 										);

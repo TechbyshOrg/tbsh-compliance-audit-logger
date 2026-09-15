@@ -48,26 +48,36 @@ class PrivacyManager {
 
 	/**
 	 * Get client IP address.
+	 * Defaults to REMOTE_ADDR. Forwarded headers are only honored when the
+	 * remote address is in the trusted proxy list (filterable).
 	 */
 	public static function get_user_ip() {
-		$ip = '127.0.0.1';
+		$remote = ! empty( $_SERVER['REMOTE_ADDR'] )
+			? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) )
+			: '127.0.0.1';
 
-		if ( ! empty( $_SERVER['REMOTE_ADDR'] ) ) {
-			$ip = sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) );
-		}
+		/**
+		 * Filter trusted proxy IP addresses that may set X-Forwarded-For / Client-IP.
+		 *
+		 * @param array $proxies List of trusted proxy IPs.
+		 */
+		$trusted_proxies = apply_filters( 'tbsh_cal_trusted_proxies', array() );
 
-		// Only check client-supplied headers if they are valid IP addresses.
-		if ( ! empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
-			$client_ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_CLIENT_IP'] ) );
-			if ( filter_var( $client_ip, FILTER_VALIDATE_IP ) ) {
-				$ip = $client_ip;
-			}
-		} elseif ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-			$forwarded_ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) );
-			$ips          = explode( ',', $forwarded_ip );
-			$first_ip     = trim( reset( $ips ) );
-			if ( filter_var( $first_ip, FILTER_VALIDATE_IP ) ) {
-				$ip = $first_ip;
+		$ip = $remote;
+
+		if ( ! empty( $trusted_proxies ) && in_array( $remote, $trusted_proxies, true ) ) {
+			if ( ! empty( $_SERVER['HTTP_CLIENT_IP'] ) ) {
+				$client_ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_CLIENT_IP'] ) );
+				if ( filter_var( $client_ip, FILTER_VALIDATE_IP ) ) {
+					$ip = $client_ip;
+				}
+			} elseif ( ! empty( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
+				$forwarded_ip = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) );
+				$ips          = explode( ',', $forwarded_ip );
+				$first_ip     = trim( reset( $ips ) );
+				if ( filter_var( $first_ip, FILTER_VALIDATE_IP ) ) {
+					$ip = $first_ip;
+				}
 			}
 		}
 
@@ -166,6 +176,7 @@ class PrivacyManager {
 	/**
 	 * Personal data eraser callback.
 	 * Replaces usernames/user IDs and recalculates the hash chain.
+	 * Uses cursor-based pagination (by id) so anonymizing user_id does not skip rows.
 	 */
 	public static function personal_data_eraser( $email_address, $page = 1 ) {
 		global $wpdb;
@@ -180,22 +191,25 @@ class PrivacyManager {
 		}
 
 		$table_name = $wpdb->prefix . 'tbsh_cal_logs';
-		$limit      = 50; // Smaller batch for CPU intensive hash recalculation
-		$offset     = ( $page - 1 ) * $limit;
+		$limit      = 50; // Smaller batch for CPU intensive hash recalculation.
+
+		// Cursor stored between eraser pages so OFFSET is not used after user_id is cleared.
+		$cursor_key = 'tbsh_cal_erase_cursor_' . $user->ID;
+		$after_id   = ( 1 === (int) $page ) ? 0 : intval( get_transient( $cursor_key ) );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$logs = $wpdb->get_results( $wpdb->prepare(
-			"SELECT * FROM %i WHERE user_id = %d ORDER BY id ASC LIMIT %d OFFSET %d",
+			"SELECT * FROM %i WHERE user_id = %d AND id > %d ORDER BY id ASC LIMIT %d",
 			$table_name,
 			$user->ID,
-			$limit,
-			$offset
+			$after_id,
+			$limit
 		) );
 
 		$items_removed = 0;
 		if ( ! empty( $logs ) ) {
 			foreach ( $logs as $log ) {
-				// Anonymize user info
+				// Anonymize user info.
 				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 				$wpdb->update(
 					$table_name,
@@ -211,16 +225,24 @@ class PrivacyManager {
 				$items_removed++;
 			}
 
-			// Since we updated entries, we need to rebuild the entire hash chain from the first modified ID to prevent integrity issues.
+			$last_id = (int) $logs[ count( $logs ) - 1 ]->id;
+			set_transient( $cursor_key, $last_id, HOUR_IN_SECONDS );
+
+			// Rebuild chain from the first modified ID.
 			$first_modified_id = $logs[0]->id;
 			self::rebuild_hash_chain_from( $first_modified_id );
+		}
+
+		$done = count( $logs ) < $limit;
+		if ( $done ) {
+			delete_transient( $cursor_key );
 		}
 
 		return array(
 			'items_removed'  => $items_removed,
 			'items_retained' => 0,
 			'messages'       => array( __( 'Anonymized personal details in compliance logs and updated the cryptographic integrity chain.', 'tbsh-compliance-audit-logger' ) ),
-			'done'           => count( $logs ) < $limit,
+			'done'           => $done,
 		);
 	}
 

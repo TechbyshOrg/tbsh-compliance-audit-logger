@@ -87,6 +87,9 @@ class HealthController extends BaseController {
 			}
 		}
 
+		$checksum = \TBSHComplianceAuditLogger\Integrity\CoreChecksum::get_latest();
+		$next_cron = wp_next_scheduled( 'tbsh_cal_cron_job' );
+
 		return $this->success( array(
 			'db_size'           => size_format( $total_raw_size ),
 			'log_count'         => $log_count,
@@ -95,6 +98,8 @@ class HealthController extends BaseController {
 			'last_verification' => $integrity['verification_date'],
 			'recent_errors'     => $recent_errors,
 			'table_health'      => $table_health,
+			'cron_next_run'     => $next_cron ? gmdate( 'Y-m-d H:i:s', $next_cron ) : null,
+			'core_checksum'     => $checksum,
 			'environment'       => array(
 				'wp_version'  => get_bloginfo( 'version' ),
 				'php_version' => PHP_VERSION,

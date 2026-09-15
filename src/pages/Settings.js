@@ -25,7 +25,7 @@ export default function Settings() {
 				setLoading(false);
 			})
 			.catch((err) => {
-				console.error(err);
+				setNotice({ type: 'error', message: err.message || __('Failed to load settings.', 'tbsh-compliance-audit-logger') });
 				setLoading(false);
 			});
 	}, [hasManageCapability]);
@@ -39,7 +39,7 @@ export default function Settings() {
 
 	const saveSettings = (e) => {
 		e.preventDefault();
-		if ( ! hasManageCapability ) return;
+		if ( ! hasManageCapability || ! settings ) return;
 
 		setBtnLoading(true);
 		setNotice({ type: '', message: '' });
@@ -75,6 +75,10 @@ export default function Settings() {
 				icon="lock"
 			/>
 		);
+	}
+
+	if ( ! settings ) {
+		return <EmptyState title={__('Error Loading Data', 'tbsh-compliance-audit-logger')} description={__('Could not load settings.', 'tbsh-compliance-audit-logger')} icon="alert" />;
 	}
 
 	return (
@@ -137,6 +141,45 @@ export default function Settings() {
 						</span>
 					</div>
 
+					<div className="tbsh-form-group" style={{ marginBottom: '20px' }}>
+						<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', cursor: 'pointer', fontWeight: 600 }}>
+							<input 
+								type="checkbox" 
+								disabled={!hasManageCapability}
+								checked={!!settings.email_alerts} 
+								onChange={(e) => handleChange('email_alerts', e.target.checked)} 
+							/>
+							{__('Email Alerts for Critical Events', 'tbsh-compliance-audit-logger')}
+						</label>
+						<span style={{ display: 'block', fontSize: '12px', color: 'var(--tbsh-text-muted)', marginLeft: '24px', marginTop: '4px' }}>
+							{__('Send rate-limited emails to the site admin for brute-force and privilege-escalation events.', 'tbsh-compliance-audit-logger')}
+						</span>
+					</div>
+
+					<div className="tbsh-form-group" style={{ marginBottom: '20px' }}>
+						<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', cursor: 'pointer', fontWeight: 600 }}>
+							<input 
+								type="checkbox" 
+								disabled={!hasManageCapability}
+								checked={settings.log_content_events !== false} 
+								onChange={(e) => handleChange('log_content_events', e.target.checked)} 
+							/>
+							{__('Log Content Changes (Posts)', 'tbsh-compliance-audit-logger')}
+						</label>
+					</div>
+
+					<div className="tbsh-form-group" style={{ marginBottom: '20px' }}>
+						<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', cursor: 'pointer', fontWeight: 600 }}>
+							<input 
+								type="checkbox" 
+								disabled={!hasManageCapability}
+								checked={settings.log_media_events !== false} 
+								onChange={(e) => handleChange('log_media_events', e.target.checked)} 
+							/>
+							{__('Log Media Upload/Delete Events', 'tbsh-compliance-audit-logger')}
+						</label>
+					</div>
+
 					<div className="tbsh-form-group">
 						<label className="tbsh-form-label">{__('Logs Retention Period (Days)', 'tbsh-compliance-audit-logger')}</label>
 						<input 
@@ -186,6 +229,21 @@ export default function Settings() {
 								<option value="daily">{__('Daily', 'tbsh-compliance-audit-logger')}</option>
 								<option value="weekly">{__('Weekly', 'tbsh-compliance-audit-logger')}</option>
 							</select>
+						</div>
+
+						<div className="tbsh-form-group" style={{ marginTop: '20px' }}>
+							<label style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', cursor: 'pointer', fontWeight: 600 }}>
+								<input 
+									type="checkbox" 
+									disabled={!hasManageCapability}
+									checked={!!settings.auto_core_checksum} 
+									onChange={(e) => handleChange('auto_core_checksum', e.target.checked)} 
+								/>
+								{__('Schedule Core File Checksum Scans', 'tbsh-compliance-audit-logger')}
+							</label>
+							<span style={{ display: 'block', fontSize: '12px', color: 'var(--tbsh-text-muted)', marginLeft: '24px', marginTop: '4px' }}>
+								{__('Run WordPress.org core checksum verification on the same cron schedule.', 'tbsh-compliance-audit-logger')}
+							</span>
 						</div>
 					</div>
 

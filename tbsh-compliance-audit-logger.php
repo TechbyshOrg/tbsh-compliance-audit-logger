@@ -116,31 +116,23 @@ class TBSH_Compliance_Audit_Logger {
 		// Install/upgrade DB tables.
 		\TBSHComplianceAuditLogger\Database\Schema::install( $network_wide );
 
-		// Setup capabilities.
-		\TBSHComplianceAuditLogger\Security\AccessControl::init();
-
-		// Generate a secure salt for hashing IPs and User Agents if not already done.
-		if ( ! get_option( 'tbsh_cal_privacy_salt' ) ) {
-			update_option( 'tbsh_cal_privacy_salt', wp_generate_password( 64, true, true ) );
+		if ( is_multisite() && $network_wide ) {
+			$sites = get_sites( array( 'fields' => 'ids', 'number' => 0 ) );
+			foreach ( $sites as $blog_id ) {
+				switch_to_blog( $blog_id );
+				\TBSHComplianceAuditLogger\Security\AccessControl::init();
+				$this->ensure_defaults();
+				\TBSHComplianceAuditLogger\Helpers\CronScheduler::sync();
+				restore_current_blog();
+			}
+		} else {
+			\TBSHComplianceAuditLogger\Security\AccessControl::init();
+			$this->ensure_defaults();
+			\TBSHComplianceAuditLogger\Helpers\CronScheduler::sync();
 		}
 
-		// Initial Settings defaults.
-		if ( ! get_option( 'tbsh_cal_settings' ) ) {
-			update_option( 'tbsh_cal_settings', array(
-				'enable_logging'      => true,
-				'min_severity'        => 'info',
-				'anonymize_ips'       => true,
-				'auto_evidence'       => true,
-				'evidence_frequency'  => 'daily',
-				'retain_logs'         => 0, // 0 = unlimited
-				'cleanup_on_uninstall'=> 'keep', // keep or delete
-			) );
-		}
-
-		// Set up cron job for daily evidence snapshot and cleanup if needed.
-		if ( ! wp_next_scheduled( 'tbsh_cal_cron_job' ) ) {
-			wp_schedule_event( time(), 'daily', 'tbsh_cal_cron_job' );
-		}
+		// Ensure logger can flush during activation (shutdown may not run reliably).
+		\TBSHComplianceAuditLogger\Logging\Logger::init();
 
 		// Log plugin activation event.
 		\TBSHComplianceAuditLogger\Logging\Logger::log(
@@ -150,6 +142,31 @@ class TBSH_Compliance_Audit_Logger {
 			__( 'Compliance Audit Trail & Evidence Logger plugin was activated.', 'tbsh-compliance-audit-logger' ),
 			__( 'Plugin was activated successfully.', 'tbsh-compliance-audit-logger' )
 		);
+		\TBSHComplianceAuditLogger\Logging\Logger::flush_now();
+	}
+
+	/**
+	 * Ensure default options exist for the current site.
+	 */
+	private function ensure_defaults() {
+		if ( ! get_option( 'tbsh_cal_privacy_salt' ) ) {
+			update_option( 'tbsh_cal_privacy_salt', wp_generate_password( 64, true, true ) );
+		}
+
+		if ( ! get_option( 'tbsh_cal_settings' ) ) {
+			update_option( 'tbsh_cal_settings', array(
+				'enable_logging'       => true,
+				'min_severity'         => 'info',
+				'anonymize_ips'        => true,
+				'auto_evidence'        => true,
+				'evidence_frequency'   => 'daily',
+				'retain_logs'          => 0,
+				'cleanup_on_uninstall' => 'keep',
+				'email_alerts'         => false,
+				'log_content_events'   => true,
+				'log_media_events'     => true,
+			) );
+		}
 	}
 
 	/**
@@ -181,6 +198,9 @@ class TBSH_Compliance_Audit_Logger {
 		if ( is_plugin_active_for_network( TBSH_CAL_BASENAME ) ) {
 			switch_to_blog( $site->blog_id );
 			\TBSHComplianceAuditLogger\Database\Schema::install( false );
+			\TBSHComplianceAuditLogger\Security\AccessControl::init();
+			$this->ensure_defaults();
+			\TBSHComplianceAuditLogger\Helpers\CronScheduler::sync();
 			restore_current_blog();
 		}
 	}
@@ -192,6 +212,8 @@ class TBSH_Compliance_Audit_Logger {
 		// Unschedule cron job.
 		wp_clear_scheduled_hook( 'tbsh_cal_cron_job' );
 
+		\TBSHComplianceAuditLogger\Logging\Logger::init();
+
 		// Log plugin deactivation.
 		\TBSHComplianceAuditLogger\Logging\Logger::log(
 			'plugin_deactivation',
@@ -200,17 +222,30 @@ class TBSH_Compliance_Audit_Logger {
 			__( 'Compliance Audit Trail & Evidence Logger plugin was deactivated.', 'tbsh-compliance-audit-logger' ),
 			__( 'Plugin was deactivated successfully.', 'tbsh-compliance-audit-logger' )
 		);
+		\TBSHComplianceAuditLogger\Logging\Logger::flush_now();
 	}
 
 	/**
 	 * Run when all plugins are loaded.
 	 */
 	public function plugins_loaded() {
+		// Upgrade schema if needed (without requiring reactivation).
+		\TBSHComplianceAuditLogger\Database\Schema::maybe_upgrade();
+
+		// Ensure capabilities exist (covers upgrades / missed activation paths).
+		\TBSHComplianceAuditLogger\Security\AccessControl::init();
+
 		// Register REST API endpoints.
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 
 		// Initialize WordPress action trackers.
 		\TBSHComplianceAuditLogger\Logging\EventTracker::init();
+
+		// GDPR personal data exporters / erasers.
+		\TBSHComplianceAuditLogger\Privacy\PrivacyManager::init();
+
+		// Email alerts for critical events.
+		\TBSHComplianceAuditLogger\Alerts\EmailAlerts::init();
 
 		// Initialize Admin Interface.
 		if ( is_admin() ) {
@@ -218,7 +253,7 @@ class TBSH_Compliance_Audit_Logger {
 			\TBSHComplianceAuditLogger\Admin\DashboardWidget::init();
 		}
 
-		// Handle daily cron tasks.
+		// Handle cron tasks.
 		add_action( 'tbsh_cal_cron_job', array( $this, 'run_cron_tasks' ) );
 	}
 
@@ -236,6 +271,7 @@ class TBSH_Compliance_Audit_Logger {
 			new \TBSHComplianceAuditLogger\API\SettingsController(),
 			new \TBSHComplianceAuditLogger\API\HealthController(),
 			new \TBSHComplianceAuditLogger\API\ComplianceController(),
+			new \TBSHComplianceAuditLogger\API\ChecksumController(),
 		);
 
 		foreach ( $controllers as $controller ) {
@@ -254,14 +290,23 @@ class TBSH_Compliance_Audit_Logger {
 			\TBSHComplianceAuditLogger\Evidence\Vault::capture_snapshot();
 		}
 
-		// Cleanup old logs if retention is set.
+		// Cleanup old logs if retention is set, then re-anchor the hash chain.
 		$retention_days = isset( $settings['retain_logs'] ) ? intval( $settings['retain_logs'] ) : 0;
 		if ( $retention_days > 0 ) {
 			global $wpdb;
 			$table_name = $wpdb->prefix . 'tbsh_cal_logs';
 			$date_limit = gmdate( 'Y-m-d H:i:s', time() - ( $retention_days * DAY_IN_SECONDS ) );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE created_at < %s", $table_name, $date_limit ) );
+			$deleted = $wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE created_at < %s", $table_name, $date_limit ) );
+
+			if ( $deleted > 0 ) {
+				\TBSHComplianceAuditLogger\Integrity\ChainRepair::reanchor_after_purge();
+			}
+		}
+
+		// Optional weekly core checksum verification.
+		if ( ! empty( $settings['auto_core_checksum'] ) ) {
+			\TBSHComplianceAuditLogger\Integrity\CoreChecksum::verify();
 		}
 	}
 }

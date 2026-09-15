@@ -28,7 +28,17 @@ class Vault {
 		}
 
 		$snapshot_data = self::gather_system_info();
-		$uuid          = self::generate_uuid();
+
+		/**
+		 * Filter evidence snapshot payload before storage.
+		 *
+		 * @param array  $snapshot_data Snapshot data.
+		 * @param string $type          manual|automatic.
+		 * @param string $title         Snapshot title.
+		 */
+		$snapshot_data = apply_filters( 'tbsh_cal_evidence_snapshot_data', $snapshot_data, $type, $title );
+
+		$uuid = self::generate_uuid();
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$inserted = $wpdb->insert(

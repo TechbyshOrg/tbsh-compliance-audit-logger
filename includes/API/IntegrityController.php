@@ -68,6 +68,15 @@ class IntegrityController extends BaseController {
 	 * Run integrity verification check.
 	 */
 	public function run_verification( $request ) {
+		if ( get_transient( 'tbsh_cal_integrity_cooldown' ) ) {
+			return $this->error(
+				'tbsh_cal_rate_limited',
+				__( 'Please wait a minute before running another integrity scan.', 'tbsh-compliance-audit-logger' ),
+				429
+			);
+		}
+		set_transient( 'tbsh_cal_integrity_cooldown', 1, MINUTE_IN_SECONDS );
+
 		$result = ChainVerifier::verify_chain();
 		return $this->success( $result );
 	}

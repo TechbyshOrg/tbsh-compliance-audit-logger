@@ -39,6 +39,8 @@ if ( isset( $tbsh_cal_settings['cleanup_on_uninstall'] ) && 'delete' === $tbsh_c
 	// Delete general option entries.
 	delete_option( 'tbsh_cal_settings' );
 	delete_option( 'tbsh_cal_privacy_salt' );
+	delete_option( 'tbsh_cal_db_version' );
+	delete_option( 'tbsh_cal_core_checksum_result' );
 
 	// Unschedule any cron tasks.
 	wp_clear_scheduled_hook( 'tbsh_cal_cron_job' );
