@@ -2,9 +2,9 @@
 Contributors: techbysh
 Tags: compliance, audit-trail, security-log, tamper-evident, nis2
 Requires at least: 6.2
-Tested up to: 7.0.1
+Tested up to: 7.1
 Requires PHP: 8.0
-Stable tag: 1.0.3
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -118,6 +118,14 @@ Yes. The Compliance Overview screen maps your active logs, settings, and verific
 10. Help and Technical Reference page containing implementation details and support guidelines.
 
 == Changelog ==
+
+= 1.1.0 =
+* Hardened cryptographic logging (flush locking, retention chain repair, activation flush).
+* Fixed GDPR privacy exporter/eraser registration and failed-login alert detection.
+* Expanded activity tracking for content, media, plugin deletion, and application passwords.
+* Added email alerts for critical events, core file checksum checks, and expiring export share links.
+* Improved admin UX with capability-gated navigation, safer API error handling, and timeline pagination.
+* Tested up to WordPress 7.1.
 
 = 1.0.3 =
 * General Bug Fixes and Improvements.
