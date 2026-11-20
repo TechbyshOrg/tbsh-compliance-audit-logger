@@ -21,6 +21,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // Define Constants.
 define( 'TBSH_CAL_VERSION', '1.1.0' );
+define( 'TBSH_CAL_FILE', __FILE__ );
 define( 'TBSH_CAL_PATH', plugin_dir_path( __FILE__ ) );
 define( 'TBSH_CAL_URL', plugin_dir_url( __FILE__ ) );
 define( 'TBSH_CAL_BASENAME', plugin_basename( __FILE__ ) );
@@ -309,6 +310,12 @@ class TBSH_Compliance_Audit_Logger {
 			\TBSHComplianceAuditLogger\Integrity\CoreChecksum::verify();
 		}
 	}
+}
+
+// Optional deactivation feedback survey (Plugins screen and its AJAX handler only).
+if ( is_admin() ) {
+	require_once TBSH_CAL_PATH . 'includes/class-tbsh-cal-deactivation-feedback.php';
+	TBSH_CAL_Deactivation_Feedback::init();
 }
 
 // Start the plugin.

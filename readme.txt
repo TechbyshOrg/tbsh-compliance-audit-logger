@@ -50,6 +50,10 @@ Unlock advanced features to manage cyber risks and supply chains networked acros
 The complete, unminified source code and build tooling for this plugin can be found in our public repository at:
 https://github.com/TechbyshOrg/tbsh-compliance-audit-logger
 
+== External services ==
+
+1. **Google Apps Script** (https://script.google.com): optional deactivation feedback, sent to the plugin author (Techbysh) and stored in a Google Sheet. It is sent **only** when an administrator deactivates the plugin and clicks **Submit & Deactivate** in the feedback popup. **Skip & Deactivate** and closing the popup send nothing. It contains the chosen reason, any text typed, the plugin, WordPress, and PHP versions, the site language, whether the site is multisite, and the active theme name. The site URL and admin email are included only if the administrator ticks the opt-in checkbox. Privacy: https://policies.google.com/privacy Terms: https://policies.google.com/terms
+
 == Installation ==
 
 1. Upload the `tbsh-compliance-audit-logger` folder to the `/wp-content/plugins/` directory.
