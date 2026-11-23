@@ -158,7 +158,7 @@ class EventTracker {
 		$table_name = $wpdb->prefix . 'tbsh_cal_logs';
 
 		// Query failures for this username in the last 15 minutes.
-		$time_limit = gmdate( 'Y-m-d H:i:s', time() - 900 );
+		$time_limit = \TBSHComplianceAuditLogger\Helpers\Time::ago( 15 * MINUTE_IN_SECONDS );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$db_failures = intval( $wpdb->get_var( $wpdb->prepare(
 			"SELECT COUNT(*) FROM %i WHERE event_type = 'failed_login' AND username = %s AND created_at > %s",

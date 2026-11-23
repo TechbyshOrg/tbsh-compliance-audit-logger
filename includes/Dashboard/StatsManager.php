@@ -22,7 +22,7 @@ class StatsManager {
 		$table_logs     = $wpdb->prefix . 'tbsh_cal_logs';
 		$table_evidence = $wpdb->prefix . 'tbsh_cal_evidence';
 
-		$today = gmdate( 'Y-m-d' );
+		$today_start = \TBSHComplianceAuditLogger\Helpers\Time::today_start();
 
 		// 1. Counts.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -31,7 +31,7 @@ class StatsManager {
 		$events_today = intval( $wpdb->get_var( $wpdb->prepare(
 			"SELECT COUNT(*) FROM %i WHERE created_at >= %s",
 			$table_logs,
-			$today . ' 00:00:00'
+			$today_start
 		) ) );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching

@@ -52,8 +52,9 @@ class IntegrityController extends BaseController {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$history = $wpdb->get_results( $wpdb->prepare(
 			"SELECT id, verification_date, status, issues_found 
-			 FROM %i 
-			 ORDER BY id DESC 
+			 FROM %i
+			 WHERE check_type = 'chain'
+			 ORDER BY id DESC
 			 LIMIT 20",
 			$table_integrity
 		) );

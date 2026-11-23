@@ -88,22 +88,16 @@ class Menu {
 					true
 				);
 
-				// Gather user capabilities list.
-				$capabilities = array(
-					'view_logs'       => AccessControl::check( 'tbsh_cal_view_logs' ),
-					'view_evidence'   => AccessControl::check( 'tbsh_cal_view_evidence' ),
-					'export_data'     => AccessControl::check( 'tbsh_cal_export_data' ),
-					'manage_settings' => AccessControl::check( 'tbsh_cal_manage_settings' ),
-					'verify_integrity'=> AccessControl::check( 'tbsh_cal_verify_integrity' ),
-				);
+				wp_set_script_translations( 'tbsh-cal-admin-js', 'tbsh-compliance-audit-logger', TBSH_CAL_PATH . 'languages' );
 
-				// Localize variables.
+				// Localize variables. Never include secrets here (see Helpers\Secrets::masked()).
 				wp_localize_script( 'tbsh-cal-admin-js', 'tbshCalApiSettings', array(
+					'mode'         => 'admin',
 					'root'         => esc_url_raw( get_rest_url() ),
 					'namespace'    => 'tbsh-compliance-audit-logger/v1',
 					'nonce'        => wp_create_nonce( 'wp_rest' ),
 					'site_id'      => get_current_blog_id(),
-					'capabilities' => $capabilities,
+					'capabilities' => AccessControl::current_user_caps(),
 					'settings'     => get_option( 'tbsh_cal_settings', array() ),
 				) );
 

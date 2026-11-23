@@ -19,6 +19,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit; // Exit if accessed directly.
 }
 
+// The discontinued separate edition loads first and hijacks our constants/autoloader.
+// If it is present, stay dormant for this request and retire it (see ProCompat).
+require_once __DIR__ . '/includes/Compat/ProCompat.php';
+if ( \TBSHComplianceAuditLogger\Compat\ProCompat::legacy_loaded() ) {
+	\TBSHComplianceAuditLogger\Compat\ProCompat::boot_conflict_mode( __FILE__ );
+	return;
+}
+
 // Define Constants.
 define( 'TBSH_CAL_VERSION', '1.1.0' );
 define( 'TBSH_CAL_FILE', __FILE__ );
@@ -210,8 +218,8 @@ class TBSH_Compliance_Audit_Logger {
 	 * Run on plugin deactivation.
 	 */
 	public function deactivate() {
-		// Unschedule cron job.
-		wp_clear_scheduled_hook( 'tbsh_cal_cron_job' );
+		// Unschedule every cron hook.
+		\TBSHComplianceAuditLogger\Helpers\CronScheduler::clear_all();
 
 		\TBSHComplianceAuditLogger\Logging\Logger::init();
 
@@ -230,11 +238,13 @@ class TBSH_Compliance_Audit_Logger {
 	 * Run when all plugins are loaded.
 	 */
 	public function plugins_loaded() {
-		// Upgrade schema if needed (without requiring reactivation).
-		\TBSHComplianceAuditLogger\Database\Schema::maybe_upgrade();
+		// Schema upgrades/migrations run at init (they write translated log entries).
+		add_action( 'init', array( $this, 'maybe_upgrade' ), 0 );
 
-		// Ensure capabilities exist (covers upgrades / missed activation paths).
-		\TBSHComplianceAuditLogger\Security\AccessControl::init();
+		// Notice about the merged editions.
+		if ( is_admin() ) {
+			\TBSHComplianceAuditLogger\Compat\ProCompat::init();
+		}
 
 		// Register REST API endpoints.
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
@@ -255,7 +265,25 @@ class TBSH_Compliance_Audit_Logger {
 		}
 
 		// Handle cron tasks.
-		add_action( 'tbsh_cal_cron_job', array( $this, 'run_cron_tasks' ) );
+		add_action( \TBSHComplianceAuditLogger\Helpers\CronScheduler::EVIDENCE_HOOK, array( $this, 'run_cron_tasks' ) );
+		add_action( \TBSHComplianceAuditLogger\Helpers\CronScheduler::MAINTENANCE_HOOK, array( $this, 'run_maintenance_tasks' ) );
+	}
+
+	/**
+	 * Install/upgrade schema and run pending migrations (no reactivation needed).
+	 */
+	public function maybe_upgrade() {
+		\TBSHComplianceAuditLogger\Database\Schema::maybe_upgrade();
+
+		// Ensure capabilities exist (covers upgrades / missed activation paths).
+		\TBSHComplianceAuditLogger\Security\AccessControl::init();
+
+		// Activation happened while the old separate edition was still loaded: finish setup now.
+		if ( get_option( 'tbsh_cal_needs_setup' ) ) {
+			$this->ensure_defaults();
+			\TBSHComplianceAuditLogger\Helpers\CronScheduler::sync();
+			delete_option( 'tbsh_cal_needs_setup' );
+		}
 	}
 
 	/**
@@ -281,7 +309,7 @@ class TBSH_Compliance_Audit_Logger {
 	}
 
 	/**
-	 * Run cron tasks (Evidence Snapshot & Cleanup).
+	 * Evidence cron (daily/weekly): snapshot and optional core checksum verification.
 	 */
 	public function run_cron_tasks() {
 		$settings = get_option( 'tbsh_cal_settings', array() );
@@ -291,12 +319,24 @@ class TBSH_Compliance_Audit_Logger {
 			\TBSHComplianceAuditLogger\Evidence\Vault::capture_snapshot();
 		}
 
+		// Optional core checksum verification.
+		if ( ! empty( $settings['auto_core_checksum'] ) ) {
+			\TBSHComplianceAuditLogger\Integrity\CoreChecksum::verify();
+		}
+	}
+
+	/**
+	 * Daily maintenance cron (always scheduled).
+	 */
+	public function run_maintenance_tasks() {
+		$settings = get_option( 'tbsh_cal_settings', array() );
+
 		// Cleanup old logs if retention is set, then re-anchor the hash chain.
 		$retention_days = isset( $settings['retain_logs'] ) ? intval( $settings['retain_logs'] ) : 0;
 		if ( $retention_days > 0 ) {
 			global $wpdb;
 			$table_name = $wpdb->prefix . 'tbsh_cal_logs';
-			$date_limit = gmdate( 'Y-m-d H:i:s', time() - ( $retention_days * DAY_IN_SECONDS ) );
+			$date_limit = \TBSHComplianceAuditLogger\Helpers\Time::ago( $retention_days * DAY_IN_SECONDS );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$deleted = $wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE created_at < %s", $table_name, $date_limit ) );
 
@@ -305,10 +345,12 @@ class TBSH_Compliance_Audit_Logger {
 			}
 		}
 
-		// Optional weekly core checksum verification.
-		if ( ! empty( $settings['auto_core_checksum'] ) ) {
-			\TBSHComplianceAuditLogger\Integrity\CoreChecksum::verify();
-		}
+		/**
+		 * Fires during the daily maintenance run.
+		 *
+		 * @param array $settings Plugin settings.
+		 */
+		do_action( 'tbsh_cal_maintenance_run', $settings );
 	}
 }
 

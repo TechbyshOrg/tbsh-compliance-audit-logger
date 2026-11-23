@@ -134,7 +134,7 @@ class Logger {
 		$compliance_tags = isset( $args['compliance_tags'] ) ? sanitize_text_field( $args['compliance_tags'] ) : $event_category;
 
 		// Add to queue.
-		self::$log_queue[] = array(
+		$entry = array(
 			'event_uuid'       => self::generate_uuid(),
 			'event_type'       => $event_type,
 			'event_category'   => $event_category,
@@ -156,6 +156,35 @@ class Logger {
 			'compliance_tags'  => $compliance_tags,
 			'created_at'       => current_time( 'mysql' ),
 		);
+
+		self::$log_queue[] = $entry;
+
+		/**
+		 * Fires after an event is queued for writing (before the shutdown flush).
+		 *
+		 * Used by incident detection and anomaly scoring. Listeners must be cheap and
+		 * must not perform network I/O; queue work instead.
+		 *
+		 * @param array $entry Queued log entry (no id/hash yet).
+		 */
+		do_action( 'tbsh_cal_event_logged', $entry );
+	}
+
+	/**
+	 * Count queued events of a type for a user ID (for same-request checks).
+	 *
+	 * @param string $event_type Event type slug.
+	 * @param int    $user_id    User ID.
+	 * @return int
+	 */
+	public static function count_queued_for_user( $event_type, $user_id ) {
+		$count = 0;
+		foreach ( self::$log_queue as $log ) {
+			if ( ( '' === $event_type || $log['event_type'] === $event_type ) && (int) $log['user_id'] === (int) $user_id ) {
+				$count++;
+			}
+		}
+		return $count;
 	}
 
 	/**

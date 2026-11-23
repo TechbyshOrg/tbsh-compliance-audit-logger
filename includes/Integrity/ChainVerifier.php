@@ -169,7 +169,7 @@ class ChainVerifier {
 		global $wpdb;
 		$table_name = $wpdb->prefix . 'tbsh_cal_integrity';
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$row        = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM %i ORDER BY id DESC LIMIT 1", $table_name ) );
+		$row        = $wpdb->get_row( $wpdb->prepare( "SELECT * FROM %i WHERE check_type = 'chain' ORDER BY id DESC LIMIT 1", $table_name ) );
 
 		if ( ! $row ) {
 			return array(
