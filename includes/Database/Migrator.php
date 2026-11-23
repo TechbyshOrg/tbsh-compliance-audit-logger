@@ -34,6 +34,9 @@ class Migrator {
 		'convert_legacy_columns',
 		'normalize_legacy_values',
 		'migrate_capabilities',
+		'migrate_legacy_vaults',
+		'migrate_legacy_settings',
+		'schedule_cron',
 	);
 
 	/**
@@ -414,6 +417,34 @@ class Migrator {
 		$migrated = AccessControl::migrate_legacy_caps();
 		AccessControl::init();
 		return array( 'legacy_grants' => $migrated );
+	}
+
+	/**
+	 * Step: re-encrypt legacy vault credentials (before the legacy settings are removed).
+	 *
+	 * @return array
+	 */
+	private static function migrate_legacy_vaults() {
+		return LegacyMigration::vaults();
+	}
+
+	/**
+	 * Step: map legacy settings and secrets.
+	 *
+	 * @return array
+	 */
+	private static function migrate_legacy_settings() {
+		return LegacyMigration::settings();
+	}
+
+	/**
+	 * Step: (re)schedule every cron hook from current settings.
+	 *
+	 * @return bool
+	 */
+	private static function schedule_cron() {
+		\TBSHComplianceAuditLogger\Helpers\CronScheduler::sync();
+		return true;
 	}
 
 	/**

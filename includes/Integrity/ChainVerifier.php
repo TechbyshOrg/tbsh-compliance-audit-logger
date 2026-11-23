@@ -154,6 +154,21 @@ class ChainVerifier {
 			)
 		);
 
+		if ( 'compromised' === $status ) {
+			\TBSHComplianceAuditLogger\Logging\Logger::log(
+				'chain_compromised',
+				'Security Monitoring',
+				'critical',
+				__( 'Audit log chain verification failed', 'tbsh-compliance-audit-logger' ),
+				/* translators: %d: number of broken entries */
+				sprintf( __( 'Integrity verification found %d log entries whose hashes do not match. The audit log may have been altered.', 'tbsh-compliance-audit-logger' ), $issues_found ),
+				array(
+					'compliance_tags' => 'Security Monitoring, Audit Trail',
+					'metadata'        => array( 'issues' => $issues_found ),
+				)
+			);
+		}
+
 		return array(
 			'status'       => $status,
 			'issues_found' => $issues_found,

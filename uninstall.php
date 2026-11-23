@@ -67,6 +67,7 @@ function tbsh_cal_uninstall_site() {
 		'tbsh_cal_core_checksum_result',
 		'tbsh_cal_notice_merged',
 		'tbsh_cal_needs_setup',
+		'tbsh_cal_baselines_updated',
 		'tbsh_cal_pro_settings',
 	);
 	foreach ( $options as $option ) {

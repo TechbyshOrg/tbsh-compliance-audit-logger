@@ -1,6 +1,23 @@
 import { __ } from '@wordpress/i18n';
 import Icon from '../components/Icon';
 
+const textStyle = { margin: 0, fontSize: '13px', color: 'var(--tbsh-text-secondary)', lineHeight: '1.6' };
+const nextTextStyle = { ...textStyle, marginTop: '8px' };
+const listStyle = { ...textStyle, margin: '8px 0 0 0', paddingLeft: '18px' };
+const codeStyle = { fontSize: '12px', wordBreak: 'break-all' };
+
+function GuideSection( { icon, title, children } ) {
+	return (
+		<div className="tbsh-card" style={ { padding: '20px' } }>
+			<h4 style={ { margin: '0 0 10px 0', fontSize: '15px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' } }>
+				<Icon name={ icon } />
+				{ title }
+			</h4>
+			{ children }
+		</div>
+	);
+}
+
 export default function Help() {
 	return (
 		<div className="tbsh-help-page">
@@ -63,6 +80,156 @@ export default function Help() {
 						<strong>{__('Article 21 (Cybersecurity Risk-Management):', 'tbsh-compliance-audit-logger')}</strong> {__('Establishes continuous logging, verification controls, and evidence collections required for organizational audit reporting.', 'tbsh-compliance-audit-logger')}
 					</p>
 				</div>
+			</div>
+
+			{/* Feature guide */}
+			<div className="tbsh-card" style={{ padding: '20px', marginBottom: '24px' }}>
+				<h3 style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '600' }}>
+					{__('Feature Guide', 'tbsh-compliance-audit-logger')}
+				</h3>
+				<p style={textStyle}>
+					{__('How each module works and where its numbers come from. Every figure in the plugin is computed from data stored on this site.', 'tbsh-compliance-audit-logger')}
+				</p>
+			</div>
+
+			<div className="tbsh-grid-2">
+				<GuideSection icon="incidents" title={__('Incident Center & NIS2 deadlines', 'tbsh-compliance-audit-logger')}>
+					<p style={textStyle}>
+						{__('Incidents are opened manually or automatically by the detection rules in Settings (brute-force logins, administrator grants, critical setting changes, log tampering, modified core files, failing off-site vaults and, if enabled, behavioural anomalies). Each incident moves through open, investigating, contained, resolved and closed, with notes, linked evidence and framework mappings.', 'tbsh-compliance-audit-logger')}
+					</p>
+					<p style={nextTextStyle}>
+						{__('When an incident is marked NIS2-significant, the Article 23 reporting stages are tracked from its detection time:', 'tbsh-compliance-audit-logger')}
+					</p>
+					<ul style={listStyle}>
+						<li>{__('Early warning: within 24 hours.', 'tbsh-compliance-audit-logger')}</li>
+						<li>{__('Incident notification: within 72 hours.', 'tbsh-compliance-audit-logger')}</li>
+						<li>{__('Final report: within 1 month (30 days).', 'tbsh-compliance-audit-logger')}</li>
+					</ul>
+					<p style={nextTextStyle}>
+						{__('A stage stays overdue until it is marked submitted. Overdue stages trigger an alert and lower the Incident Management score.', 'tbsh-compliance-audit-logger')}
+					</p>
+				</GuideSection>
+
+				<GuideSection icon="alerts" title={__('Alerts & channels', 'tbsh-compliance-audit-logger')}>
+					<p style={textStyle}>
+						{__('Alerts can go to email, Slack, Discord, Microsoft Teams, Telegram and a custom webhook. Only alerts at or above the minimum alert severity are sent. Nothing is sent during the page request: each alert is queued and delivered in the background by WP-Cron, retried up to 4 times (after 5, 30 and 120 minutes), and identical alerts are throttled for 15 minutes.', 'tbsh-compliance-audit-logger')}
+					</p>
+					<p style={nextTextStyle}>
+						{__('Webhook URLs and tokens are stored encrypted and never shown again. Custom webhooks can be signed: verify the X-TBSH-Signature header, which is "sha256=" followed by the HMAC-SHA256 of the X-TBSH-Timestamp value, a dot and the raw body, keyed with your signing secret. Every delivery is listed in the Alert Center.', 'tbsh-compliance-audit-logger')}
+					</p>
+				</GuideSection>
+
+				<GuideSection icon="risk" title={__('Risk register (5×5 scale)', 'tbsh-compliance-audit-logger')}>
+					<p style={textStyle}>
+						{__('Each risk is rated for likelihood and impact from 1 to 5. The score is likelihood × impact (1–25) and maps to a band:', 'tbsh-compliance-audit-logger')}
+					</p>
+					<ul style={listStyle}>
+						<li>{__('Low: 1–4', 'tbsh-compliance-audit-logger')}</li>
+						<li>{__('Medium: 5–9', 'tbsh-compliance-audit-logger')}</li>
+						<li>{__('High: 10–15', 'tbsh-compliance-audit-logger')}</li>
+						<li>{__('Critical: 16–25', 'tbsh-compliance-audit-logger')}</li>
+					</ul>
+					<p style={nextTextStyle}>
+						{__('Risks have an owner, category, status (active, mitigated, accepted, closed) and a review date. Active risks past their review date are counted as overdue.', 'tbsh-compliance-audit-logger')}
+					</p>
+				</GuideSection>
+
+				<GuideSection icon="vendors" title={__('Vendor governance & supply chain', 'tbsh-compliance-audit-logger')}>
+					<p style={textStyle}>
+						{__('The vendor register (DORA Art. 28) records each ICT third party with its criticality, data access level, risk rating, contract renewal and security review dates. Reminders are sent 30 and 7 days before a renewal or review date.', 'tbsh-compliance-audit-logger')}
+					</p>
+					<p style={nextTextStyle}>
+						{__('The supply-chain inventory is built from the plugins and themes actually installed, including pending updates, and from the outbound services this plugin is configured to contact (hosts only, never credentials). Link a vendor to a plugin or theme to connect the two views.', 'tbsh-compliance-audit-logger')}
+					</p>
+				</GuideSection>
+
+				<GuideSection icon="resilience" title={__('Operational resilience drills', 'tbsh-compliance-audit-logger')}>
+					<p style={textStyle}>
+						{__('Plan and record drills (DORA Art. 24–25): backup restore, failover, incident response, tabletop or other. Enter RTO and RPO targets and the actual results; the plugin marks whether each target was met. Mean time to resolve incidents and backup history are calculated from real incident and vault data.', 'tbsh-compliance-audit-logger')}
+					</p>
+				</GuideSection>
+
+				<GuideSection icon="anomaly" title={__('Behavioural anomalies', 'tbsh-compliance-audit-logger')}>
+					<p style={textStyle}>
+						{__('When enabled in Settings, every action by a logged-in user is compared with that user’s baseline from the last 30 days. The score (0–100) adds points for an unusual hour (+25), an action never performed before (+40) or rarely performed (+20), and a burst above the normal hourly rate (+25). Scores of 60 or more are logged as anomalies and open an incident. Users need at least 5 days of history before they are scored.', 'tbsh-compliance-audit-logger')}
+					</p>
+				</GuideSection>
+
+				<GuideSection icon="executive" title={__('Executive dashboard', 'tbsh-compliance-audit-logger')}>
+					<p style={textStyle}>
+						{__('The overall score is the average of seven component scores (0–100), each computed from stored data and shown with the inputs that produced it:', 'tbsh-compliance-audit-logger')}
+					</p>
+					<ul style={listStyle}>
+						<li>{__('Logging & Monitoring: points for logging, low-severity capture, snapshots, core checksum scans, an alert channel and IP masking.', 'tbsh-compliance-audit-logger')}</li>
+						<li>{__('Integrity: hash chain verification and core checksum status.', 'tbsh-compliance-audit-logger')}</li>
+						<li>{__('Access Control: deductions for failed logins and administrator grants in the last 7 days.', 'tbsh-compliance-audit-logger')}</li>
+						<li>{__('Incident Management: deductions for open critical, high and warning incidents and overdue NIS2 stages.', 'tbsh-compliance-audit-logger')}</li>
+						<li>{__('Risk Management: deductions for active critical and high risks and overdue reviews.', 'tbsh-compliance-audit-logger')}</li>
+						<li>{__('Third-Party Risk: deductions for overdue vendor reviews and pending plugin/theme updates.', 'tbsh-compliance-audit-logger')}</li>
+						<li>{__('Operational Resilience: the most recent drill in the last year and the age of the last off-site backup.', 'tbsh-compliance-audit-logger')}</li>
+					</ul>
+					<p style={nextTextStyle}>
+						{__('Bands: strong (85+), good (70+), fair (50+), weak (below 50). An empty risk or vendor register gives a neutral score, not a perfect one.', 'tbsh-compliance-audit-logger')}
+					</p>
+				</GuideSection>
+
+				<GuideSection icon="reports" title={__('Compliance reports', 'tbsh-compliance-audit-logger')}>
+					<p style={textStyle}>
+						{__('Generate executive, NIS2 (per incident and stage), DORA, ISO 27001, SOC 2, incident, risk and vendor reports. Formats: HTML (print-ready; use your browser’s "Save as PDF"), CSV and JSON.', 'tbsh-compliance-audit-logger')}
+					</p>
+					<p style={nextTextStyle}>
+						{__('Every report file is signed when it is generated: a SHA-256 hash of the file plus an HMAC-SHA256 signature made with a key unique to this site. "Verify" recomputes both from the stored file, so any modification, or a signature not made by this site, fails verification.', 'tbsh-compliance-audit-logger')}
+					</p>
+				</GuideSection>
+
+				<GuideSection icon="database" title={__('Off-site vaults', 'tbsh-compliance-audit-logger')}>
+					<p style={textStyle}>
+						{__('Vaults copy new logs, incidents, incident notes and evidence off-site on an hourly, daily or weekly schedule. Providers: S3-compatible object storage, FTP/FTPS, or another WordPress site running this plugin ("Remote site"; the receiving site must enable the vault receiver in Settings).', 'tbsh-compliance-audit-logger')}
+					</p>
+					<p style={nextTextStyle}>
+						{__('Each package (.tbshvault) is encrypted before upload with a passphrase you choose (PBKDF2-SHA256 key derivation, XChaCha20-Poly1305). Keep the passphrase safe: without it the packages cannot be restored. To restore, decrypt a package to gzip-compressed JSON Lines with:', 'tbsh-compliance-audit-logger')}
+					</p>
+					<ul style={listStyle}>
+						<li><code style={codeStyle}>wp tbsh-cal vault-decrypt &lt;file.tbshvault&gt;</code></li>
+						<li>
+							<code style={codeStyle}>php tools/decrypt-vault.php &lt;file.tbshvault&gt; [output.jsonl.gz]</code>
+							{' '}
+							{__('(standalone, works without WordPress; requires the PHP sodium extension)', 'tbsh-compliance-audit-logger')}
+						</li>
+					</ul>
+				</GuideSection>
+
+				<GuideSection icon="auditor" title={__('Auditor access links', 'tbsh-compliance-audit-logger')}>
+					<p style={textStyle}>
+						{__('Give an external auditor a read-only view without a WordPress account. Each link expires after the number of days you choose (up to 90) and can be revoked at any time. The link is shown only once and stored as a hash. Auditors can only read an approved set of pages; every write action is refused, and repeated invalid attempts are rate-limited.', 'tbsh-compliance-audit-logger')}
+					</p>
+				</GuideSection>
+
+				<GuideSection icon="info" title={__('AI incident analysis', 'tbsh-compliance-audit-logger')}>
+					<p style={textStyle}>
+						{__('Optional and off by default. Choose a provider (Anthropic, OpenAI, Google Gemini, or any OpenAI-compatible endpoint such as a self-hosted Ollama) in Settings. Nothing is sent automatically: only when someone clicks "Analyse" on an incident are its title, type, severity, status, detection time, description, affected systems, impact, root cause and compliance tags sent to that provider. Logs, user records and evidence are not sent. The API key is stored encrypted.', 'tbsh-compliance-audit-logger')}
+					</p>
+				</GuideSection>
+
+				<GuideSection icon="settings" title={__('WP-CLI commands', 'tbsh-compliance-audit-logger')}>
+					<ul style={{ ...listStyle, marginTop: 0 }}>
+						<li>
+							<code style={codeStyle}>wp tbsh-cal vault-decrypt &lt;file&gt; [--output=&lt;path&gt;] [--passphrase=&lt;passphrase&gt;]</code>
+							<br />
+							{__('Decrypt a vault package. Without --passphrase, the TBSH_CAL_VAULT_PASSPHRASE environment variable is used, or you are prompted.', 'tbsh-compliance-audit-logger')}
+						</li>
+						<li>
+							<code style={codeStyle}>wp tbsh-cal vault-sync [--id=&lt;id&gt;]</code>
+							<br />
+							{__('Run an off-site vault sync now for one vault, or for every active vault.', 'tbsh-compliance-audit-logger')}
+						</li>
+						<li>
+							<code style={codeStyle}>wp tbsh-cal verify-chain</code>
+							<br />
+							{__('Verify the audit log hash chain and report any issues.', 'tbsh-compliance-audit-logger')}
+						</li>
+					</ul>
+				</GuideSection>
 			</div>
 
 			{/* FAQ section */}

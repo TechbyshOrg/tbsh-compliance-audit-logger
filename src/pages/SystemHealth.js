@@ -164,6 +164,38 @@ export default function SystemHealth() {
 				</div>
 			</div>
 
+			{ Array.isArray( health.platform_checks ) && health.platform_checks.length > 0 && (
+				<div className="tbsh-card" style={{ padding: '20px', marginBottom: '24px' }}>
+					<h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>
+						{__('Platform Readiness Checks', 'tbsh-compliance-audit-logger')}
+					</h3>
+					<div className="tbsh-table-container">
+						<table className="tbsh-table">
+							<thead>
+								<tr>
+									<th>{__('Check', 'tbsh-compliance-audit-logger')}</th>
+									<th>{__('Status', 'tbsh-compliance-audit-logger')}</th>
+									<th>{__('Details', 'tbsh-compliance-audit-logger')}</th>
+								</tr>
+							</thead>
+							<tbody>
+								{health.platform_checks.map( ( check ) => {
+									const badge = { pass: 'success', warn: 'warning', fail: 'danger' }[ check.status ] || 'info';
+									const label = { pass: __('Pass', 'tbsh-compliance-audit-logger'), warn: __('Attention', 'tbsh-compliance-audit-logger'), fail: __('Action needed', 'tbsh-compliance-audit-logger') }[ check.status ] || check.status;
+									return (
+										<tr key={ check.key }>
+											<td><strong>{ check.label }</strong></td>
+											<td><span className={ `tbsh-badge tbsh-badge-${ badge }` }>{ label }</span></td>
+											<td>{ check.detail }</td>
+										</tr>
+									);
+								} ) }
+							</tbody>
+						</table>
+					</div>
+				</div>
+			) }
+
 			<div className="tbsh-card" style={{ padding: '20px' }}>
 				<h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>
 					{__('Custom Tables Integrity & Health Status', 'tbsh-compliance-audit-logger')}

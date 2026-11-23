@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Compliance Audit Trail & Evidence Logger
- * Description: Enterprise-grade compliance logging, audit evidence, security monitoring, and integrity verification platform.
- * Version: 1.1.0
+ * Description: Tamper-evident compliance logging, incident response, risk and vendor governance, signed reports, encrypted off-site evidence vaults and read-only auditor access.
+ * Version: 2.0.0
  * Author: Techbysh
  * Author URI: https://techbysh.com
  * Text Domain: tbsh-compliance-audit-logger
@@ -28,7 +28,7 @@ if ( \TBSHComplianceAuditLogger\Compat\ProCompat::legacy_loaded() ) {
 }
 
 // Define Constants.
-define( 'TBSH_CAL_VERSION', '1.1.0' );
+define( 'TBSH_CAL_VERSION', '2.0.0' );
 define( 'TBSH_CAL_FILE', __FILE__ );
 define( 'TBSH_CAL_PATH', plugin_dir_path( __FILE__ ) );
 define( 'TBSH_CAL_URL', plugin_dir_url( __FILE__ ) );
@@ -163,18 +163,7 @@ class TBSH_Compliance_Audit_Logger {
 		}
 
 		if ( ! get_option( 'tbsh_cal_settings' ) ) {
-			update_option( 'tbsh_cal_settings', array(
-				'enable_logging'       => true,
-				'min_severity'         => 'info',
-				'anonymize_ips'        => true,
-				'auto_evidence'        => true,
-				'evidence_frequency'   => 'daily',
-				'retain_logs'          => 0,
-				'cleanup_on_uninstall' => 'keep',
-				'email_alerts'         => false,
-				'log_content_events'   => true,
-				'log_media_events'     => true,
-			) );
+			update_option( 'tbsh_cal_settings', \TBSHComplianceAuditLogger\API\SettingsController::defaults() );
 		}
 	}
 
@@ -255,8 +244,22 @@ class TBSH_Compliance_Audit_Logger {
 		// GDPR personal data exporters / erasers.
 		\TBSHComplianceAuditLogger\Privacy\PrivacyManager::init();
 
-		// Email alerts for critical events.
-		\TBSHComplianceAuditLogger\Alerts\EmailAlerts::init();
+		// Alert queue/dispatch (email, Slack, Discord, Teams, Telegram, webhook).
+		\TBSHComplianceAuditLogger\Alerts\AlertManager::init();
+
+		// Detection and governance modules.
+		\TBSHComplianceAuditLogger\Incidents\IncidentDetector::init();
+		\TBSHComplianceAuditLogger\Incidents\Nis2Tracker::init();
+		\TBSHComplianceAuditLogger\Analytics\AnomalyDetector::init();
+		\TBSHComplianceAuditLogger\Analytics\BehaviorBaseline::init();
+		\TBSHComplianceAuditLogger\Vendors\VendorRegister::init();
+		\TBSHComplianceAuditLogger\Vendors\SupplyChain::init();
+		\TBSHComplianceAuditLogger\Vaults\VaultManager::init();
+		\TBSHComplianceAuditLogger\Compliance\AuditorAccess::init();
+
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			\WP_CLI::add_command( 'tbsh-cal', \TBSHComplianceAuditLogger\CLI\Command::class );
+		}
 
 		// Initialize Admin Interface.
 		if ( is_admin() ) {
@@ -301,6 +304,10 @@ class TBSH_Compliance_Audit_Logger {
 			new \TBSHComplianceAuditLogger\API\HealthController(),
 			new \TBSHComplianceAuditLogger\API\ComplianceController(),
 			new \TBSHComplianceAuditLogger\API\ChecksumController(),
+			new \TBSHComplianceAuditLogger\API\IncidentsController(),
+			new \TBSHComplianceAuditLogger\API\GovernanceController(),
+			new \TBSHComplianceAuditLogger\API\ReportsController(),
+			new \TBSHComplianceAuditLogger\API\OperationsController(),
 		);
 
 		foreach ( $controllers as $controller ) {
@@ -329,21 +336,10 @@ class TBSH_Compliance_Audit_Logger {
 	 * Daily maintenance cron (always scheduled).
 	 */
 	public function run_maintenance_tasks() {
-		$settings = get_option( 'tbsh_cal_settings', array() );
+		$settings = wp_parse_args( get_option( 'tbsh_cal_settings', array() ), \TBSHComplianceAuditLogger\API\SettingsController::defaults() );
 
-		// Cleanup old logs if retention is set, then re-anchor the hash chain.
-		$retention_days = isset( $settings['retain_logs'] ) ? intval( $settings['retain_logs'] ) : 0;
-		if ( $retention_days > 0 ) {
-			global $wpdb;
-			$table_name = $wpdb->prefix . 'tbsh_cal_logs';
-			$date_limit = \TBSHComplianceAuditLogger\Helpers\Time::ago( $retention_days * DAY_IN_SECONDS );
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-			$deleted = $wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE created_at < %s", $table_name, $date_limit ) );
-
-			if ( $deleted > 0 ) {
-				\TBSHComplianceAuditLogger\Integrity\ChainRepair::reanchor_after_purge();
-			}
-		}
+		// Retention for logs (archived + chain re-anchored), incidents, evidence and delivery history.
+		\TBSHComplianceAuditLogger\Compliance\RetentionPolicy::run( $settings );
 
 		/**
 		 * Fires during the daily maintenance run.

@@ -339,10 +339,6 @@ class EventTracker {
 					'compliance_tags' => 'Security Monitoring, Access Control, Authorization',
 				)
 			);
-
-			if ( class_exists( '\TBSHComplianceAuditLogger\Alerts\EmailAlerts' ) ) {
-				\TBSHComplianceAuditLogger\Alerts\EmailAlerts::on_privilege_escalation( $username );
-			}
 		}
 	}
 

@@ -1,14 +1,14 @@
 <?php
 namespace TBSHComplianceAuditLogger\API;
 
-use TBSHComplianceAuditLogger\Integrity\ChainVerifier;
+use TBSHComplianceAuditLogger\Compliance\ReadinessEngine;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
 /**
- * Controller for Compliance Overview REST endpoints.
+ * Compliance overview, readiness and executive scorecard endpoints.
  */
 class ComplianceController extends BaseController {
 
@@ -20,129 +20,92 @@ class ComplianceController extends BaseController {
 			array(
 				'methods'             => \WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'get_compliance_data' ),
-				'permission_callback' => array( $this, 'check_compliance_permission' ),
+				'permission_callback' => $this->cap( 'tbsh_cal_view_logs' ),
+			),
+		) );
+
+		register_rest_route( $this->namespace, '/readiness', array(
+			array(
+				'methods'             => \WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_readiness' ),
+				'permission_callback' => $this->cap( 'tbsh_cal_view_logs' ),
+			),
+		) );
+
+		register_rest_route( $this->namespace, '/executive', array(
+			array(
+				'methods'             => \WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_executive' ),
+				'permission_callback' => $this->cap( 'tbsh_cal_view_analytics' ),
 			),
 		) );
 	}
 
 	/**
-	 * Permissions.
-	 */
-	public function check_compliance_permission() {
-		return $this->check_permission( 'tbsh_cal_view_logs' );
-	}
-
-	/**
-	 * Get compliance overview data.
+	 * Compliance overview: event categories, readiness checks, evidence coverage, frameworks.
 	 */
 	public function get_compliance_data( $request ) {
 		global $wpdb;
 		$table_logs = $wpdb->prefix . 'tbsh_cal_logs';
 
-		// 1. Gather Category counts in a single query.
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$results = $wpdb->get_results( $wpdb->prepare( "SELECT event_category, COUNT(*) as count FROM %i GROUP BY event_category", $table_logs ) );
+		$results = $wpdb->get_results( $wpdb->prepare( 'SELECT event_category, COUNT(*) as count FROM %i GROUP BY event_category', $table_logs ) );
 
-		$counts = array(
-			'Access Control'           => 0,
-			'Identity Management'      => 0,
-			'Authentication'           => 0,
-			'Authorization'            => 0,
-			'Change Management'        => 0,
-			'Configuration Management' => 0,
-			'Security Monitoring'      => 0,
-			'Incident Detection'       => 0,
-			'Operational Security'     => 0,
-			'Audit Trail'              => 0,
+		$counts = array_fill_keys(
+			array( 'Access Control', 'Identity Management', 'Authentication', 'Authorization', 'Change Management', 'Configuration Management', 'Security Monitoring', 'Incident Detection', 'Operational Security', 'Audit Trail' ),
+			0
 		);
-
-		if ( ! empty( $results ) ) {
-			foreach ( $results as $row ) {
-				if ( isset( $counts[ $row->event_category ] ) ) {
-					$counts[ $row->event_category ] = intval( $row->count );
-				}
+		foreach ( (array) $results as $row ) {
+			if ( isset( $counts[ $row->event_category ] ) ) {
+				$counts[ $row->event_category ] = intval( $row->count );
 			}
 		}
 
-		$access_control_events  = $counts['Access Control'];
-		$identity_events        = $counts['Identity Management'];
-		$authentication_events  = $counts['Authentication'];
-		$authorization_events   = $counts['Authorization'];
-		$change_events          = $counts['Change Management'];
-		$configuration_events   = $counts['Configuration Management'];
-		$security_events        = $counts['Security Monitoring'];
-		$incident_events        = $counts['Incident Detection'];
-		$operational_events     = $counts['Operational Security'];
-		$audit_trail_events     = $counts['Audit Trail'];
+		$assessment = ReadinessEngine::assess();
+		$facts      = $assessment['facts'];
 
-		// 2. Compute Audit Readiness Indicators.
-		$settings = get_option( 'tbsh_cal_settings', array() );
-		$integrity = ChainVerifier::get_latest_status();
-
-		$readiness_score = 0;
-		$readiness_items = array(
-			'logging_active'     => array(
-				'title'  => __( 'Continuous Event Logging', 'tbsh-compliance-audit-logger' ),
-				'status' => ! empty( $settings['enable_logging'] ) ? 'pass' : 'fail',
-				'desc'   => ! empty( $settings['enable_logging'] ) ? __( 'System is actively compiling compliance logs.', 'tbsh-compliance-audit-logger' ) : __( 'Continuous logging is disabled.', 'tbsh-compliance-audit-logger' ),
-			),
-			'integrity_chain'    => array(
-				'title'  => __( 'Cryptographic Integrity Chain', 'tbsh-compliance-audit-logger' ),
-				'status' => 'verified' === $integrity['status'] ? 'pass' : ( 'unverified' === $integrity['status'] ? 'warn' : 'fail' ),
-				'desc'   => 'verified' === $integrity['status'] ? __( 'Cryptographic hash validation matches stored state.', 'tbsh-compliance-audit-logger' ) : ( 'unverified' === $integrity['status'] ? __( 'Integrity scan pending.', 'tbsh-compliance-audit-logger' ) : __( 'Chain verification detected discrepancies!', 'tbsh-compliance-audit-logger' ) ),
-			),
-			'evidence_snapshots' => array(
-				'title'  => __( 'Evidence Snapshot Collection', 'tbsh-compliance-audit-logger' ),
-				'status' => ! empty( $settings['auto_evidence'] ) ? 'pass' : 'fail',
-				'desc'   => ! empty( $settings['auto_evidence'] ) ? __( 'Automated state snapshots are active.', 'tbsh-compliance-audit-logger' ) : __( 'Automated state archiving is disabled.', 'tbsh-compliance-audit-logger' ),
-			),
-			'gdpr_compliance'    => array(
-				'title'  => __( 'Data Subject Privacy Shield', 'tbsh-compliance-audit-logger' ),
-				'status' => ! empty( $settings['anonymize_ips'] ) ? 'pass' : 'warn',
-				'desc'   => ! empty( $settings['anonymize_ips'] ) ? __( 'Actor IP hash masking is active.', 'tbsh-compliance-audit-logger' ) : __( 'Actor IPs are being saved without hash masking.', 'tbsh-compliance-audit-logger' ),
-			),
-		);
-
-		// Calculate Score (Pass = 25, Warn = 12.5, Fail = 0)
-		foreach ( $readiness_items as $item ) {
-			if ( 'pass' === $item['status'] ) {
-				$readiness_score += 25;
-			} elseif ( 'warn' === $item['status'] ) {
-				$readiness_score += 12.5;
-			}
+		$checks = $assessment['checks'];
+		$score  = 0;
+		foreach ( $checks as $item ) {
+			$score += 'pass' === $item['status'] ? 1 : ( 'warn' === $item['status'] ? 0.5 : 0 );
 		}
 
-		// 3. Evidence Coverage Indicators.
-		// Assess whether major configuration snapshots are registered.
-		$table_evidence   = $wpdb->prefix . 'tbsh_cal_evidence';
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$snapshots_recent = intval( $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i", $table_evidence ) ) );
-
-		$coverage_score = 0;
-		if ( $snapshots_recent > 0 ) {
-			$coverage_score += 50;
-		}
-		if ( ! empty( $settings['auto_evidence'] ) ) {
-			$coverage_score += 50;
-		}
+		$coverage = ( $facts['evidence_count'] > 0 ? 40 : 0 ) + ( $facts['evidence_7d'] > 0 ? 30 : 0 ) + ( ! empty( $facts['settings']['auto_evidence'] ) ? 30 : 0 );
 
 		return $this->success( array(
 			'categories' => array(
-				'access_control'  => $access_control_events + $identity_events,
-				'authentication'  => $authentication_events,
-				'authorization'   => $authorization_events,
-				'changes'         => $change_events + $configuration_events,
-				'security'        => $security_events + $incident_events,
-				'operational'     => $operational_events + $audit_trail_events,
+				'access_control' => $counts['Access Control'] + $counts['Identity Management'],
+				'authentication' => $counts['Authentication'],
+				'authorization'  => $counts['Authorization'],
+				'changes'        => $counts['Change Management'] + $counts['Configuration Management'],
+				'security'       => $counts['Security Monitoring'] + $counts['Incident Detection'],
+				'operational'    => $counts['Operational Security'] + $counts['Audit Trail'],
 			),
-			'readiness' => array(
-				'score' => $readiness_score,
-				'items' => $readiness_items,
+			'readiness'  => array(
+				'score' => (int) round( 100 * $score / max( 1, count( $checks ) ) ),
+				'items' => $checks,
 			),
-			'coverage' => array(
-				'score' => $coverage_score,
-				'snapshots_recorded' => $snapshots_recent,
+			'coverage'   => array(
+				'score'              => $coverage,
+				'snapshots_recorded' => $facts['evidence_count'],
 			),
+			'frameworks' => $assessment['frameworks'],
 		) );
+	}
+
+	/**
+	 * Full readiness assessment.
+	 */
+	public function get_readiness( $request ) {
+		$assessment = ReadinessEngine::assess();
+		unset( $assessment['facts'] );
+		return $this->success( $assessment );
+	}
+
+	/**
+	 * Executive scorecard.
+	 */
+	public function get_executive( $request ) {
+		return $this->success( ReadinessEngine::scorecard() );
 	}
 }

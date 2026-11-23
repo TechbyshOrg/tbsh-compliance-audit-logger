@@ -9,6 +9,7 @@ export default function ComplianceOverview() {
 	const [data, setData] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
+	const [expanded, setExpanded] = useState({});
 
 	useEffect(() => {
 		apiFetch({ path: '/tbsh-compliance-audit-logger/v1/compliance' })
@@ -41,6 +42,31 @@ export default function ComplianceOverview() {
 		return 'var(--tbsh-danger)';
 	};
 
+	const frameworks = data.frameworks;
+
+	// Framework coverage helpers (85+ good, 60+ partial, else weak).
+	const getCoverageColor = (score) => {
+		if (score >= 85) return 'var(--tbsh-success)';
+		if (score >= 60) return 'var(--tbsh-warning)';
+		return 'var(--tbsh-danger)';
+	};
+	const getCoverageClass = (score) => {
+		if (score >= 85) return 'is-success';
+		if (score >= 60) return 'is-warning';
+		return 'is-danger';
+	};
+	const getStatusBadge = (status) => {
+		if (status === 'pass') return 'success';
+		if (status === 'warn') return 'warning';
+		return 'danger';
+	};
+	const getStatusLabel = (status) => {
+		if (status === 'pass') return __('Pass', 'tbsh-compliance-audit-logger');
+		if (status === 'warn') return __('Warning', 'tbsh-compliance-audit-logger');
+		if (status === 'fail') return __('Fail', 'tbsh-compliance-audit-logger');
+		return status;
+	};
+
 	return (
 		<div className="tbsh-compliance-page">
 			{/* Overview Row */}
@@ -62,7 +88,7 @@ export default function ComplianceOverview() {
 						{readiness.score}%
 					</div>
 					<p style={{ margin: 0, color: 'var(--tbsh-text-muted)', fontSize: '13px', textAlign: 'center' }}>
-						{__('Calculated based on policy logs activity, IP hashing privacy, and chain validations.', 'tbsh-compliance-audit-logger')}
+						{__('Calculated from the readiness checks below: a pass counts fully, a warning counts half, a failure counts zero.', 'tbsh-compliance-audit-logger')}
 					</p>
 				</div>
 
@@ -205,6 +231,100 @@ export default function ComplianceOverview() {
 					</div>
 				</div>
 			</div>
+
+			{/* Framework coverage */}
+			{frameworks && Object.keys(frameworks).length > 0 && (
+				<div className="tbsh-card" style={{ padding: '20px', marginTop: '24px' }}>
+					<h3 className="tbsh-section-title">
+						{__('Framework coverage', 'tbsh-compliance-audit-logger')}
+					</h3>
+					<p className="tbsh-muted" style={{ marginTop: 0, marginBottom: '16px' }}>
+						{__('Each control is mapped to one or more readiness checks above. A control passes only when all of its checks pass; coverage is the share of passing controls. This is a readiness aid, not a certification.', 'tbsh-compliance-audit-logger')}
+					</p>
+					<div className="tbsh-grid-2" style={{ marginBottom: 0 }}>
+						{Object.keys(frameworks).map((fwKey) => {
+							const fw = frameworks[fwKey] || {};
+							const cov = Number(fw.coverage) || 0;
+							const controls = Array.isArray(fw.controls) ? fw.controls : [];
+							const isOpen = !!expanded[fwKey];
+							const passed = controls.filter((c) => c.status === 'pass').length;
+							const listId = `tbsh-fw-controls-${fwKey}`;
+							return (
+								<div key={fwKey} style={{ padding: '16px', border: '1px solid var(--tbsh-border-color)', borderRadius: '6px' }}>
+									<div className="tbsh-row-between" style={{ marginBottom: '8px' }}>
+										<strong style={{ fontSize: '14px' }}>{fw.name || fwKey}</strong>
+										<span style={{ fontWeight: 700, color: getCoverageColor(cov) }}>{cov}%</span>
+									</div>
+									<div className="tbsh-progress">
+										<div className={`tbsh-progress-bar ${getCoverageClass(cov)}`} style={{ width: `${cov}%` }} />
+									</div>
+									<div className="tbsh-row-between" style={{ marginTop: '10px' }}>
+										<span className="tbsh-muted">
+											{sprintf(
+												/* translators: 1: passing controls, 2: total controls */
+												__('%1$d of %2$d controls passing', 'tbsh-compliance-audit-logger'),
+												passed,
+												controls.length
+											)}
+										</span>
+										{controls.length > 0 && (
+											<button
+												type="button"
+												className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
+												aria-expanded={isOpen}
+												aria-controls={listId}
+												onClick={() => setExpanded((prev) => ({ ...prev, [fwKey]: !prev[fwKey] }))}
+											>
+												{isOpen ? __('Hide controls', 'tbsh-compliance-audit-logger') : __('Show controls', 'tbsh-compliance-audit-logger')}
+											</button>
+										)}
+									</div>
+									{isOpen && (
+										<div id={listId} className="tbsh-table-container" style={{ marginTop: '12px' }}>
+											<table className="tbsh-table">
+												<thead>
+													<tr>
+														<th>{__('Control', 'tbsh-compliance-audit-logger')}</th>
+														<th>{__('Status', 'tbsh-compliance-audit-logger')}</th>
+													</tr>
+												</thead>
+												<tbody>
+													{controls.map((control, idx) => {
+														const checks = Array.isArray(control.checks) ? control.checks : [];
+														return (
+															<tr key={`${control.ref}-${idx}`}>
+																<td>
+																	<div>
+																		<code>{control.ref}</code> {control.title}
+																	</div>
+																	{checks.length > 0 && (
+																		<div className="tbsh-muted" style={{ fontSize: '12px', marginTop: '4px' }}>
+																			{sprintf(
+																				/* translators: %s: comma-separated list of readiness checks */
+																				__('Checks: %s', 'tbsh-compliance-audit-logger'),
+																				checks.map((c) => (readiness.items && readiness.items[c] && readiness.items[c].title) || c).join(', ')
+																			)}
+																		</div>
+																	)}
+																</td>
+																<td>
+																	<span className={`tbsh-badge tbsh-badge-${getStatusBadge(control.status)}`}>
+																		{getStatusLabel(control.status)}
+																	</span>
+																</td>
+															</tr>
+														);
+													})}
+												</tbody>
+											</table>
+										</div>
+									)}
+								</div>
+							);
+						})}
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

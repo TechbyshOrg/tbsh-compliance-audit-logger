@@ -497,7 +497,7 @@
   <aside class="sidebar">
     <div class="logo-section">
       <div class="logo-title">Compliance Audit Trail & Evidence Logger</div>
-      <div class="logo-version">Documentation v1.1.0</div>
+      <div class="logo-version">Documentation v2.0.0</div>
     </div>
 
     <!-- Search Box -->
@@ -517,7 +517,22 @@
         <li class="nav-item" data-section="hash-chaining"><a href="#hash-chaining">Cryptographic Chaining</a></li>
         <li class="nav-item" data-section="privacy"><a href="#privacy">Privacy & GDPR</a></li>
         <li class="nav-item" data-section="evidence-vault"><a href="#evidence-vault">Evidence Vault</a></li>
+        <li class="nav-item" data-section="incidents"><a href="#incidents">Incident Center & NIS2</a></li>
+        <li class="nav-item" data-section="alerts"><a href="#alerts">Alerts & Channels</a></li>
+        <li class="nav-item" data-section="governance"><a href="#governance">Risk, Vendors & Resilience</a></li>
+        <li class="nav-item" data-section="analytics"><a href="#analytics">Executive & Analytics</a></li>
+        <li class="nav-item" data-section="reports"><a href="#reports">Signed Reports</a></li>
+        <li class="nav-item" data-section="offsite-vaults"><a href="#offsite-vaults">Off-site Vaults</a></li>
+        <li class="nav-item" data-section="auditor-access"><a href="#auditor-access">Auditor Access</a></li>
+        <li class="nav-item" data-section="ai-analysis"><a href="#ai-analysis">AI Incident Analysis</a></li>
+        <li class="nav-item" data-section="retention"><a href="#retention">Data Retention</a></li>
+        <li class="nav-item" data-section="settings"><a href="#settings">Settings Reference</a></li>
+        <li class="nav-item" data-section="capabilities"><a href="#capabilities">Capabilities</a></li>
+        <li class="nav-item" data-section="credentials"><a href="#credentials">Credential Encryption</a></li>
         <li class="nav-item" data-section="rest-api"><a href="#rest-api">REST API Endpoints</a></li>
+        <li class="nav-item" data-section="wp-cli"><a href="#wp-cli">WP-CLI</a></li>
+        <li class="nav-item" data-section="migration"><a href="#migration">Migrating from the Separate Edition</a></li>
+        <li class="nav-item" data-section="troubleshooting"><a href="#troubleshooting">Troubleshooting</a></li>
         <li class="nav-item" data-section="compliance"><a href="#compliance">Regulatory Mapping</a></li>
       </ul>
     </nav>
@@ -534,7 +549,7 @@
     
     <div id="search-results-empty" class="search-no-results">
       <h3>No matches found</h3>
-      <p>Try searching for other terms like 'cron', 'SHA-256', 'REST API', or 'GDPR'.</p>
+      <p>Try searching for other terms like 'cron', 'SHA-256', 'REST API', 'NIS2', 'vault' or 'GDPR'.</p>
     </div>
 
     <!-- Section: Intro -->
@@ -554,8 +569,16 @@
         <li><strong>Tamper-Evident Chaining:</strong> Standard database records can be easily modified or deleted directly via SQL. This plugin hashes each entry with the hash signature of the preceding log record, establishing an unbroken cryptographic chain.</li>
         <li><strong>Archival Evidence Vault:</strong> Automatically or manually capture full-system configuration snapshots (installed plugins, active themes, user roles, security configurations, database capacities) to serve as proof of system integrity during compliance audits.</li>
         <li><strong>GDPR Privacy Shield:</strong> Client IP addresses and User Agents are hashed locally and irreversibly using HMAC-SHA-256 with a unique, cryptographically random site salt. Complete support for core WordPress Personal Data Exporters and Erasers is included.</li>
-        <li><strong>No Cloud Dependency:</strong> Built for high compliance. All log events, audit timelines, verification records, and snapshots are kept locally in custom SQL tables. No telemetry data or user footprints are ever offloaded.</li>
+        <li><strong>Local by Default:</strong> All log events, audit timelines, verification records, incidents, registers and snapshots are kept locally in custom SQL tables. No telemetry is collected. Outbound connections (alert channels, AI analysis, off-site vaults, WordPress.org core checksums) happen only after an administrator configures or triggers them.</li>
+        <li><strong>Incident Response:</strong> Automatic incident detection, NIS2 Article 23 deadline tracking and multi-channel alerts (email, Slack, Discord, Microsoft Teams, Telegram, signed webhooks).</li>
+        <li><strong>Governance Registers:</strong> A 5×5 risk register, a vendor / ICT third-party register (DORA Art. 28), a software supply-chain inventory and an operational resilience drill register with RTO/RPO.</li>
+        <li><strong>Evidence & Reporting:</strong> An executive readiness score computed from real data, signed and verifiable compliance reports, encrypted off-site evidence vaults and expiring read-only auditor links.</li>
       </ul>
+
+      <div class="alert alert-info">
+        <h4>One Plugin, Every Feature</h4>
+        Since version 2.0.0 the former separate edition is merged into this plugin. Every module documented here is included; there is no paid tier. Sites that used the separate edition are migrated automatically (see <a href="#migration">Migrating from the Separate Edition</a>).
+      </div>
     </section>
 
     <!-- Section: Installation -->
@@ -567,7 +590,26 @@
         <li>Log in as an Administrator and activate the plugin through the <strong>Plugins</strong> page in the WordPress admin panel.</li>
         <li>Navigate to the new <strong>Compliance Logs</strong> sidebar menu to access the verification status, timeline, logs grid, and vaults.</li>
         <li>Go to <strong>Settings</strong> to customize logging thresholds, automatic evidence vault snap frequencies, and log retention parameters.</li>
+        <li>Optional: configure alert channels, incident detection rules, AI analysis and retention in <strong>Settings</strong>, then add an off-site evidence vault.</li>
+        <li>Recommended before saving any credentials: define a dedicated encryption key in <code>wp-config.php</code> (see <a href="#credentials">Credential Encryption</a>).</li>
       </ol>
+
+      <h3>Admin Navigation</h3>
+      <p>All screens live under the <strong>Compliance Logs</strong> menu. Each entry is only shown to users holding the listed capability.</p>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Group</th><th>Screens</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Overview</td><td>Dashboard, Executive Dashboard, Compliance Overview</td></tr>
+            <tr><td>Monitoring</td><td>Activity Logs, Forensic Timeline, Behavioral Anomalies, Advanced Analytics, Alert Center</td></tr>
+            <tr><td>Response & Governance</td><td>Incident Center, Risk Register, Vendor Governance, Operational Resilience</td></tr>
+            <tr><td>Evidence & Reporting</td><td>Evidence Vault, Integrity Center, Compliance Reports, Export Center, Auditor Access</td></tr>
+            <tr><td>System</td><td>System Health, Settings, Help & Reference</td></tr>
+          </tbody>
+        </table>
+      </div>
 
       <div class="alert alert-warning">
         <h4>System Requirements</h4>
@@ -575,6 +617,8 @@
           <li>WordPress version <strong>6.2</strong> or higher.</li>
           <li>PHP version <strong>8.0</strong> or higher.</li>
           <li>MySQL / MariaDB database with standard transactional locking support.</li>
+          <li>Working WP-Cron (or a real cron job calling <code>wp-cron.php</code>) for alerts, retention and vault syncs.</li>
+          <li>PHP <code>zlib</code> for log archives and vault packages; the <code>sodium</code> extension is recommended (WordPress's compatibility library is used otherwise, more slowly); the <code>ftp</code> extension only for FTP/FTPS vaults.</li>
         </ul>
       </div>
     </section>
@@ -597,6 +641,7 @@
             <li>The row is updated with its calculated signature hash, making it an integral link in the cryptographic chain.</li>
           </ul>
         </li>
+        <li><strong>Detection & Response:</strong> After each entry is written, the <code>tbsh_cal_event_logged</code> action fires. The incident detector and (when enabled) the behavioural anomaly detector listen to it, so detection reuses the events already recorded instead of hooking WordPress a second time. Opened incidents queue alerts, which are delivered later by WP-Cron.</li>
       </ol>
     </section>
 
@@ -646,6 +691,54 @@
               <td>HMAC IP/UA hash anonymizer and WordPress personal data erasure hooks.</td>
             </tr>
             <tr>
+              <td><code>/includes/Incidents/</code></td>
+              <td>Incident repository, automatic detection rules and NIS2 Article 23 tracker.</td>
+            </tr>
+            <tr>
+              <td><code>/includes/Alerts/</code></td>
+              <td>Alert queue with retries and the delivery channels (email, Slack, Discord, Teams, Telegram, webhook).</td>
+            </tr>
+            <tr>
+              <td><code>/includes/Risk/</code>, <code>/includes/Vendors/</code>, <code>/includes/Resilience/</code></td>
+              <td>Risk register, vendor register and supply-chain inventory, resilience drill register.</td>
+            </tr>
+            <tr>
+              <td><code>/includes/Analytics/</code></td>
+              <td>Trends, per-user behaviour baselines and anomaly scoring.</td>
+            </tr>
+            <tr>
+              <td><code>/includes/Compliance/</code></td>
+              <td>Readiness engine, framework mapping, retention policy and auditor access links.</td>
+            </tr>
+            <tr>
+              <td><code>/includes/Reporting/</code></td>
+              <td>Report generation, HTML rendering and SHA-256 / HMAC-SHA256 signing.</td>
+            </tr>
+            <tr>
+              <td><code>/includes/Vaults/</code></td>
+              <td>Off-site vault manager, encrypted package builder, providers (S3-compatible, FTP/FTPS, remote site) and the vault receiver.</td>
+            </tr>
+            <tr>
+              <td><code>/includes/AI/</code></td>
+              <td>Optional AI incident analysis adapter.</td>
+            </tr>
+            <tr>
+              <td><code>/includes/Helpers/</code></td>
+              <td>Cron scheduler, credential encryption (<code>Crypto</code>, <code>Secrets</code>), private file storage and time helpers.</td>
+            </tr>
+            <tr>
+              <td><code>/includes/CLI/</code></td>
+              <td>WP-CLI commands (<code>wp tbsh-cal</code>).</td>
+            </tr>
+            <tr>
+              <td><code>/includes/Compat/</code></td>
+              <td>Detects and retires the discontinued separate edition.</td>
+            </tr>
+            <tr>
+              <td><code>/tools/decrypt-vault.php</code></td>
+              <td>Standalone vault package decryptor that runs without WordPress.</td>
+            </tr>
+            <tr>
               <td><code>/assets/</code></td>
               <td>Vanilla CSS stylesheets and custom local SVGs.</td>
             </tr>
@@ -667,12 +760,43 @@
       <h2>When Things Trigger (Timelines & Crons)</h2>
       <p>The plugin manages background events dynamically:</p>
       <ul>
-        <li><strong>Plugin Activation:</strong> Automatically builds/upgrades SQL schemas, generates a secure 64-character site salt for privacy masks, sets default logging preferences, schedules the daily evidence snapshots cron, and registers the initial activation log event.</li>
+        <li><strong>Plugin Activation:</strong> Automatically builds/upgrades SQL schemas (and runs any pending migrations), generates a secure 64-character site salt for privacy masks, sets default logging preferences, grants all capabilities to administrators, schedules the cron hooks below, and registers the initial activation log event. Schema upgrades also run automatically after a plugin update, without reactivation.</li>
         <li><strong>Plugin Deactivation:</strong> Cleans up scheduled cron tasks and logs a warning event.</li>
-        <li><strong>Plugin Uninstallation:</strong> If configured in the admin dashboard (<em>Delete All Tables and Settings</em>), the plugin drops all three custom SQL tables, deletes options records, and clears scheduled crons permanently.</li>
-        <li><strong>Daily / Weekly Background Task:</strong> A WordPress cron job (<code>tbsh_cal_cron_job</code>) executes every 24 hours (or weekly depending on settings) to compile system configuration snapshots and prune expired logs (if logs retention is set to a value greater than 0).</li>
+        <li><strong>Plugin Uninstallation:</strong> Only if <em>Delete all data on uninstall</em> is selected in Settings, the plugin drops all of its tables (including leftover tables from the separate edition), deletes its options, capabilities, user meta, scheduled hooks and private files. Otherwise all data is kept.</li>
         <li><strong>GDPR Request Completion:</strong> When a user personal data erasure request is completed, the data is anonymized immediately, and a chain rebuild is triggered from the first altered ID onwards.</li>
       </ul>
+
+      <h3>Cron Hooks</h3>
+      <p>Every schedule is managed by <code>CronScheduler</code> and re-synchronised whenever settings or vaults are saved. Saving settings never triggers an immediate run.</p>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Hook</th><th>Recurrence</th><th>What it does</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>tbsh_cal_cron_job</code></td>
+              <td>Daily or weekly (<code>evidence_frequency</code>); scheduled only while automatic evidence or automatic core checksum is enabled</td>
+              <td>Captures an evidence snapshot (<code>auto_evidence</code>) and verifies core checksums against WordPress.org (<code>auto_core_checksum</code>).</td>
+            </tr>
+            <tr>
+              <td><code>tbsh_cal_maintenance</code></td>
+              <td>Daily, always scheduled (first run one hour after scheduling)</td>
+              <td>Applies data retention, then fires <code>tbsh_cal_maintenance_run</code>, which refreshes behaviour baselines (when anomaly detection is on), purges expired auditor links, sends NIS2 overdue reminders and vendor renewal/review reminders, and retries pending alerts.</td>
+            </tr>
+            <tr>
+              <td><code>tbsh_cal_vault_sync</code></td>
+              <td>Hourly, only while at least one off-site vault is active</td>
+              <td>Syncs each active vault whose own schedule (hourly / daily / weekly) is due. Failing vaults retry at most hourly.</td>
+            </tr>
+            <tr>
+              <td><code>tbsh_cal_dispatch_alerts</code></td>
+              <td>Single events scheduled by the alert queue</td>
+              <td>Delivers queued alerts (up to 25 per run) and schedules retries.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </section>
 
     <!-- Section: Core Architecture -->
@@ -711,7 +835,7 @@ Logger::log(
       </div>
 
       <h3>Custom Database Tables Created</h3>
-      <p>On activation, the plugin deploys three optimized, indexed tables using the default database schema:</p>
+      <p>On activation (and on upgrade), the plugin deploys fourteen indexed tables with <code>dbDelta</code>. The schema version is <code>2.0.0</code>.</p>
       <div class="table-wrapper">
         <table>
           <thead>
@@ -734,12 +858,75 @@ Logger::log(
             </tr>
             <tr>
               <td><code>{prefix}tbsh_cal_integrity</code></td>
-              <td>Chronological records of database validation scans, anomalies detected, and validation metrics.</td>
+              <td>Chronological records of chain verification and core checksum scans (<code>check_type</code>), issues found and details.</td>
+              <td><code>created_at</code>, <code>check_type</code></td>
+            </tr>
+            <tr>
+              <td><code>{prefix}tbsh_cal_incidents</code></td>
+              <td>Incident register: severity, status, type, owner/assignee, root cause, impact, compliance mappings, detection key, NIS2 data and AI analysis.</td>
+              <td><code>created_at</code>, <code>status</code>, <code>severity</code>, <code>incident_type</code>, <code>detection_key</code></td>
+            </tr>
+            <tr>
+              <td><code>{prefix}tbsh_cal_incident_notes</code></td>
+              <td>Investigation notes attached to incidents.</td>
+              <td><code>incident_id</code></td>
+            </tr>
+            <tr>
+              <td><code>{prefix}tbsh_cal_incident_evidence</code></td>
+              <td>Links between incidents and evidence snapshots.</td>
+              <td>unique (<code>incident_id</code>, <code>evidence_uuid</code>)</td>
+            </tr>
+            <tr>
+              <td><code>{prefix}tbsh_cal_risks</code></td>
+              <td>Risk register (likelihood, impact, score, mitigation, owner, review date).</td>
+              <td><code>category</code>, <code>status</code>, <code>score</code></td>
+            </tr>
+            <tr>
+              <td><code>{prefix}tbsh_cal_vendors</code></td>
+              <td>Vendor / ICT third-party register, optionally linked to a plugin or theme slug.</td>
+              <td><code>name</code>, <code>criticality</code>, <code>review_date</code></td>
+            </tr>
+            <tr>
+              <td><code>{prefix}tbsh_cal_reports</code></td>
+              <td>Generated reports with content hash and HMAC signature (files are stored in private storage).</td>
+              <td><code>created_at</code>, <code>report_type</code></td>
+            </tr>
+            <tr>
+              <td><code>{prefix}tbsh_cal_vaults</code></td>
+              <td>Off-site vault definitions with encrypted credentials, schedule, status and sync cursor.</td>
+              <td><code>is_active</code></td>
+            </tr>
+            <tr>
+              <td><code>{prefix}tbsh_cal_vault_logs</code></td>
+              <td>Vault sync history (status, remote path, size).</td>
+              <td><code>vault_id</code>, <code>created_at</code></td>
+            </tr>
+            <tr>
+              <td><code>{prefix}tbsh_cal_alert_log</code></td>
+              <td>Alert queue and delivery history (masked recipient, attempts, next attempt, response).</td>
+              <td>(<code>status</code>, <code>next_attempt_at</code>), <code>channel</code></td>
+            </tr>
+            <tr>
+              <td><code>{prefix}tbsh_cal_auditor_access</code></td>
+              <td>Auditor links: SHA-256 token hash, last four characters, expiry and revocation.</td>
+              <td><code>token_hash</code>, <code>status</code></td>
+            </tr>
+            <tr>
+              <td><code>{prefix}tbsh_cal_resilience</code></td>
+              <td>Resilience drills with RTO/RPO targets and actuals.</td>
               <td><code>created_at</code>, <code>status</code></td>
             </tr>
           </tbody>
         </table>
       </div>
+
+      <h3>Options, User Meta & Files</h3>
+      <ul>
+        <li><code>tbsh_cal_settings</code>: all plugin settings (see <a href="#settings">Settings Reference</a>).</li>
+        <li><code>tbsh_cal_secrets</code>: non-autoloaded option holding encrypted credentials (API keys, webhook URLs, tokens).</li>
+        <li><code>tbsh_cal_behavior_baseline</code>: per-user meta with each user's 30-day behaviour baseline (only when anomaly detection is enabled).</li>
+        <li><code>wp-content/uploads/tbsh-compliance-private/</code>: private storage with the sub-folders <code>reports</code>, <code>archives</code>, <code>vault-tmp</code>, <code>vault-inbox</code> and <code>probe</code>. Each folder gets an <code>index.php</code> and an Apache <code>.htaccess</code> deny rule, and files use unguessable names.</li>
+      </ul>
     </section>
 
     <!-- Section: Cryptographic Chaining -->
@@ -837,91 +1024,535 @@ $integrity_hash = hash('sha256', $canonical_string);</code></pre>
       </div>
     </section>
 
-    <!-- Section: REST API -->
-    <section id="rest-api">
-      <h2>REST API Endpoints Reference</h2>
-      <p>All admin dashboards and external integrations interact securely via the namespace <code>wp-json/tbsh-compliance-audit-logger/v1</code>. Every endpoint is capability-locked and protected against CSRF.</p>
+    <!-- Section: Incident Center -->
+    <section id="incidents">
+      <h2>Incident Center & NIS2 Reporting</h2>
+      <p>
+        The Incident Center records security incidents with severity (<code>info</code>, <code>notice</code>, <code>warning</code>, <code>error</code>, <code>critical</code>), status (<code>open</code>, <code>investigating</code>, <code>contained</code>, <code>resolved</code>, <code>closed</code>), assignee, affected systems, root cause, impact assessment, compliance mappings, investigation notes and linked evidence snapshots. Incidents can be created manually or opened automatically.
+      </p>
 
+      <h3>Automatic Detection Rules</h3>
+      <p>The detector listens to <code>tbsh_cal_event_logged</code>. Each rule is de-duplicated per subject and time window, so a sustained attack opens one incident rather than hundreds.</p>
       <div class="table-wrapper">
         <table>
           <thead>
-            <tr>
-              <th>Endpoint Path</th>
-              <th>HTTP Method</th>
-              <th>Required Capability</th>
-              <th>Description</th>
-            </tr>
+            <tr><th>Rule</th><th>Triggering event</th><th>Severity</th><th>Window</th><th>Setting</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Brute-force login attack</td><td><code>excessive_failed_logins</code></td><td>critical</td><td>1 hour per targeted username</td><td><code>detect_brute_force</code></td></tr>
+            <tr><td>Administrator privileges granted</td><td><code>privilege_escalation</code></td><td>critical</td><td>1 day per user</td><td><code>detect_privilege_escalation</code></td></tr>
+            <tr><td>Critical site setting changed</td><td><code>option_update</code> on <code>siteurl</code>, <code>home</code>, <code>admin_email</code>, <code>users_can_register</code> or <code>default_role</code></td><td>error</td><td>1 hour per option</td><td><code>detect_config_change</code></td></tr>
+            <tr><td>WordPress core files modified</td><td><code>core_checksum_check</code> with status <code>fail</code></td><td>critical</td><td>1 day</td><td><code>detect_integrity</code></td></tr>
+            <tr><td>Audit log tampering detected</td><td><code>chain_compromised</code></td><td>critical</td><td>1 day</td><td><code>detect_integrity</code></td></tr>
+            <tr><td>Off-site evidence backup failing</td><td><code>vault_sync_failed</code></td><td>error</td><td>1 day per vault</td><td><code>detect_vault_failure</code></td></tr>
+            <tr><td>High-risk user behaviour anomaly</td><td><code>behavior_anomaly</code> with score &ge; 85</td><td>error</td><td>1 day per user</td><td><code>anomaly_detection</code> (off by default)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>NIS2 Article 23 Tracking</h3>
+      <p>Mark an incident as <em>significant</em> (and optionally <em>cross-border</em>) to track the three NIS2 reporting stages, each with a status (<code>pending</code>, <code>draft</code>, <code>submitted</code>), submission time and authority reference. Deadlines are counted from the detection time:</p>
+      <ul>
+        <li><strong>Early warning:</strong> within 24 hours.</li>
+        <li><strong>Incident notification:</strong> within 72 hours.</li>
+        <li><strong>Final report:</strong> within 1 month (30 days).</li>
+      </ul>
+      <p>Stages that pass their deadline without being submitted are flagged as overdue, and the daily maintenance run sends overdue reminders through the configured alert channels. A NIS2 Incident Report can be generated per incident and per stage from <a href="#reports">Compliance Reports</a>.</p>
+    </section>
+
+    <!-- Section: Alerts -->
+    <section id="alerts">
+      <h2>Alerts & Notification Channels</h2>
+      <p>
+        Alerts are never sent during a page request. Each alert writes one queued row per ready channel to <code>{prefix}tbsh_cal_alert_log</code> and schedules a single <code>tbsh_cal_dispatch_alerts</code> event. Only alerts at or above <code>alert_min_severity</code> (default <code>error</code>) are queued, and identical alerts about the same subject are throttled for 15 minutes.
+      </p>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Channel</th><th>Configuration</th><th>Notes</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Email</td><td><code>email_alerts</code>, <code>alert_emails</code> (up to 20, defaults to the site admin email)</td><td>Sent with <code>wp_mail()</code>; first recipient in To, the rest in Bcc.</td></tr>
+            <tr><td>Slack</td><td><code>slack_enabled</code> + incoming webhook URL</td><td>Webhook URLs must be public <code>https://</code> URLs.</td></tr>
+            <tr><td>Discord</td><td><code>discord_enabled</code> + webhook URL</td><td></td></tr>
+            <tr><td>Microsoft Teams</td><td><code>teams_enabled</code> + Teams Workflows webhook URL</td><td>Use a Workflows (Power Automate) webhook.</td></tr>
+            <tr><td>Telegram</td><td><code>telegram_enabled</code> + bot token + <code>telegram_chat_id</code></td><td>Sent through <code>api.telegram.org</code>.</td></tr>
+            <tr><td>Generic webhook</td><td><code>webhook_enabled</code> + URL + optional signing secret</td><td>JSON body with <code>X-TBSH-Event</code>, <code>X-TBSH-Timestamp</code> and, when a secret is set, <code>X-TBSH-Signature: sha256=HMAC_SHA256(timestamp + "." + body, secret)</code>.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Every payload contains the alert type, severity, subject, message, context (for example an incident ID), site name and URL, time and a link back to the admin screen. Failed deliveries are retried after 5, 30 and 120 minutes (4 attempts in total); pending retries are also picked up by the daily maintenance run. The <strong>Alert Center</strong> shows every delivery with its masked recipient, attempts and the provider's response. A test alert can be sent per channel from Settings.</p>
+    </section>
+
+    <!-- Section: Governance -->
+    <section id="governance">
+      <h2>Risk, Vendor & Resilience Registers</h2>
+
+      <h3>Risk Register (5×5 Heat Map)</h3>
+      <p>Each risk has a category (Operational, Technical, Compliance, Vendor, Security, Data Protection), likelihood and impact from 1 to 5, a score (likelihood × impact, 1–25), mitigation plan, owner, review date, status (<code>active</code>, <code>mitigated</code>, <code>accepted</code>, <code>closed</code>) and compliance mappings. The heat map plots active risks by likelihood and impact.</p>
+
+      <h3>Vendor & ICT Third-Party Register (DORA Art. 28)</h3>
+      <p>Record each supplier's service type, data access level (<code>none</code>, <code>read</code>, <code>write</code>), criticality and risk rating (<code>low</code>, <code>medium</code>, <code>high</code>), contact details, contract renewal date, security review date and status. A vendor can be linked to an installed plugin or theme slug. Active vendors whose renewal or review date is 30 or 7 days away trigger a reminder alert during the daily maintenance run.</p>
+
+      <h3>Software Supply-Chain Inventory</h3>
+      <p>Built from real site data: installed plugins and themes with their versions and pending updates (taken from WordPress's own update transients, so no extra request is made), their mapping to the vendor register, and every outbound integration you have configured (alert channels, AI provider, vault endpoints, WordPress.org). The inventory is cached for 12 hours and refreshed automatically when plugins or themes change.</p>
+
+      <h3>Operational Resilience Drills</h3>
+      <p>Plan and record drills by scenario (<code>backup_restore</code>, <code>failover</code>, <code>incident_response</code>, <code>tabletop</code>, <code>other</code>) with status (<code>planned</code>, <code>completed</code>, <code>cancelled</code>), scheduled and completed dates, RTO and RPO targets and actual values in minutes, outcome (<code>passed</code>, <code>partial</code>, <code>failed</code>) and notes. Resilience metrics summarise drill history and RTO/RPO results.</p>
+    </section>
+
+    <!-- Section: Analytics -->
+    <section id="analytics">
+      <h2>Executive Dashboard, Readiness & Analytics</h2>
+      <p>
+        The <strong>readiness engine</strong> is the single source of truth for the Executive Dashboard, Compliance Overview and reports. It runs pass / warn / fail checks against stored data (continuous logging, chain verification, core checksums, evidence collection, IP masking, alert channels, incidents and NIS2 deadlines, risks, vendor reviews and pending updates, off-site backups and resilience drills), produces an overall score with components, and shows framework coverage for <strong>NIS2</strong>, <strong>DORA</strong>, <strong>ISO/IEC 27001:2022</strong> and <strong>SOC 2</strong>. Nothing is hard-coded: the score changes as your data changes.
+      </p>
+      <h3>Advanced Analytics</h3>
+      <p>Event trends over 7 to 90 days (default 30).</p>
+      <h3>Behavioural Anomaly Detection (opt-in)</h3>
+      <p>When <code>anomaly_detection</code> is enabled, the plugin builds a 30-day baseline per user (usual hours, action mix, daily and hourly rates), refreshed daily. Each authenticated action is scored: unusual hour (+25), never-performed action (+40) or rarely performed action (+20), and a burst above the normal hourly rate (+25). Scores of 60 or more are logged as <code>behavior_anomaly</code> events; scores of 85 or more also open an incident. Users need at least 5 active days of history before they are scored. Baselines can be rebuilt on demand.</p>
+    </section>
+
+    <!-- Section: Reports -->
+    <section id="reports">
+      <h2>Signed Compliance Reports</h2>
+      <p>Available report types:</p>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Type</th><th>Title</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>executive</code></td><td>Executive Compliance Summary</td></tr>
+            <tr><td><code>nis2</code></td><td>NIS2 Incident Report (per incident and stage: <code>early_warning</code>, <code>notification</code>, <code>final_report</code>)</td></tr>
+            <tr><td><code>dora</code></td><td>DORA ICT Risk & Resilience Report</td></tr>
+            <tr><td><code>iso27001</code></td><td>ISO/IEC 27001:2022 Control Evidence Report</td></tr>
+            <tr><td><code>soc2</code></td><td>SOC 2 Control Evidence Report</td></tr>
+            <tr><td><code>incidents</code></td><td>Incident Register Report</td></tr>
+            <tr><td><code>risk</code></td><td>Risk Register Report</td></tr>
+            <tr><td><code>vendors</code></td><td>Third-Party & Supply Chain Report</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Formats are <strong>HTML</strong> (print-ready; use the browser's <em>Print → Save as PDF</em> to obtain a PDF), <strong>CSV</strong> and <strong>JSON</strong>. The plugin does not generate PDF files itself.</p>
+      <div class="alert alert-info">
+        <h4>Signing & Verification</h4>
+        Every stored report gets a SHA-256 content hash and an HMAC-SHA256 signature over that hash, keyed with a site secret derived from the plugin's encryption key. Verification recomputes both from the stored file, so any change to the file, or a signature produced without this site's key, fails verification.
+      </div>
+    </section>
+
+    <!-- Section: Off-site Vaults -->
+    <section id="offsite-vaults">
+      <h2>Encrypted Off-site Evidence Vaults</h2>
+      <p><strong>Where:</strong> <em>Evidence Vault → Off-site vaults</em> tab (requires the <code>tbsh_cal_manage_vaults</code> capability). The receiving side of a remote-site vault is enabled under <em>Settings → Off-site Vault Receiver</em>.</p>
+      <p>
+        Off-site vaults copy your evidence to storage the website cannot silently rewrite. Each sync builds a package containing the audit log rows added since the last successful sync, a full snapshot of the incident register and its notes, and the evidence snapshots captured since the last sync. The package is encrypted on your server before upload; the passphrase never leaves it.
+      </p>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Provider</th><th>Fields</th><th>Notes</th></tr>
           </thead>
           <tbody>
             <tr>
-              <td><code>/dashboard</code></td>
-              <td>GET</td>
-              <td><code>tbsh_cal_view_logs</code></td>
-              <td>Aggregates KPIs, active users, common events, recent logs, and table capacities.</td>
+              <td>S3-compatible (<code>s3_compatible</code>)</td>
+              <td>endpoint, region, bucket, prefix, path-style, access key, secret key, passphrase</td>
+              <td>AWS S3 (leave the endpoint empty; the region defaults to <code>us-east-1</code>), Google Cloud Storage (endpoint <code>https://storage.googleapis.com</code> with HMAC interoperability keys), Cloudflare R2, Wasabi, Backblaze B2, MinIO. Signed with AWS Signature Version 4; files over 8 MiB use multipart upload.</td>
             </tr>
             <tr>
-              <td><code>/logs</code></td>
-              <td>GET</td>
-              <td><code>tbsh_cal_view_logs</code></td>
-              <td>Paginates, filters (by severity, category, actor, or date), and sorts database logs.</td>
+              <td>FTP / FTPS (<code>ftp</code>)</td>
+              <td>host, port, mode (<code>ftps</code> default, or <code>ftp</code>), passive, path, username, password, passphrase</td>
+              <td>Requires the PHP <code>ftp</code> extension. FTPS uses explicit TLS.</td>
             </tr>
             <tr>
-              <td><code>/logs/&lt;id&gt;</code></td>
-              <td>GET</td>
-              <td><code>tbsh_cal_view_logs</code></td>
-              <td>Retrieves detailed JSON audit records, metadata, and signatures for a specific log ID.</td>
-            </tr>
-            <tr>
-              <td><code>/timeline</code></td>
-              <td>GET</td>
-              <td><code>tbsh_cal_view_logs</code></td>
-              <td>Generates chronological forensic feeds for compliance investigations.</td>
-            </tr>
-            <tr>
-              <td><code>/evidence</code></td>
-              <td>GET</td>
-              <td><code>tbsh_cal_view_evidence</code></td>
-              <td>List generated manual and automatic system snapshots.</td>
-            </tr>
-            <tr>
-              <td><code>/evidence</code></td>
-              <td>POST</td>
-              <td><code>tbsh_cal_verify_integrity</code></td>
-              <td>Triggers a manual snapshot configuration capture.</td>
-            </tr>
-            <tr>
-              <td><code>/integrity</code></td>
-              <td>GET</td>
-              <td><code>tbsh_cal_view_logs</code></td>
-              <td>Returns status metrics and chronological verification history logs.</td>
-            </tr>
-            <tr>
-              <td><code>/integrity</code></td>
-              <td>POST</td>
-              <td><code>tbsh_cal_verify_integrity</code></td>
-              <td>Triggers a sequential database tamper-evident check.</td>
-            </tr>
-            <tr>
-              <td><code>/exports</code></td>
-              <td>GET</td>
-              <td><code>tbsh_cal_export_data</code></td>
-              <td>List compiled CSV and JSON report downloads in the vault.</td>
-            </tr>
-            <tr>
-              <td><code>/exports</code></td>
-              <td>POST</td>
-              <td><code>tbsh_cal_export_data</code></td>
-              <td>Compiles a filtered logs export download payload.</td>
-            </tr>
-            <tr>
-              <td><code>/settings</code></td>
-              <td>POST</td>
-              <td><code>tbsh_cal_manage_settings</code></td>
-              <td>Saves settings policies, logging severity thresholds, and cron parameters.</td>
+              <td>Another WordPress site (<code>remote_site</code>)</td>
+              <td>receiver URL, receiver token, passphrase</td>
+              <td>The other site must run this plugin with the vault receiver enabled.</td>
             </tr>
           </tbody>
         </table>
       </div>
+      <p>Each vault has a schedule (<code>hourly</code>, <code>daily</code> or <code>weekly</code>), a <em>Test connection</em> action (writes and deletes a small probe file) and a <em>Sync now</em> action. Secret fields are write-only: they are never returned to the browser, an empty value keeps the stored one, and a field must be cleared explicitly to remove it. A failed sync logs <code>vault_sync_failed</code> (which can open an incident) and the vault retries hourly.</p>
+
+      <h3>Vault Receiver</h3>
+      <p>
+        To accept packages from other sites, enable <code>vault_receiver_enabled</code> and set a receiver token in Settings. The receiver endpoint is <code>POST /wp-json/tbsh-compliance-audit-logger/v1/vault-receiver</code>. Requests are authenticated with <code>X-TBSH-Signature = HMAC-SHA256(timestamp + "\n" + filename + "\n" + sha256(body), token)</code>, together with <code>X-TBSH-Timestamp</code> (max 5 minutes skew), <code>X-TBSH-Filename</code> and <code>X-TBSH-Content-SHA256</code>; replays are rejected. Packages up to 100 MB (filter <code>tbsh_cal_vault_receiver_max_bytes</code>) are stored encrypted in <code>uploads/tbsh-compliance-private/vault-inbox/</code>. The receiving site never learns the passphrase.
+      </p>
+
+      <h3>Package Format (<code>.tbshvault</code>, version 1)</h3>
+      <div class="code-container">
+        <div class="code-header">
+          <span>File layout</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code>"TBSHVLT1"                         8 bytes (magic)
+PBKDF2 iterations                  uint32 big-endian (210000)
+salt                               16 bytes
+secretstream header                24 bytes
+repeated:
+  ciphertext length                uint32 big-endian
+  ciphertext chunk                 (64 KiB plaintext per chunk; last chunk tagged FINAL)
+
+key    = PBKDF2-HMAC-SHA256(passphrase, salt, iterations, 32 bytes)
+cipher = libsodium crypto_secretstream_xchacha20poly1305
+
+Decrypted content: gzip-compressed JSON Lines, one record per line:
+  {"type": "manifest" | "log" | "incident" | "incident_note" | "evidence", "data": {...}}
+The manifest records the site URL, generation time, the last log ID before
+this package (logs_after_id), the hash-chain head and the plugin version.</code></pre>
+      </div>
+
+      <h3>Restoring a Package</h3>
+      <div class="code-container">
+        <div class="code-header">
+          <span>Shell</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code># With WP-CLI (output defaults to &lt;file&gt;.jsonl.gz)
+wp tbsh-cal vault-decrypt evidence-example-com-20261123-020000.tbshvault --output=restore.jsonl.gz
+
+# Without WordPress (PHP 7.2+ with sodium)
+TBSH_CAL_VAULT_PASSPHRASE='your passphrase' php tools/decrypt-vault.php package.tbshvault restore.jsonl.gz
+
+# Inspect
+gunzip -c restore.jsonl.gz | head</code></pre>
+      </div>
+      <div class="alert alert-warning">
+        <h4>Keep the Passphrase Safe</h4>
+        A package cannot be decrypted without its passphrase, and the plugin cannot recover it. Store it outside the website (for example in a password manager).
+      </div>
+    </section>
+
+    <!-- Section: Auditor Access -->
+    <section id="auditor-access">
+      <h2>Read-only Auditor Access</h2>
+      <ul>
+        <li>Create a link with a label and a lifetime of 1 to 90 days (default 7). The token is 256-bit random, shown once, and stored only as a SHA-256 hash with its last four characters as a hint.</li>
+        <li>The link <code>/?tbsh_cal_audit=&lt;token&gt;</code> is exchanged for an HttpOnly cookie and the browser is redirected to a URL without the token. API clients can send the <code>X-TBSH-Auditor-Token</code> header instead.</li>
+        <li>Auditor requests may only reach an allowlist of <strong>GET</strong> routes: dashboard, logs, timeline, evidence, integrity, compliance, readiness, executive, incidents (with notes and evidence), risks, vendors and supply chain, reports (list, download, verify), resilience drills and metrics, and analytics trends. Everything else is refused.</li>
+        <li>Invalid attempts are rate-limited per IP hash. Links can be revoked at any time; expired links are purged by the daily maintenance run.</li>
+      </ul>
+    </section>
+
+    <!-- Section: AI -->
+    <section id="ai-analysis">
+      <h2>Optional AI Incident Analysis</h2>
+      <p>
+        Off by default (<code>ai_provider = none</code>). When configured, a user with <code>tbsh_cal_manage_incidents</code> can request an analysis of a single incident. The result (summary, likely causes, recommended actions, risk level, whether it is likely NIS2-reportable, notes) is stored on the incident and the request is logged.
+      </p>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Provider (<code>ai_provider</code>)</th><th>Endpoint</th><th>Credentials</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>anthropic</code> — Anthropic Claude</td><td><code>api.anthropic.com</code></td><td>API key (a default model is suggested)</td></tr>
+            <tr><td><code>openai</code> — OpenAI</td><td><code>api.openai.com</code></td><td>API key and model</td></tr>
+            <tr><td><code>gemini</code> — Google Gemini</td><td><code>generativelanguage.googleapis.com</code></td><td>API key and model</td></tr>
+            <tr><td><code>ollama</code> — OpenAI-compatible endpoint (Ollama, LM Studio, vLLM…)</td><td>The URL you enter (<code>ai_endpoint</code>)</td><td>Endpoint, model and optional API key</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Only incident fields are sent: title, type, severity, status, detection time, description, affected systems, impact assessment, root-cause notes and compliance tags. Log rows, IP hashes and user records are never sent. The API key is encrypted at rest and never returned to the browser.</p>
+    </section>
+
+    <!-- Section: Retention -->
+    <section id="retention">
+      <h2>Unified Data Retention</h2>
+      <p>Retention runs in the daily <code>tbsh_cal_maintenance</code> task. A value of <code>0</code> keeps data forever.</p>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Setting</th><th>Default</th><th>Effect</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>retain_logs</code></td><td>0</td><td>Logs older than N days are archived first when <code>archive_before_purge</code> is on (gzip JSON Lines in <code>uploads/tbsh-compliance-private/archives/</code>, verified before any row is deleted), deleted in batches, and the hash chain is re-anchored so verification keeps passing.</td></tr>
+            <tr><td><code>retain_incidents</code></td><td>0</td><td>Resolved or closed incidents older than N days, with their notes and evidence links.</td></tr>
+            <tr><td><code>retain_evidence</code></td><td>0</td><td>Evidence snapshots older than N days, except snapshots linked to an open incident.</td></tr>
+            <tr><td><code>retain_alert_log</code></td><td>180</td><td>Alert delivery and vault sync history older than N days.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Each run that deletes anything logs a <code>retention_applied</code> event tagged <em>GDPR Art. 5(1)(e)</em>.</p>
+    </section>
+
+    <!-- Section: Settings -->
+    <section id="settings">
+      <h2>Settings Reference</h2>
+      <p>Settings are stored in the <code>tbsh_cal_settings</code> option and saved through <code>POST /settings</code> with merge-on-write semantics (omitted keys keep their values). Credentials are stored separately and encrypted (see <a href="#credentials">Credential Encryption</a>).</p>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Key</th><th>Default</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>enable_logging</code></td><td>true</td><td>Master switch for activity logging.</td></tr>
+            <tr><td><code>min_severity</code></td><td>info</td><td>Minimum severity to record (<code>info</code>, <code>notice</code>, <code>warning</code>, <code>error</code>, <code>critical</code>).</td></tr>
+            <tr><td><code>anonymize_ips</code></td><td>true</td><td>Hash IP addresses and user agents with HMAC-SHA-256.</td></tr>
+            <tr><td><code>log_content_events</code> / <code>log_media_events</code></td><td>true</td><td>Log post/page and media library changes.</td></tr>
+            <tr><td><code>auto_evidence</code></td><td>true</td><td>Capture evidence snapshots automatically.</td></tr>
+            <tr><td><code>evidence_frequency</code></td><td>daily</td><td><code>daily</code> or <code>weekly</code>; also the cadence of automatic core checksums.</td></tr>
+            <tr><td><code>auto_core_checksum</code></td><td>false</td><td>Verify core files against WordPress.org checksums on the evidence schedule.</td></tr>
+            <tr><td><code>email_alerts</code>, <code>alert_emails</code></td><td>false, empty</td><td>Email alerts and recipients (comma separated, max 20; empty = site admin email).</td></tr>
+            <tr><td><code>alert_min_severity</code></td><td>error</td><td>Minimum severity for alerts.</td></tr>
+            <tr><td><code>slack_enabled</code>, <code>discord_enabled</code>, <code>teams_enabled</code>, <code>webhook_enabled</code></td><td>false</td><td>Enable each webhook channel (URLs are credentials).</td></tr>
+            <tr><td><code>telegram_enabled</code>, <code>telegram_chat_id</code></td><td>false, empty</td><td>Telegram alerts (bot token is a credential).</td></tr>
+            <tr><td><code>detect_brute_force</code>, <code>detect_privilege_escalation</code>, <code>detect_config_change</code>, <code>detect_integrity</code>, <code>detect_vault_failure</code></td><td>true</td><td>Automatic incident detection rules.</td></tr>
+            <tr><td><code>anomaly_detection</code></td><td>false</td><td>Behavioural baselines and anomaly scoring.</td></tr>
+            <tr><td><code>ai_provider</code>, <code>ai_model</code></td><td>none, empty</td><td>AI incident analysis provider (<code>none</code>, <code>anthropic</code>, <code>openai</code>, <code>gemini</code>, <code>ollama</code>) and model.</td></tr>
+            <tr><td><code>retain_logs</code>, <code>retain_incidents</code>, <code>retain_evidence</code></td><td>0</td><td>Retention in days (0 = forever, max 36500).</td></tr>
+            <tr><td><code>retain_alert_log</code></td><td>180</td><td>Retention of alert and vault delivery history in days.</td></tr>
+            <tr><td><code>archive_before_purge</code></td><td>true</td><td>Archive logs to private storage before retention deletes them.</td></tr>
+            <tr><td><code>vault_receiver_enabled</code></td><td>false</td><td>Accept encrypted vault packages from other sites.</td></tr>
+            <tr><td><code>cleanup_on_uninstall</code></td><td>keep</td><td><code>keep</code> or <code>delete</code> all data when the plugin is deleted.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>Credentials (write-only)</h3>
+      <p>Sent in the <code>secrets</code> object of <code>POST /settings</code> and removed with <code>clear_secrets</code>: <code>ai_api_key</code>, <code>ai_endpoint</code>, <code>slack_webhook</code>, <code>discord_webhook</code>, <code>teams_webhook</code>, <code>webhook_url</code>, <code>webhook_signing_secret</code>, <code>telegram_bot_token</code>, <code>vault_receiver_token</code>. <code>GET /settings</code> returns only masked values. Webhook URLs must be public <code>https://</code> URLs. Changing credentials is itself logged (names only, never values).</p>
+      <p>Developers can adjust settings before they are saved with the <code>tbsh_cal_settings</code> filter.</p>
+    </section>
+
+    <!-- Section: Capabilities -->
+    <section id="capabilities">
+      <h2>Capabilities</h2>
+      <p>All capabilities are granted to the <code>administrator</code> role. Grant them to other roles with any role editor to delegate access.</p>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Capability</th><th>Allows</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>tbsh_cal_view_logs</code></td><td>Admin menu, dashboard, logs, timeline, integrity status, core checksum results, compliance overview, readiness, system health.</td></tr>
+            <tr><td><code>tbsh_cal_view_evidence</code></td><td>View evidence snapshots.</td></tr>
+            <tr><td><code>tbsh_cal_verify_integrity</code></td><td>Run chain verification and core checksum checks, capture evidence snapshots.</td></tr>
+            <tr><td><code>tbsh_cal_export_data</code></td><td>Create, download and share log exports.</td></tr>
+            <tr><td><code>tbsh_cal_manage_settings</code></td><td>Read and change settings and credentials; rebuild behaviour baselines.</td></tr>
+            <tr><td><code>tbsh_cal_view_incidents</code> / <code>tbsh_cal_manage_incidents</code></td><td>View / create, edit, delete incidents, notes, evidence links, NIS2 tracking and AI analysis.</td></tr>
+            <tr><td><code>tbsh_cal_view_risks</code> / <code>tbsh_cal_manage_risks</code></td><td>View / manage the risk register; <code>manage_risks</code> also manages resilience drills.</td></tr>
+            <tr><td><code>tbsh_cal_view_vendors</code> / <code>tbsh_cal_manage_vendors</code></td><td>View vendors and supply-chain inventory / manage vendors.</td></tr>
+            <tr><td><code>tbsh_cal_view_reports</code> / <code>tbsh_cal_manage_reports</code></td><td>List, download and verify reports / generate and delete reports.</td></tr>
+            <tr><td><code>tbsh_cal_manage_vaults</code></td><td>Configure, test and sync off-site vaults; view sync history.</td></tr>
+            <tr><td><code>tbsh_cal_view_alerts</code> / <code>tbsh_cal_manage_alerts</code></td><td>View the Alert Center delivery log / send test alerts.</td></tr>
+            <tr><td><code>tbsh_cal_view_analytics</code></td><td>Executive dashboard, trends, anomalies, resilience drills and metrics.</td></tr>
+            <tr><td><code>tbsh_cal_manage_auditor_access</code></td><td>Create, list and revoke auditor links.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section: Credentials -->
+    <section id="credentials">
+      <h2>Credential Encryption</h2>
+      <p>
+        API keys, webhook URLs, tokens and vault credentials are encrypted at rest with libsodium secretbox (XSalsa20-Poly1305) using per-purpose keys derived with HKDF-SHA256. They are never sent back to the browser.
+      </p>
+      <p>By default the key material is your WordPress <code>SECURE_AUTH</code> salt, so rotating salts makes stored credentials unreadable (you would need to re-enter them). Define a dedicated key of at least 32 characters in <code>wp-config.php</code> to avoid this. System Health warns when no dedicated key is set.</p>
+      <div class="code-container">
+        <div class="code-header">
+          <span>wp-config.php</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code>define( 'TBSH_CAL_ENCRYPTION_KEY', 'replace-with-a-long-random-string-of-at-least-32-characters' );</code></pre>
+      </div>
+      <div class="alert alert-warning">
+        <h4>Set It Before Saving Credentials</h4>
+        Adding or changing <code>TBSH_CAL_ENCRYPTION_KEY</code> after credentials were saved makes them undecryptable; re-enter them afterwards. The same key also signs reports, so reports signed under a previous key no longer verify.
+      </div>
+    </section>
+
+    <!-- Section: REST API -->
+    <section id="rest-api">
+      <h2>REST API Endpoints Reference</h2>
+      <p>All admin screens and external integrations use the namespace <code>wp-json/tbsh-compliance-audit-logger/v1</code>. Every endpoint is capability-checked and, for cookie authentication, requires the standard <code>wp_rest</code> nonce. <code>{id}</code> is a numeric ID. <code>PUT</code> routes also accept <code>POST</code> and <code>PATCH</code>.</p>
+
+      <h3>Audit Trail, Evidence & Integrity</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Endpoint Path</th><th>HTTP Method</th><th>Required Capability</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>/dashboard</code></td><td>GET</td><td><code>tbsh_cal_view_logs</code></td><td>KPIs, active users, common events, recent logs and table sizes.</td></tr>
+            <tr><td><code>/logs</code></td><td>GET</td><td><code>tbsh_cal_view_logs</code></td><td>Paginated, filtered and sorted logs.</td></tr>
+            <tr><td><code>/logs/{id}</code></td><td>GET</td><td><code>tbsh_cal_view_logs</code></td><td>One log record with metadata and hashes.</td></tr>
+            <tr><td><code>/timeline</code></td><td>GET</td><td><code>tbsh_cal_view_logs</code></td><td>Chronological forensic feed.</td></tr>
+            <tr><td><code>/evidence</code></td><td>GET</td><td><code>tbsh_cal_view_evidence</code></td><td>List evidence snapshots.</td></tr>
+            <tr><td><code>/evidence</code></td><td>POST</td><td><code>tbsh_cal_verify_integrity</code></td><td>Capture a snapshot now.</td></tr>
+            <tr><td><code>/evidence/{id}</code></td><td>GET</td><td><code>tbsh_cal_view_evidence</code></td><td>One snapshot with its data.</td></tr>
+            <tr><td><code>/integrity</code></td><td>GET</td><td><code>tbsh_cal_view_logs</code></td><td>Chain status and verification history.</td></tr>
+            <tr><td><code>/integrity</code></td><td>POST</td><td><code>tbsh_cal_verify_integrity</code></td><td>Run a chain verification.</td></tr>
+            <tr><td><code>/checksums</code></td><td>GET</td><td><code>tbsh_cal_view_logs</code></td><td>Latest core checksum result.</td></tr>
+            <tr><td><code>/checksums</code></td><td>POST</td><td><code>tbsh_cal_verify_integrity</code></td><td>Run a core checksum check (rate-limited).</td></tr>
+            <tr><td><code>/exports</code></td><td>GET / POST</td><td><code>tbsh_cal_export_data</code></td><td>List exports / create a filtered CSV or JSON export.</td></tr>
+            <tr><td><code>/exports/download</code></td><td>GET</td><td><code>tbsh_cal_export_data</code></td><td>Download an export file.</td></tr>
+            <tr><td><code>/exports/share</code></td><td>POST</td><td><code>tbsh_cal_export_data</code></td><td>Create an expiring share link for an export.</td></tr>
+            <tr><td><code>/exports/shared</code></td><td>GET</td><td>Public (valid <code>token</code> required)</td><td>Download through a share link.</td></tr>
+            <tr><td><code>/health</code></td><td>GET</td><td><code>tbsh_cal_view_logs</code></td><td>System Health diagnostics.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Compliance & Analytics</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Endpoint Path</th><th>HTTP Method</th><th>Required Capability</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>/compliance</code></td><td>GET</td><td><code>tbsh_cal_view_logs</code></td><td>Compliance Overview data.</td></tr>
+            <tr><td><code>/readiness</code></td><td>GET</td><td><code>tbsh_cal_view_logs</code></td><td>Readiness checks, score and framework coverage.</td></tr>
+            <tr><td><code>/executive</code></td><td>GET</td><td><code>tbsh_cal_view_analytics</code></td><td>Executive dashboard.</td></tr>
+            <tr><td><code>/analytics/trends</code></td><td>GET</td><td><code>tbsh_cal_view_analytics</code></td><td>Event trends (<code>days</code> 7–90, default 30).</td></tr>
+            <tr><td><code>/analytics/anomalies</code></td><td>GET</td><td><code>tbsh_cal_view_analytics</code></td><td>Logged behaviour anomalies (filter <code>user_id</code>).</td></tr>
+            <tr><td><code>/analytics/anomalies</code></td><td>POST</td><td><code>tbsh_cal_manage_settings</code></td><td>Rebuild behaviour baselines.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Incidents</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Endpoint Path</th><th>HTTP Method</th><th>Required Capability</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>/incidents</code></td><td>GET</td><td><code>tbsh_cal_view_incidents</code></td><td>List incidents.</td></tr>
+            <tr><td><code>/incidents</code></td><td>POST</td><td><code>tbsh_cal_manage_incidents</code></td><td>Create an incident.</td></tr>
+            <tr><td><code>/incidents/{id}</code></td><td>GET / PUT / DELETE</td><td>view / manage incidents</td><td>Read, update or delete an incident.</td></tr>
+            <tr><td><code>/incidents/{id}/notes</code></td><td>GET / POST</td><td>view / manage incidents</td><td>List or add investigation notes.</td></tr>
+            <tr><td><code>/incidents/{id}/notes/{note_id}</code></td><td>DELETE</td><td><code>tbsh_cal_manage_incidents</code></td><td>Delete a note.</td></tr>
+            <tr><td><code>/incidents/{id}/evidence</code></td><td>GET / POST</td><td>view / manage incidents</td><td>List or link evidence snapshots.</td></tr>
+            <tr><td><code>/incidents/{id}/evidence/{link_id}</code></td><td>DELETE</td><td><code>tbsh_cal_manage_incidents</code></td><td>Unlink a snapshot.</td></tr>
+            <tr><td><code>/incidents/{id}/nis2</code></td><td>PUT</td><td><code>tbsh_cal_manage_incidents</code></td><td>Update NIS2 tracking (<code>significant</code>, <code>cross_border</code>, <code>stages</code>, <code>remediation</code>, <code>authority</code>, <code>detected_at</code>).</td></tr>
+            <tr><td><code>/incidents/{id}/analyze</code></td><td>POST</td><td><code>tbsh_cal_manage_incidents</code></td><td>Run AI incident analysis (when configured).</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Governance</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Endpoint Path</th><th>HTTP Method</th><th>Required Capability</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>/risks</code>, <code>/risks/{id}</code></td><td>GET / POST, GET / PUT / DELETE</td><td><code>tbsh_cal_view_risks</code> / <code>tbsh_cal_manage_risks</code></td><td>Risk register.</td></tr>
+            <tr><td><code>/vendors</code>, <code>/vendors/{id}</code></td><td>GET / POST, GET / PUT / DELETE</td><td><code>tbsh_cal_view_vendors</code> / <code>tbsh_cal_manage_vendors</code></td><td>Vendor register.</td></tr>
+            <tr><td><code>/vendors/supply-chain</code></td><td>GET</td><td><code>tbsh_cal_view_vendors</code></td><td>Supply-chain inventory (<code>refresh=true</code> rebuilds the cache).</td></tr>
+            <tr><td><code>/resilience/drills</code>, <code>/resilience/drills/{id}</code></td><td>GET / POST, GET / PUT / DELETE</td><td><code>tbsh_cal_view_analytics</code> / <code>tbsh_cal_manage_risks</code></td><td>Resilience drill register.</td></tr>
+            <tr><td><code>/resilience/metrics</code></td><td>GET</td><td><code>tbsh_cal_view_analytics</code></td><td>Drill and RTO/RPO metrics.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Reports</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Endpoint Path</th><th>HTTP Method</th><th>Required Capability</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>/reports</code></td><td>GET</td><td><code>tbsh_cal_view_reports</code></td><td>List reports and available types.</td></tr>
+            <tr><td><code>/reports</code></td><td>POST</td><td><code>tbsh_cal_manage_reports</code></td><td>Generate a report (<code>type</code>, <code>format</code> = <code>html</code>|<code>csv</code>|<code>json</code>, <code>start_date</code>, <code>end_date</code>, <code>company_name</code>, and for NIS2 <code>incident_id</code> and <code>stage</code>).</td></tr>
+            <tr><td><code>/reports/{id}</code></td><td>DELETE</td><td><code>tbsh_cal_manage_reports</code></td><td>Delete a report and its file.</td></tr>
+            <tr><td><code>/reports/{id}/download</code></td><td>GET</td><td><code>tbsh_cal_view_reports</code></td><td>Download the report file.</td></tr>
+            <tr><td><code>/reports/{id}/verify</code></td><td>GET</td><td><code>tbsh_cal_view_reports</code></td><td>Verify hash and signature.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Operations, Alerts, Auditor Access & Settings</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Endpoint Path</th><th>HTTP Method</th><th>Required Capability</th><th>Description</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>/vaults</code></td><td>GET / POST</td><td><code>tbsh_cal_manage_vaults</code></td><td>List vaults (no secrets) and provider types / create a vault.</td></tr>
+            <tr><td><code>/vaults/{id}</code></td><td>PUT / DELETE</td><td><code>tbsh_cal_manage_vaults</code></td><td>Update or delete a vault.</td></tr>
+            <tr><td><code>/vaults/{id}/test</code></td><td>POST</td><td><code>tbsh_cal_manage_vaults</code></td><td>Test the connection.</td></tr>
+            <tr><td><code>/vaults/{id}/sync</code></td><td>POST</td><td><code>tbsh_cal_manage_vaults</code></td><td>Sync now.</td></tr>
+            <tr><td><code>/vaults/history</code></td><td>GET</td><td><code>tbsh_cal_manage_vaults</code></td><td>Sync history.</td></tr>
+            <tr><td><code>/vault-receiver</code></td><td>POST</td><td>Public, HMAC-signed (see <a href="#offsite-vaults">Vault Receiver</a>)</td><td>Receive a package from another site.</td></tr>
+            <tr><td><code>/alerts/log</code></td><td>GET</td><td><code>tbsh_cal_view_alerts</code></td><td>Alert delivery history (filters <code>status</code>, <code>channel</code>).</td></tr>
+            <tr><td><code>/alerts/test</code></td><td>POST</td><td><code>tbsh_cal_manage_alerts</code></td><td>Send a test alert (<code>channel</code> = <code>email</code>|<code>slack</code>|<code>discord</code>|<code>teams</code>|<code>telegram</code>|<code>webhook</code>).</td></tr>
+            <tr><td><code>/auditor/links</code></td><td>GET / POST</td><td><code>tbsh_cal_manage_auditor_access</code></td><td>List / create auditor links (<code>label</code>, <code>days</code> 1–90).</td></tr>
+            <tr><td><code>/auditor/links/{id}/revoke</code></td><td>POST</td><td><code>tbsh_cal_manage_auditor_access</code></td><td>Revoke a link.</td></tr>
+            <tr><td><code>/settings</code></td><td>GET / POST</td><td><code>tbsh_cal_manage_settings</code></td><td>Read settings (masked credentials) / save settings and credentials.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Section: WP-CLI -->
+    <section id="wp-cli">
+      <h2>WP-CLI Commands</h2>
+      <div class="code-container">
+        <div class="code-header">
+          <span>Shell</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code># Decrypt a vault package to gzip-compressed JSON Lines.
+# Passphrase: --passphrase, the TBSH_CAL_VAULT_PASSPHRASE environment variable, or a prompt.
+wp tbsh-cal vault-decrypt &lt;file&gt; [--output=&lt;path&gt;] [--passphrase=&lt;passphrase&gt;]
+
+# Sync one vault, or every active vault when --id is omitted.
+wp tbsh-cal vault-sync [--id=&lt;id&gt;]
+
+# Verify the audit-log hash chain (non-zero exit code when issues are found).
+wp tbsh-cal verify-chain</code></pre>
+      </div>
+      <p>Prefer the environment variable or the prompt over <code>--passphrase</code>, which can end up in your shell history.</p>
+    </section>
+
+    <!-- Section: Migration -->
+    <section id="migration">
+      <h2>Migrating from the Separate Edition</h2>
+      <p>Version 2.0.0 replaces the separate edition of this plugin. Migration is automatic:</p>
+      <ol>
+        <li><strong>Back up your database</strong> before updating.</li>
+        <li>Update or install this plugin and activate it. If the separate edition is active, this plugin stays dormant for one request, deactivates the separate edition, and finishes setup on the next request.</li>
+        <li>The migrator then:
+          <ul>
+            <li>renames the <code>{prefix}tbsh_cal_pro_*</code> tables to their new names (for example <code>tbsh_cal_pro_alerts</code> becomes <code>tbsh_cal_alert_log</code>). If a new table already exists, missing rows are copied over and the old table is kept as <code>*_migrated_bak</code>;</li>
+            <li>maps the old settings into <code>tbsh_cal_settings</code>, re-encrypts webhook URLs, bot tokens and AI keys into the encrypted credential store, and deletes the old settings option (it held plaintext secrets);</li>
+            <li>re-encrypts vault credentials. S3 and FTP vaults keep working when the old edition had an encryption password set (otherwise they are deactivated until you set a passphrase). Google Cloud Storage vaults become S3-compatible vaults and stay inactive until you enter HMAC interoperability keys. Remote WordPress vaults stay inactive until you enter the receiver URL and token. <strong>Azure and SFTP vaults are no longer supported and are deactivated</strong>; replace them with an S3-compatible, FTP/FTPS or remote-site vault;</li>
+            <li>renames capabilities (<code>tbsh_cal_pro_*</code> to their <code>tbsh_cal_*</code> equivalents) on every role, keeping custom grants;</li>
+            <li>converts auditor links to hashed tokens, so existing links keep working;</li>
+            <li>moves stored report files to private storage and logs a migration event.</li>
+          </ul>
+        </li>
+        <li>Review your vaults and alert channels, then send a test alert and run <em>Test connection</em> on each vault.</li>
+        <li>Delete the separate edition from the Plugins screen <strong>while this plugin is active</strong>.</li>
+      </ol>
+    </section>
+
+    <!-- Section: Troubleshooting -->
+    <section id="troubleshooting">
+      <h2>Troubleshooting</h2>
+      <ul>
+        <li><strong>Alerts, retention or vault syncs never run:</strong> they depend on WP-Cron, which only runs when the site receives traffic. If <code>DISABLE_WP_CRON</code> is set or traffic is low, call <code>wp-cron.php</code> from a real cron job (for example every 5 minutes) or run <code>wp cron event run --due-now</code>. System Health shows whether the maintenance hook is scheduled.</li>
+        <li><strong>An alert shows "failed" in the Alert Center:</strong> read the stored response message. Webhook URLs must be public <code>https://</code> URLs; private or local addresses are refused.</li>
+        <li><strong>S3 vault: "Access Denied":</strong> the key needs <code>s3:PutObject</code> and <code>s3:DeleteObject</code> on the bucket/prefix (the connection test writes and deletes a probe object), plus <code>s3:AbortMultipartUpload</code> for packages over 8 MiB, which use multipart upload (initiating, uploading parts and completing are covered by <code>s3:PutObject</code>; a failed multipart upload is aborted). For non-AWS providers, enter the provider's endpoint and enable path-style addressing if required. Self-hosted endpoints on private networks are blocked unless the <code>tbsh_cal_allow_private_vault_endpoints</code> filter returns <code>true</code>.</li>
+        <li><strong>FTP/FTPS vault is unavailable:</strong> the PHP <code>ftp</code> extension is not installed on the server (System Health reports this). Use an S3-compatible or remote-site vault, or ask your host to enable it.</li>
+        <li><strong>Private files are publicly readable (nginx):</strong> nginx ignores <code>.htaccess</code>. Add a deny rule; System Health reports a failure while files in <code>uploads/tbsh-compliance-private/</code> can be downloaded.
+          <div class="code-container">
+            <div class="code-header">
+              <span>nginx</span>
+              <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+            </div>
+            <pre><code>location ^~ /wp-content/uploads/tbsh-compliance-private/ {
+    deny all;
+}</code></pre>
+          </div>
+        </li>
+        <li><strong>Stored credentials stopped working:</strong> the WordPress salts or <code>TBSH_CAL_ENCRYPTION_KEY</code> changed. Re-enter the credentials, and define <code>TBSH_CAL_ENCRYPTION_KEY</code> to avoid this in future.</li>
+        <li><strong>Vault package cannot be decrypted:</strong> check the passphrase and that the file was fully downloaded; any modified chunk fails authentication.</li>
+        <li><strong>Vault sync says the passphrase is missing:</strong> every vault needs its own encryption passphrase before it can sync.</li>
+        <li><strong>Large vault packages are slow to build:</strong> install the PHP <code>sodium</code> extension; without it the slower compatibility library is used.</li>
+        <li><strong>AI analysis is unavailable:</strong> choose a provider, a model (required for OpenAI, Gemini and OpenAI-compatible endpoints) and an API key or endpoint in Settings.</li>
+      </ul>
     </section>
 
     <!-- Section: Regulatory Mapping -->
@@ -933,9 +1564,9 @@ $integrity_hash = hash('sha256', $canonical_string);</code></pre>
 
       <div class="compliance-grid">
         <div class="compliance-card">
-          <div class="compliance-tag" style="color: #6366f1;">ISO 27001</div>
-          <div class="compliance-title">Annex A.12.4</div>
-          <p class="compliance-desc">Mandates tracking system alerts, logins, file activities, and configuration modifications securely.</p>
+          <div class="compliance-tag" style="color: #6366f1;">ISO/IEC 27001:2022</div>
+          <div class="compliance-title">Annex A.8.15, A.8.16 & A.5.24–5.28</div>
+          <p class="compliance-desc">Logging and monitoring of logins, file and configuration changes, plus incident management and evidence collection.</p>
         </div>
         <div class="compliance-card">
           <div class="compliance-tag" style="color: #10b981;">SOC 2</div>
@@ -944,13 +1575,13 @@ $integrity_hash = hash('sha256', $canonical_string);</code></pre>
         </div>
         <div class="compliance-card">
           <div class="compliance-tag" style="color: #f59e0b;">NIS 2</div>
-          <div class="compliance-title">Article 21</div>
-          <p class="compliance-desc">Demands incident tracking and resilience proofs. Satisfied through tamper-evident verifications.</p>
+          <div class="compliance-title">Articles 21 & 23</div>
+          <p class="compliance-desc">Risk-management measures backed by tamper-evident logs, plus 24h / 72h / 1-month incident reporting tracked in the Incident Center.</p>
         </div>
         <div class="compliance-card">
           <div class="compliance-tag" style="color: #0ea5e9;">DORA</div>
-          <div class="compliance-title">Article 17</div>
-          <p class="compliance-desc">Ensures ICT incident logging and configuration records are archived permanently.</p>
+          <div class="compliance-title">Articles 12, 17, 24 & 28</div>
+          <p class="compliance-desc">Off-site evidence backups, ICT incident records, resilience testing (RTO/RPO) and the ICT third-party register.</p>
         </div>
       </div>
     </section>
