@@ -32,6 +32,7 @@ class AccessControl {
 		'manage_alerts'          => 'tbsh_cal_manage_alerts',
 		'view_analytics'         => 'tbsh_cal_view_analytics',
 		'manage_auditor_access'  => 'tbsh_cal_manage_auditor_access',
+		'manage_sessions'        => 'tbsh_cal_manage_sessions',
 	);
 
 	/**

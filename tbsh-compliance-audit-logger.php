@@ -164,6 +164,8 @@ class TBSH_Compliance_Audit_Logger {
 
 		if ( ! get_option( 'tbsh_cal_settings' ) ) {
 			update_option( 'tbsh_cal_settings', \TBSHComplianceAuditLogger\API\SettingsController::defaults() );
+			// Fresh install: offer the setup assistant (existing installs never see it automatically).
+			add_option( \TBSHComplianceAuditLogger\API\AutomationController::SETUP_OPTION, 'pending', '', false );
 		}
 	}
 
@@ -241,6 +243,9 @@ class TBSH_Compliance_Audit_Logger {
 		// Initialize WordPress action trackers.
 		\TBSHComplianceAuditLogger\Logging\EventTracker::init();
 
+		// Public logging API (do_action( 'tbsh_cal_log', ... ) and tbsh_cal_log()).
+		\TBSHComplianceAuditLogger\Logging\PublicApi::init();
+
 		// GDPR personal data exporters / erasers.
 		\TBSHComplianceAuditLogger\Privacy\PrivacyManager::init();
 
@@ -256,6 +261,11 @@ class TBSH_Compliance_Audit_Logger {
 		\TBSHComplianceAuditLogger\Vendors\SupplyChain::init();
 		\TBSHComplianceAuditLogger\Vaults\VaultManager::init();
 		\TBSHComplianceAuditLogger\Compliance\AuditorAccess::init();
+		\TBSHComplianceAuditLogger\Integrity\ExtensionIntegrity::init();
+		\TBSHComplianceAuditLogger\Reporting\ComplianceDigest::init();
+
+		// Near-real-time forwarding of audit entries to a SIEM (off by default).
+		\TBSHComplianceAuditLogger\Alerts\SiemForwarder::init();
 
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			\WP_CLI::add_command( 'tbsh-cal', \TBSHComplianceAuditLogger\CLI\Command::class );
@@ -308,6 +318,9 @@ class TBSH_Compliance_Audit_Logger {
 			new \TBSHComplianceAuditLogger\API\GovernanceController(),
 			new \TBSHComplianceAuditLogger\API\ReportsController(),
 			new \TBSHComplianceAuditLogger\API\OperationsController(),
+			new \TBSHComplianceAuditLogger\API\SessionsController(),
+			new \TBSHComplianceAuditLogger\API\FileIntegrityController(),
+			new \TBSHComplianceAuditLogger\API\AutomationController(),
 		);
 
 		foreach ( $controllers as $controller ) {
@@ -330,6 +343,11 @@ class TBSH_Compliance_Audit_Logger {
 		if ( ! empty( $settings['auto_core_checksum'] ) ) {
 			\TBSHComplianceAuditLogger\Integrity\CoreChecksum::verify();
 		}
+
+		// Optional plugin/theme/uploads file verification (runs in chained cron batches).
+		if ( ! empty( $settings['auto_file_integrity'] ) ) {
+			\TBSHComplianceAuditLogger\Integrity\ExtensionIntegrity::start( 'scheduled' );
+		}
 	}
 
 	/**
@@ -347,6 +365,21 @@ class TBSH_Compliance_Audit_Logger {
 		 * @param array $settings Plugin settings.
 		 */
 		do_action( 'tbsh_cal_maintenance_run', $settings );
+	}
+}
+
+if ( ! function_exists( 'tbsh_cal_log' ) ) {
+	/**
+	 * Add an entry to the tamper-evident audit log from another plugin or custom code.
+	 *
+	 * Call it after plugins_loaded. See PublicApi::log() for the accepted arguments.
+	 *
+	 * @param string $event_type Event type slug, e.g. 'invoice_approved'.
+	 * @param array  $args       title (required), message, category, severity, object_type, object_id, metadata, compliance_tags.
+	 * @return bool Whether the event was queued.
+	 */
+	function tbsh_cal_log( $event_type, array $args = array() ) {
+		return \TBSHComplianceAuditLogger\Logging\PublicApi::log( $event_type, $args );
 	}
 }
 

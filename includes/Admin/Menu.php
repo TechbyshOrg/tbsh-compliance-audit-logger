@@ -44,6 +44,47 @@ class Menu {
 	}
 
 	/**
+	 * Make translations of lazily loaded chunks (build/page-*.js) available.
+	 *
+	 * WordPress loads JSON translations only for enqueued script files. Chunks are
+	 * fetched later by the app, so their translation files are read here and merged
+	 * into the text domain before the main script runs.
+	 *
+	 * @param string $handle Main script handle.
+	 */
+	public static function chunk_translations( $handle ) {
+		$chunks = glob( TBSH_CAL_PATH . 'build/page-*.js' );
+		if ( ! $chunks ) {
+			return;
+		}
+
+		$messages = array();
+		foreach ( $chunks as $chunk ) {
+			$name        = basename( $chunk, '.js' );
+			$chunk_handle = 'tbsh-cal-chunk-' . sanitize_key( $name );
+			wp_register_script( $chunk_handle, TBSH_CAL_URL . 'build/' . $name . '.js', array(), TBSH_CAL_VERSION, true );
+			$json = load_script_textdomain( $chunk_handle, 'tbsh-compliance-audit-logger', TBSH_CAL_PATH . 'languages' );
+			wp_deregister_script( $chunk_handle );
+			if ( ! $json ) {
+				continue;
+			}
+			$data = json_decode( $json, true );
+			if ( isset( $data['locale_data']['messages'] ) && is_array( $data['locale_data']['messages'] ) ) {
+				$messages = array_merge( $messages, $data['locale_data']['messages'] );
+			}
+		}
+		if ( ! $messages ) {
+			return;
+		}
+
+		wp_add_inline_script(
+			$handle,
+			sprintf( 'wp.i18n.setLocaleData( %s, "tbsh-compliance-audit-logger" );', wp_json_encode( $messages ) ),
+			'before'
+		);
+	}
+
+	/**
 	 * Enqueue styles and JS assets.
 	 */
 	public static function enqueue_assets( $hook ) {
@@ -99,7 +140,11 @@ class Menu {
 					'site_id'      => get_current_blog_id(),
 					'capabilities' => AccessControl::current_user_caps(),
 					'settings'     => get_option( 'tbsh_cal_settings', array() ),
+					'setupState'   => current_user_can( 'tbsh_cal_manage_settings' ) ? \TBSHComplianceAuditLogger\API\AutomationController::setup_state() : 'complete',
 				) );
+
+				// Translations for the page chunks loaded on demand.
+				self::chunk_translations( 'tbsh-cal-admin-js' );
 
 				wp_localize_script( 'tbsh-cal-admin-js', 'tbshCalIcons', SVGHelper::get_icons() );
 			}

@@ -6,6 +6,9 @@ use TBSHComplianceAuditLogger\Alerts\AlertManager;
 use TBSHComplianceAuditLogger\Alerts\Channels;
 use TBSHComplianceAuditLogger\Helpers\CronScheduler;
 use TBSHComplianceAuditLogger\Helpers\Secrets;
+use TBSHComplianceAuditLogger\Alerts\SiemForwarder;
+use TBSHComplianceAuditLogger\Logging\Exclusions;
+use TBSHComplianceAuditLogger\Reporting\ComplianceDigest;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -28,7 +31,12 @@ class SettingsController extends BaseController {
 		'log_site_structure_events',
 		'log_comment_events',
 		'log_taxonomy_events',
+		'log_woocommerce_events',
 		'auto_core_checksum',
+		'auto_file_integrity',
+		'digest_attach_report',
+		'digest_skip_empty',
+		'siem_enabled',
 		'email_alerts',
 		'slack_enabled',
 		'discord_enabled',
@@ -51,6 +59,11 @@ class SettingsController extends BaseController {
 	const INT_KEYS = array( 'retain_logs', 'retain_incidents', 'retain_evidence', 'retain_alert_log' );
 
 	/**
+	 * Compliance frameworks the setup assistant can record.
+	 */
+	const FRAMEWORKS = array( 'nis2', 'dora', 'iso27001', 'soc2', 'pci_dss', 'gdpr' );
+
+	/**
 	 * Enumerated settings.
 	 *
 	 * @return array
@@ -63,6 +76,9 @@ class SettingsController extends BaseController {
 			'evidence_frequency'   => array( 'daily', 'weekly' ),
 			'cleanup_on_uninstall' => array( 'keep', 'delete' ),
 			'ai_provider'          => array_merge( array( 'none' ), array_keys( AIAdapter::PROVIDERS ) ),
+			'digest_frequency'     => ComplianceDigest::FREQUENCIES,
+			'siem_transport'       => SiemForwarder::TRANSPORTS,
+			'siem_min_severity'    => $severities,
 		);
 	}
 
@@ -85,7 +101,26 @@ class SettingsController extends BaseController {
 			'log_site_structure_events'   => true,
 			'log_comment_events'          => true,
 			'log_taxonomy_events'         => true,
+			'log_woocommerce_events'      => true,
 			'auto_core_checksum'          => false,
+			'auto_file_integrity'         => false,
+			// Exclusions (never applied to error/critical or protected events).
+			'exclude_users'               => '',
+			'exclude_roles'               => array(),
+			'exclude_event_types'         => '',
+			// Compliance digest.
+			'digest_frequency'            => 'off',
+			'digest_recipients'           => '',
+			'digest_attach_report'        => true,
+			'digest_skip_empty'           => false,
+			// SIEM forwarding.
+			'siem_enabled'                => false,
+			'siem_transport'              => 'https',
+			'siem_min_severity'           => 'info',
+			'siem_host'                   => '',
+			'siem_port'                   => 6514,
+			// Frameworks chosen in the setup assistant.
+			'frameworks'                  => array(),
 			// Alerts.
 			'email_alerts'                => false,
 			'alert_emails'                => '',
@@ -133,6 +168,13 @@ class SettingsController extends BaseController {
 		$args['alert_emails']     = array( 'type' => 'string', 'sanitize_callback' => 'sanitize_textarea_field' );
 		$args['telegram_chat_id'] = array( 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' );
 		$args['ai_model']         = array( 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' );
+		$args['exclude_users']       = array( 'type' => 'string', 'sanitize_callback' => 'sanitize_textarea_field' );
+		$args['exclude_event_types'] = array( 'type' => 'string', 'sanitize_callback' => 'sanitize_textarea_field' );
+		$args['exclude_roles']       = array( 'type' => 'array', 'items' => array( 'type' => 'string' ) );
+		$args['digest_recipients']   = array( 'type' => 'string', 'sanitize_callback' => 'sanitize_textarea_field' );
+		$args['siem_host']           = array( 'type' => 'string', 'sanitize_callback' => 'sanitize_text_field' );
+		$args['siem_port']           = array( 'type' => 'integer', 'minimum' => 1, 'maximum' => 65535 );
+		$args['frameworks']          = array( 'type' => 'array', 'items' => array( 'type' => 'string', 'enum' => self::FRAMEWORKS ) );
 		$args['secrets']          = array( 'type' => 'object', 'description' => 'Write-only secret values; empty strings are ignored.' );
 		$args['clear_secrets']    = array( 'type' => 'array', 'items' => array( 'type' => 'string', 'enum' => Secrets::KEYS ) );
 
@@ -215,6 +257,50 @@ class SettingsController extends BaseController {
 			$new['ai_model'] = preg_replace( '/[^A-Za-z0-9._:\/-]/', '', (string) $request->get_param( 'ai_model' ) );
 		}
 
+		// Logging exclusions.
+		$exclusion_input = array();
+		foreach ( array( 'exclude_users', 'exclude_roles', 'exclude_event_types' ) as $key ) {
+			if ( null !== $request->get_param( $key ) ) {
+				$exclusion_input[ $key ] = $request->get_param( $key );
+			}
+		}
+		if ( $exclusion_input ) {
+			$exclusions = Exclusions::sanitize( $exclusion_input );
+			if ( is_wp_error( $exclusions ) ) {
+				return $exclusions;
+			}
+			$new = array_merge( $new, $exclusions );
+		}
+
+		// Compliance digest recipients.
+		if ( null !== $request->get_param( 'digest_recipients' ) ) {
+			$emails = array_filter( array_map( 'trim', preg_split( '/[\s,;]+/', (string) $request->get_param( 'digest_recipients' ) ) ) );
+			$bad    = array_filter( $emails, function ( $e ) {
+				return ! is_email( $e );
+			} );
+			if ( $bad ) {
+				/* translators: %s: invalid addresses */
+				return $this->error( 'tbsh_cal_invalid_setting', sprintf( __( 'Invalid email address: %s', 'tbsh-compliance-audit-logger' ), implode( ', ', $bad ) ), 400 );
+			}
+			$new['digest_recipients'] = implode( ', ', array_slice( $emails, 0, 20 ) );
+		}
+
+		// SIEM syslog destination.
+		if ( null !== $request->get_param( 'siem_host' ) ) {
+			$host = trim( (string) $request->get_param( 'siem_host' ) );
+			if ( '' !== $host && ! filter_var( $host, FILTER_VALIDATE_IP ) && ! preg_match( '/^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i', $host ) ) {
+				return $this->error( 'tbsh_cal_invalid_setting', __( 'The syslog host must be a host name or IP address.', 'tbsh-compliance-audit-logger' ), 400 );
+			}
+			$new['siem_host'] = strtolower( $host );
+		}
+		if ( null !== $request->get_param( 'siem_port' ) ) {
+			$new['siem_port'] = max( 1, min( 65535, (int) $request->get_param( 'siem_port' ) ) );
+		}
+
+		if ( null !== $request->get_param( 'frameworks' ) ) {
+			$new['frameworks'] = array_values( array_unique( array_intersect( (array) $request->get_param( 'frameworks' ), self::FRAMEWORKS ) ) );
+		}
+
 		// Secrets: write-only, validated.
 		$secrets = $request->get_param( 'secrets' );
 		$updates = array();
@@ -224,7 +310,7 @@ class SettingsController extends BaseController {
 					continue;
 				}
 				$value = trim( $value );
-				if ( in_array( $key, array( 'slack_webhook', 'discord_webhook', 'teams_webhook', 'webhook_url' ), true ) && ( ! wp_http_validate_url( $value ) || 0 !== strpos( $value, 'https://' ) ) ) {
+				if ( in_array( $key, array( 'slack_webhook', 'discord_webhook', 'teams_webhook', 'webhook_url', 'siem_url' ), true ) && ( ! wp_http_validate_url( $value ) || 0 !== strpos( $value, 'https://' ) ) ) {
 					/* translators: %s: secret key */
 					return $this->error( 'tbsh_cal_invalid_setting', sprintf( __( '%s must be a public https URL.', 'tbsh-compliance-audit-logger' ), $key ), 400 );
 				}
@@ -267,6 +353,8 @@ class SettingsController extends BaseController {
 
 		CronScheduler::sync( $new );
 		\TBSHComplianceAuditLogger\Vendors\SupplyChain::flush();
+		ComplianceDigest::on_settings_saved( $old, $new );
+		SiemForwarder::on_settings_saved( $old, $new );
 
 		$payload            = self::payload();
 		$payload['message'] = __( 'Settings saved successfully.', 'tbsh-compliance-audit-logger' );
@@ -299,6 +387,11 @@ class SettingsController extends BaseController {
 			'admin_email'        => get_option( 'admin_email' ),
 			'receiver_url'       => rest_url( 'tbsh-compliance-audit-logger/v1/vault-receiver' ),
 			'dedicated_key'      => \TBSHComplianceAuditLogger\Helpers\Crypto::has_dedicated_key(),
+			'roles'              => array_map( 'translate_user_role', wp_roles()->get_names() ),
+			'protected_events'   => Exclusions::PROTECTED_EVENTS,
+			'woocommerce_active' => class_exists( 'WooCommerce' ),
+			'digest_last_sent'   => ComplianceDigest::state()['last_sent'] ?? null,
+			'setup_state'        => AutomationController::setup_state(),
 		);
 		return $settings;
 	}

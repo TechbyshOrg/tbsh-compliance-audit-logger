@@ -13,6 +13,22 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Logger {
 
 	/**
+	 * Compliance categories used across logs, filters and reports.
+	 */
+	const CATEGORIES = array(
+		'Access Control',
+		'Identity Management',
+		'Authentication',
+		'Authorization',
+		'Change Management',
+		'Configuration Management',
+		'Security Monitoring',
+		'Incident Detection',
+		'Operational Security',
+		'Audit Trail',
+	);
+
+	/**
 	 * Log queue to process at shutdown.
 	 *
 	 * @var array
@@ -109,6 +125,11 @@ class Logger {
 		$user_id      = isset( $args['user_id'] ) ? intval( $args['user_id'] ) : ( $current_user && $current_user->ID ? $current_user->ID : 0 );
 		$username     = isset( $args['username'] ) ? sanitize_text_field( $args['username'] ) : ( $current_user && $current_user->ID ? $current_user->user_login : 'system' );
 		$role         = 'system';
+
+		// Admin-defined exclusions (never applied to error/critical or protected event types).
+		if ( Exclusions::is_excluded( $settings, $event_type, $severity, $user_id, $username ) ) {
+			return;
+		}
 
 		if ( $user_id > 0 && $current_user && $current_user->ID === $user_id && ! empty( $current_user->roles ) ) {
 			$role = reset( $current_user->roles );

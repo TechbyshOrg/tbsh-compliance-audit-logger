@@ -74,6 +74,7 @@ class EventTracker {
 		Trackers\SecurityTracker::init();
 		Trackers\SiteStructureTracker::init();
 		Trackers\ContentTracker::init();
+		Trackers\WooCommerceTracker::init();
 	}
 
 	/**

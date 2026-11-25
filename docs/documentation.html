@@ -794,6 +794,21 @@
               <td>Single events scheduled by the alert queue</td>
               <td>Delivers queued alerts (up to 25 per run) and schedules retries.</td>
             </tr>
+            <tr>
+              <td><code>tbsh_cal_file_integrity</code></td>
+              <td>Single events chained while a scheduled file scan runs</td>
+              <td>Processes about 20 seconds of plugin, theme and uploads verification per run, then schedules the next batch until the scan completes.</td>
+            </tr>
+            <tr>
+              <td><code>tbsh_cal_siem_forward</code></td>
+              <td>Single events after new entries are written, while SIEM forwarding is enabled</td>
+              <td>Forwards entries after the last delivered ID in batches of 200; on failure retries with backoff (5 minutes to 1 hour) and alerts after an hour.</td>
+            </tr>
+            <tr>
+              <td><code>tbsh_cal_maintenance_run</code> (action)</td>
+              <td>Inside the daily maintenance run</td>
+              <td>Also sends the compliance digest when a weekly or monthly period has ended, and retries SIEM forwarding.</td>
+            </tr>
           </tbody>
         </table>
       </div>
@@ -834,6 +849,29 @@ Logger::log(
 );</code></pre>
       </div>
 
+      <h3>Public Logging API (recommended for other plugins)</h3>
+      <p>Prefer the stable public API: it validates and sanitises input, reserves event types used by the detection rules (<code>privilege_escalation</code>, <code>chain_compromised</code>, <code>file_edited</code> and others), caps metadata at 8 KB and a request at 200 entries, and adds <code>"source": "api"</code> to the metadata. Call it after <code>plugins_loaded</code>.</p>
+      <div class="code-container">
+        <div class="code-header">
+          <span>PHP</span>
+          <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+        </div>
+        <pre><code>if ( function_exists( 'tbsh_cal_log' ) ) {
+    tbsh_cal_log( 'invoice_approved', array(
+        'title'       => 'Invoice approved',            // required
+        'message'     => 'Invoice 1042 approved by finance.',
+        'category'    => 'Change Management',           // one of the compliance categories
+        'severity'    => 'notice',                      // info|notice|warning|error|critical
+        'object_type' => 'invoice',
+        'object_id'   => 1042,
+        'metadata'    => array( 'amount' => '120.00' ),
+    ) );
+}
+
+// Or without a function_exists() check:
+do_action( 'tbsh_cal_log', 'invoice_approved', array( 'title' => 'Invoice approved' ) );</code></pre>
+      </div>
+
       <h3>Tracked Events</h3>
       <div class="table-wrapper">
         <table>
@@ -852,6 +890,8 @@ Logger::log(
             <tr><td>Site design and navigation</td><td><code>menu_created</code>, <code>menu_updated</code>, <code>menu_deleted</code>, <code>widgets_updated</code>, <code>theme_mods_updated</code>, <code>customizer_published</code>, <code>design_created</code>, <code>design_updated</code>, <code>design_trashed</code>, <code>design_deleted</code> (templates, template parts, global styles, navigation, synced patterns, additional CSS)</td><td><code>log_site_structure_events</code></td></tr>
             <tr><td>Comments</td><td><code>comment_status_changed</code>, <code>comment_edited</code>, <code>comment_deleted</code> (signed-in users only; no commenter names)</td><td><code>log_comment_events</code></td></tr>
             <tr><td>Categories, tags and taxonomies</td><td><code>term_created</code>, <code>term_updated</code>, <code>term_deleted</code></td><td><code>log_taxonomy_events</code></td></tr>
+            <tr><td>WooCommerce (when active)</td><td><code>wc_order_status_changed</code> and <code>wc_order_edited</code> (by staff only), <code>wc_order_refunded</code>, <code>wc_order_trashed</code>, <code>wc_order_deleted</code>, <code>wc_product_updated</code> (price, sale dates, stock, SKU, tax, downloads, product type), <code>wc_coupon_created</code>, <code>wc_coupon_updated</code>, <code>wc_coupon_trashed</code>, <code>wc_coupon_deleted</code>, <code>wc_settings_updated</code> (option names only). No customer data is logged.</td><td><code>log_woocommerce_events</code></td></tr>
+            <tr><td>Sessions, integrity and operations</td><td><code>session_terminated</code>, <code>sessions_terminated_all</code>, <code>file_integrity_check</code>, <code>file_baseline_accepted</code>, <code>compliance_digest_sent</code>, <code>siem_forward_failed</code>, <code>setup_completed</code></td><td>Always</td></tr>
           </tbody>
         </table>
       </div>
@@ -870,6 +910,8 @@ Logger::log(
             <tr><td><code>tbsh_cal_sensitive_capabilities</code></td><td>Role and capability names whose direct grant is logged as <code>privilege_escalation</code> (default includes <code>administrator</code>, <code>manage_options</code>, <code>install_plugins</code>, <code>edit_users</code>, <code>promote_users</code> and network management capabilities).</td></tr>
             <tr><td><code>tbsh_cal_site_editor_post_types</code></td><td>Non-public post types logged as site design items.</td></tr>
             <tr><td><code>tbsh_cal_track_taxonomy</code></td><td>Return <code>false</code> to stop logging term changes for a taxonomy (<code>$tracked, $taxonomy</code>).</td></tr>
+            <tr><td><code>tbsh_cal_allow_private_siem_endpoints</code></td><td>Return <code>true</code> to allow SIEM forwarding to private, loopback or reserved addresses (internal collectors). Off by default to prevent request forgery against internal services.</td></tr>
+            <tr><td><code>tbsh_cal_log</code> (action)</td><td>Add an event through the public API (see above).</td></tr>
           </tbody>
         </table>
       </div>
@@ -1084,6 +1126,7 @@ $integrity_hash = hash('sha256', $canonical_string);</code></pre>
             <tr><td>Code edited in the dashboard file editor</td><td><code>file_edited</code></td><td>error</td><td>1 hour per file</td><td><code>detect_config_change</code></td></tr>
             <tr><td>Critical site setting changed</td><td><code>option_update</code> on <code>siteurl</code>, <code>home</code>, <code>admin_email</code>, <code>users_can_register</code> or <code>default_role</code></td><td>error</td><td>1 hour per option</td><td><code>detect_config_change</code></td></tr>
             <tr><td>WordPress core files modified</td><td><code>core_checksum_check</code> with status <code>fail</code></td><td>critical</td><td>1 day</td><td><code>detect_integrity</code></td></tr>
+            <tr><td>Plugin, theme or uploads files modified</td><td><code>file_integrity_check</code> with status <code>fail</code></td><td>critical</td><td>1 day</td><td><code>detect_integrity</code></td></tr>
             <tr><td>Audit log tampering detected</td><td><code>chain_compromised</code></td><td>critical</td><td>1 day</td><td><code>detect_integrity</code></td></tr>
             <tr><td>Off-site evidence backup failing</td><td><code>vault_sync_failed</code></td><td>error</td><td>1 day per vault</td><td><code>detect_vault_failure</code></td></tr>
             <tr><td>High-risk user behaviour anomaly</td><td><code>behavior_anomaly</code> with score &ge; 85</td><td>error</td><td>1 day per user</td><td><code>anomaly_detection</code> (off by default)</td></tr>
@@ -1334,6 +1377,15 @@ gunzip -c restore.jsonl.gz | head</code></pre>
             <tr><td><code>log_site_structure_events</code></td><td>true</td><td>Log menus, widgets, theme customisations, Customizer publishes and Site Editor items.</td></tr>
             <tr><td><code>log_comment_events</code></td><td>true</td><td>Log comment moderation by signed-in users.</td></tr>
             <tr><td><code>log_taxonomy_events</code></td><td>true</td><td>Log category, tag and custom taxonomy term changes.</td></tr>
+            <tr><td><code>log_woocommerce_events</code></td><td>true</td><td>Log WooCommerce store changes (only when WooCommerce is active).</td></tr>
+            <tr><td><code>exclude_users</code> / <code>exclude_roles</code> / <code>exclude_event_types</code></td><td>empty</td><td>Skip routine activity by these usernames, roles or event types. Never applied to <code>error</code>/<code>critical</code> events or protected types (failed logins, role and capability changes, file edits, monitored setting changes, integrity checks, plugin activation changes, erasures, incidents, session terminations).</td></tr>
+            <tr><td><code>auto_file_integrity</code></td><td>false</td><td>Scan plugin, theme and uploads files on the evidence schedule.</td></tr>
+            <tr><td><code>digest_frequency</code></td><td>off</td><td><code>off</code>, <code>weekly</code> or <code>monthly</code>. The first period starts when the digest is switched on.</td></tr>
+            <tr><td><code>digest_recipients</code></td><td>empty</td><td>Digest recipients; empty uses the alert email recipients (or the admin email).</td></tr>
+            <tr><td><code>digest_attach_report</code> / <code>digest_skip_empty</code></td><td>true / false</td><td>Attach a signed executive report; skip scheduled digests when nothing needs attention.</td></tr>
+            <tr><td><code>siem_enabled</code>, <code>siem_transport</code>, <code>siem_min_severity</code></td><td>false, https, info</td><td>Real-time forwarding: <code>https</code>, <code>splunk_hec</code>, <code>syslog_tls</code> or <code>syslog_tcp</code>; entries below the minimum severity are not forwarded.</td></tr>
+            <tr><td><code>siem_host</code> / <code>siem_port</code></td><td>empty / 6514</td><td>Syslog destination. The HTTPS/Splunk URL and token are write-only credentials (<code>siem_url</code>, <code>siem_token</code>).</td></tr>
+            <tr><td><code>frameworks</code></td><td>[]</td><td>Frameworks chosen in the setup assistant (<code>nis2</code>, <code>dora</code>, <code>iso27001</code>, <code>soc2</code>, <code>pci_dss</code>, <code>gdpr</code>).</td></tr>
             <tr><td><code>auto_evidence</code></td><td>true</td><td>Capture evidence snapshots automatically.</td></tr>
             <tr><td><code>evidence_frequency</code></td><td>daily</td><td><code>daily</code> or <code>weekly</code>; also the cadence of automatic core checksums.</td></tr>
             <tr><td><code>auto_core_checksum</code></td><td>false</td><td>Verify core files against WordPress.org checksums on the evidence schedule.</td></tr>
@@ -1380,6 +1432,7 @@ gunzip -c restore.jsonl.gz | head</code></pre>
             <tr><td><code>tbsh_cal_view_alerts</code> / <code>tbsh_cal_manage_alerts</code></td><td>View the Alert Center delivery log / send test alerts.</td></tr>
             <tr><td><code>tbsh_cal_view_analytics</code></td><td>Executive dashboard, trends, anomalies, resilience drills and metrics.</td></tr>
             <tr><td><code>tbsh_cal_manage_auditor_access</code></td><td>Create, list and revoke auditor links.</td></tr>
+            <tr><td><code>tbsh_cal_manage_sessions</code></td><td>View active login sessions and end them. Ending a session also requires the core <code>edit_user</code> capability for that user.</td></tr>
           </tbody>
         </table>
       </div>
@@ -1428,6 +1481,9 @@ gunzip -c restore.jsonl.gz | head</code></pre>
             <tr><td><code>/integrity</code></td><td>POST</td><td><code>tbsh_cal_verify_integrity</code></td><td>Run a chain verification.</td></tr>
             <tr><td><code>/checksums</code></td><td>GET</td><td><code>tbsh_cal_view_logs</code></td><td>Latest core checksum result.</td></tr>
             <tr><td><code>/checksums</code></td><td>POST</td><td><code>tbsh_cal_verify_integrity</code></td><td>Run a core checksum check (rate-limited).</td></tr>
+            <tr><td><code>/file-integrity</code></td><td>GET</td><td><code>tbsh_cal_view_logs</code></td><td>Last plugin/theme/uploads scan result and progress (also available to auditor links).</td></tr>
+            <tr><td><code>/file-integrity/scan</code></td><td>POST</td><td><code>tbsh_cal_verify_integrity</code></td><td><code>step=start</code> begins a scan; every call processes about 15 seconds of work. Call again while <code>running</code> is true.</td></tr>
+            <tr><td><code>/file-integrity/baseline</code></td><td>POST</td><td><code>tbsh_cal_verify_integrity</code></td><td>Accept current files as a component's baseline (<code>type</code> plugin|theme|mu-plugins, <code>id</code>).</td></tr>
             <tr><td><code>/exports</code></td><td>GET / POST</td><td><code>tbsh_cal_export_data</code></td><td>List exports / create a filtered CSV or JSON export.</td></tr>
             <tr><td><code>/exports/download</code></td><td>GET</td><td><code>tbsh_cal_export_data</code></td><td>Download an export file.</td></tr>
             <tr><td><code>/exports/share</code></td><td>POST</td><td><code>tbsh_cal_export_data</code></td><td>Create an expiring share link for an export.</td></tr>
@@ -1524,6 +1580,14 @@ gunzip -c restore.jsonl.gz | head</code></pre>
             <tr><td><code>/auditor/links</code></td><td>GET / POST</td><td><code>tbsh_cal_manage_auditor_access</code></td><td>List / create auditor links (<code>label</code>, <code>days</code> 1–90).</td></tr>
             <tr><td><code>/auditor/links/{id}/revoke</code></td><td>POST</td><td><code>tbsh_cal_manage_auditor_access</code></td><td>Revoke a link.</td></tr>
             <tr><td><code>/settings</code></td><td>GET / POST</td><td><code>tbsh_cal_manage_settings</code></td><td>Read settings (masked credentials) / save settings and credentials.</td></tr>
+            <tr><td><code>/sessions</code></td><td>GET</td><td><code>tbsh_cal_manage_sessions</code></td><td>Active sessions of this site's users (<code>search</code>).</td></tr>
+            <tr><td><code>/sessions/{user_id}/{session_id}</code></td><td>DELETE</td><td><code>tbsh_cal_manage_sessions</code></td><td>End one session (not the caller's current one).</td></tr>
+            <tr><td><code>/sessions/{user_id}/logout-all</code></td><td>POST</td><td><code>tbsh_cal_manage_sessions</code></td><td>End all sessions of a user (all others when it is the caller).</td></tr>
+            <tr><td><code>/digest/preview</code></td><td>GET</td><td><code>tbsh_cal_manage_settings</code></td><td>Digest HTML for the current period and its recipients.</td></tr>
+            <tr><td><code>/digest/send</code></td><td>POST</td><td><code>tbsh_cal_manage_settings</code></td><td>Send the digest now.</td></tr>
+            <tr><td><code>/siem</code></td><td>GET</td><td><code>tbsh_cal_manage_settings</code></td><td>Forwarding status (sent, waiting, last error).</td></tr>
+            <tr><td><code>/siem/test</code></td><td>POST</td><td><code>tbsh_cal_manage_settings</code></td><td>Send a test event to the configured destination.</td></tr>
+            <tr><td><code>/setup</code></td><td>GET / POST</td><td><code>tbsh_cal_manage_settings</code></td><td>Setup assistant state (<code>pending</code>, <code>complete</code>, <code>dismissed</code>).</td></tr>
           </tbody>
         </table>
       </div>

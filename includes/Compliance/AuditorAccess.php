@@ -51,6 +51,7 @@ class AuditorAccess {
 		'#^/timeline$#',
 		'#^/evidence(/\d+)?$#',
 		'#^/integrity$#',
+		'#^/file-integrity$#',
 		'#^/compliance$#',
 		'#^/readiness$#',
 		'#^/executive$#',
@@ -325,6 +326,7 @@ class AuditorAccess {
 			'label'        => $row->label,
 		) );
 		wp_localize_script( 'tbsh-cal-admin-js', 'tbshCalIcons', SVGHelper::get_icons() );
+		\TBSHComplianceAuditLogger\Admin\Menu::chunk_translations( 'tbsh-cal-admin-js' );
 
 		nocache_headers();
 		status_header( 200 );

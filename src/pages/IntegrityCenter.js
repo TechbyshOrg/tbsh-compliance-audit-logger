@@ -5,6 +5,7 @@ import SkeletonLoader from '../components/SkeletonLoader';
 import EmptyState from '../components/EmptyState';
 import Notice from '../components/Notice';
 import Icon from '../components/Icon';
+import FileIntegrityPanel from '../components/FileIntegrityPanel';
 
 export default function IntegrityCenter() {
 	const [integrityData, setIntegrityData] = useState(null);
@@ -205,6 +206,8 @@ export default function IntegrityCenter() {
 					<EmptyState title={__('No Scan History Available', 'tbsh-compliance-audit-logger')} description={__('Trigger your first verification check using the button above.', 'tbsh-compliance-audit-logger')} icon="info" />
 				)}
 			</div>
+
+			<FileIntegrityPanel />
 		</div>
 	);
 }

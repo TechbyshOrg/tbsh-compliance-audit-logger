@@ -23,7 +23,7 @@ class Storage {
 	/**
 	 * Allowed storage areas.
 	 */
-	const AREAS = array( 'reports', 'archives', 'vault-tmp', 'vault-inbox', 'probe' );
+	const AREAS = array( 'reports', 'archives', 'vault-tmp', 'vault-inbox', 'probe', 'integrity' );
 
 	/**
 	 * Absolute path (with trailing slash) to a protected storage area.

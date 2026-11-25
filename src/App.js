@@ -1,29 +1,34 @@
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect, lazy, Suspense } from '@wordpress/element';
 import { __, sprintf } from '@wordpress/i18n';
 import Icon from './components/Icon';
-import { isAuditor } from './api';
+import SkeletonLoader from './components/SkeletonLoader';
+import { isAuditor, can } from './api';
 
-// Pages.
+// The default page ships in the main bundle; every other page is a separate chunk
+// loaded the first time it is opened.
 import Dashboard from './pages/Dashboard';
-import ExecutiveDashboard from './pages/ExecutiveDashboard';
-import ComplianceOverview from './pages/ComplianceOverview';
-import ActivityLogs from './pages/ActivityLogs';
-import Timeline from './pages/Timeline';
-import BehavioralAnomaly from './pages/BehavioralAnomaly';
-import AdvancedAnalytics from './pages/AdvancedAnalytics';
-import AlertCenter from './pages/AlertCenter';
-import IncidentCenter from './pages/IncidentCenter';
-import RiskRegister from './pages/RiskRegister';
-import VendorGovernance from './pages/VendorGovernance';
-import ResilienceModule from './pages/ResilienceModule';
-import EvidenceVault from './pages/EvidenceVault';
-import IntegrityCenter from './pages/IntegrityCenter';
-import ComplianceReporting from './pages/ComplianceReporting';
-import ExportCenter from './pages/ExportCenter';
-import AuditorAccess from './pages/AuditorAccess';
-import SystemHealth from './pages/SystemHealth';
-import Settings from './pages/Settings';
-import Help from './pages/Help';
+
+const ExecutiveDashboard = lazy( () => import( /* webpackChunkName: "page-executive" */ './pages/ExecutiveDashboard' ) );
+const ComplianceOverview = lazy( () => import( /* webpackChunkName: "page-compliance" */ './pages/ComplianceOverview' ) );
+const ActivityLogs = lazy( () => import( /* webpackChunkName: "page-logs" */ './pages/ActivityLogs' ) );
+const Timeline = lazy( () => import( /* webpackChunkName: "page-timeline" */ './pages/Timeline' ) );
+const BehavioralAnomaly = lazy( () => import( /* webpackChunkName: "page-anomalies" */ './pages/BehavioralAnomaly' ) );
+const AdvancedAnalytics = lazy( () => import( /* webpackChunkName: "page-analytics" */ './pages/AdvancedAnalytics' ) );
+const AlertCenter = lazy( () => import( /* webpackChunkName: "page-alerts" */ './pages/AlertCenter' ) );
+const Sessions = lazy( () => import( /* webpackChunkName: "page-sessions" */ './pages/Sessions' ) );
+const IncidentCenter = lazy( () => import( /* webpackChunkName: "page-incidents" */ './pages/IncidentCenter' ) );
+const RiskRegister = lazy( () => import( /* webpackChunkName: "page-risks" */ './pages/RiskRegister' ) );
+const VendorGovernance = lazy( () => import( /* webpackChunkName: "page-vendors" */ './pages/VendorGovernance' ) );
+const ResilienceModule = lazy( () => import( /* webpackChunkName: "page-resilience" */ './pages/ResilienceModule' ) );
+const EvidenceVault = lazy( () => import( /* webpackChunkName: "page-evidence" */ './pages/EvidenceVault' ) );
+const IntegrityCenter = lazy( () => import( /* webpackChunkName: "page-integrity" */ './pages/IntegrityCenter' ) );
+const ComplianceReporting = lazy( () => import( /* webpackChunkName: "page-reports" */ './pages/ComplianceReporting' ) );
+const ExportCenter = lazy( () => import( /* webpackChunkName: "page-exports" */ './pages/ExportCenter' ) );
+const AuditorAccess = lazy( () => import( /* webpackChunkName: "page-auditor" */ './pages/AuditorAccess' ) );
+const SystemHealth = lazy( () => import( /* webpackChunkName: "page-health" */ './pages/SystemHealth' ) );
+const Settings = lazy( () => import( /* webpackChunkName: "page-settings" */ './pages/Settings' ) );
+const Setup = lazy( () => import( /* webpackChunkName: "page-setup" */ './pages/Setup' ) );
+const Help = lazy( () => import( /* webpackChunkName: "page-help" */ './pages/Help' ) );
 
 function getCaps() {
 	return ( window.tbshCalApiSettings && window.tbshCalApiSettings.capabilities ) || {};
@@ -84,6 +89,7 @@ export default function App() {
 				{ id: 'anomalies', label: __( 'Behavioral Anomalies', 'tbsh-compliance-audit-logger' ), icon: 'anomaly', cap: 'view_analytics' },
 				{ id: 'analytics', label: __( 'Advanced Analytics', 'tbsh-compliance-audit-logger' ), icon: 'analytics', cap: 'view_analytics' },
 				{ id: 'alerts', label: __( 'Alert Center', 'tbsh-compliance-audit-logger' ), icon: 'alerts', cap: 'view_alerts' },
+				{ id: 'sessions', label: __( 'Active Sessions', 'tbsh-compliance-audit-logger' ), icon: 'user', cap: 'manage_sessions' },
 			],
 		},
 		{
@@ -111,6 +117,7 @@ export default function App() {
 				{ id: 'health', label: __( 'System Health', 'tbsh-compliance-audit-logger' ), icon: 'health', cap: 'view_logs' },
 				{ id: 'settings', label: __( 'Settings', 'tbsh-compliance-audit-logger' ), icon: 'settings', cap: 'manage_settings' },
 				{ id: 'help', label: __( 'Help & Reference', 'tbsh-compliance-audit-logger' ), icon: 'help', cap: null },
+				{ id: 'setup', label: __( 'Setup Assistant', 'tbsh-compliance-audit-logger' ), icon: 'check', cap: 'manage_settings', hidden: true },
 			],
 		},
 	];
@@ -123,7 +130,7 @@ export default function App() {
 	};
 
 	const visibleGroups = groups
-		.map( ( group ) => ( { ...group, items: group.items.filter( isAllowed ) } ) )
+		.map( ( group ) => ( { ...group, items: group.items.filter( ( item ) => ! item.hidden && isAllowed( item ) ) } ) )
 		.filter( ( group ) => group.items.length > 0 );
 	const allItems = groups.flatMap( ( group ) => group.items );
 
@@ -154,6 +161,10 @@ export default function App() {
 				return <AdvancedAnalytics />;
 			case 'alerts':
 				return <AlertCenter navigate={ navigate } />;
+			case 'sessions':
+				return <Sessions />;
+			case 'setup':
+				return <Setup navigate={ navigate } />;
 			case 'incidents':
 				return <IncidentCenter />;
 			case 'risks':
@@ -184,6 +195,7 @@ export default function App() {
 	};
 
 	const settings = window.tbshCalApiSettings || {};
+	const showSetupBanner = ! auditor && settings.setupState === 'pending' && route !== 'setup' && can( 'manage_settings' );
 
 	return (
 		<div className={ `tbsh-cal-app ${ darkMode ? 'tbsh-dark' : '' }` }>
@@ -241,7 +253,24 @@ export default function App() {
 				</nav>
 
 				<main className="tbsh-app-content">
-					{ renderPage() }
+					{ showSetupBanner && (
+						<div className="tbsh-card" role="region" aria-label={ __( 'Finish setup', 'tbsh-compliance-audit-logger' ) } style={ { padding: '16px 20px', marginBottom: '24px', borderLeft: '4px solid var(--tbsh-primary)' } }>
+							<div className="tbsh-row-between" style={ { gap: '12px', flexWrap: 'wrap' } }>
+								<div style={ { minWidth: 0 } }>
+									<strong>{ __( 'Finish setting up compliance logging', 'tbsh-compliance-audit-logger' ) }</strong>
+									<p className="tbsh-muted" style={ { margin: '4px 0 0' } }>
+										{ __( 'Pick your frameworks and apply recommended alerts, scheduled checks and retention in four short steps.', 'tbsh-compliance-audit-logger' ) }
+									</p>
+								</div>
+								<button type="button" className="tbsh-btn tbsh-btn-primary" onClick={ () => navigate( 'setup' ) }>
+									{ __( 'Start setup', 'tbsh-compliance-audit-logger' ) }
+								</button>
+							</div>
+						</div>
+					) }
+					<Suspense fallback={ <SkeletonLoader rows={ 4 } cols={ 3 } /> }>
+						{ renderPage() }
+					</Suspense>
 				</main>
 			</div>
 		</div>

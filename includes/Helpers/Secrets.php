@@ -31,6 +31,8 @@ class Secrets {
 		'webhook_signing_secret',
 		'telegram_bot_token',
 		'vault_receiver_token',
+		'siem_url',
+		'siem_token',
 	);
 
 	/**

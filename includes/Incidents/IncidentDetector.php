@@ -75,6 +75,14 @@ class IncidentDetector {
 				'title'    => __( 'WordPress core files modified', 'tbsh-compliance-audit-logger' ),
 				'mapping'  => 'ISO 27001 A.8.7, SOC 2 CC7.1, NIS2 Art. 21(2)(e)',
 			),
+			'file_integrity_check'    => array(
+				'rule'     => 'file_integrity',
+				'setting'  => 'detect_integrity',
+				'severity' => 'critical',
+				'window'   => DAY_IN_SECONDS,
+				'title'    => __( 'Plugin, theme or uploads files modified', 'tbsh-compliance-audit-logger' ),
+				'mapping'  => 'ISO 27001 A.8.7, PCI DSS 11.5.2, SOC 2 CC7.1, NIS2 Art. 21(2)(e)',
+			),
 			'chain_compromised'       => array(
 				'rule'     => 'log_tampering',
 				'setting'  => 'detect_integrity',
@@ -145,6 +153,12 @@ class IncidentDetector {
 				}
 				$subject = 'core';
 				break;
+			case 'file_integrity_check':
+				if ( 'fail' !== ( $meta['status'] ?? '' ) ) {
+					return;
+				}
+				$subject = 'extensions';
+				break;
 			case 'chain_compromised':
 				$subject = 'chain';
 				break;
@@ -204,6 +218,8 @@ class IncidentDetector {
 				return sprintf( __( 'File %s', 'tbsh-compliance-audit-logger' ), $subject );
 			case 'core_checksum_check':
 				return __( 'WordPress core files', 'tbsh-compliance-audit-logger' );
+			case 'file_integrity_check':
+				return __( 'Plugin, theme or uploads files', 'tbsh-compliance-audit-logger' );
 			case 'chain_compromised':
 				return __( 'Audit log database table', 'tbsh-compliance-audit-logger' );
 			case 'vault_sync_failed':

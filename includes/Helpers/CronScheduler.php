@@ -15,6 +15,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * - tbsh_cal_maintenance     daily, always: retention, baselines, token purge, reminders, alert retries.
  * - tbsh_cal_vault_sync      hourly, only while an off-site vault is active.
  * - tbsh_cal_dispatch_alerts single events scheduled by the alert queue.
+ * - tbsh_cal_file_integrity  single events chaining a plugin/theme file scan in batches.
+ * - tbsh_cal_siem_forward    single events forwarding new audit entries to a SIEM.
  */
 class CronScheduler {
 
@@ -22,6 +24,8 @@ class CronScheduler {
 	const MAINTENANCE_HOOK = 'tbsh_cal_maintenance';
 	const VAULT_HOOK       = 'tbsh_cal_vault_sync';
 	const ALERTS_HOOK      = 'tbsh_cal_dispatch_alerts';
+	const FILES_HOOK       = 'tbsh_cal_file_integrity';
+	const SIEM_HOOK        = 'tbsh_cal_siem_forward';
 
 	/**
 	 * Every hook this plugin schedules.
@@ -31,6 +35,8 @@ class CronScheduler {
 		self::MAINTENANCE_HOOK,
 		self::VAULT_HOOK,
 		self::ALERTS_HOOK,
+		self::FILES_HOOK,
+		self::SIEM_HOOK,
 	);
 
 	/**
@@ -47,7 +53,7 @@ class CronScheduler {
 		}
 
 		// Evidence snapshot + core checksum.
-		$evidence_needed = ! empty( $settings['auto_evidence'] ) || ! empty( $settings['auto_core_checksum'] );
+		$evidence_needed = ! empty( $settings['auto_evidence'] ) || ! empty( $settings['auto_core_checksum'] ) || ! empty( $settings['auto_file_integrity'] );
 		$frequency       = isset( $settings['evidence_frequency'] ) && 'weekly' === $settings['evidence_frequency'] ? 'weekly' : 'daily';
 		self::ensure( self::EVIDENCE_HOOK, $evidence_needed ? $frequency : null );
 

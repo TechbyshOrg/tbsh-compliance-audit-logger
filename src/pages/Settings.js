@@ -11,7 +11,7 @@ import { get, post, can } from '../api';
 const NON_SETTING_KEYS = [ 'secrets', 'meta', 'message' ];
 
 /** Secrets whose value must be a public https URL (validated by the server too). */
-const HTTPS_SECRETS = [ 'slack_webhook', 'discord_webhook', 'teams_webhook', 'webhook_url' ];
+const HTTPS_SECRETS = [ 'slack_webhook', 'discord_webhook', 'teams_webhook', 'webhook_url', 'siem_url' ];
 
 const helpStyle = { display: 'block', fontSize: '12px', color: 'var(--tbsh-text-muted)', marginTop: '4px' };
 const toggleHelpStyle = { ...helpStyle, marginLeft: '24px' };
@@ -170,6 +170,12 @@ export default function Settings() {
 	const [ removeTarget, setRemoveTarget ] = useState( null );
 	const [ removing, setRemoving ] = useState( false );
 	const [ copied, setCopied ] = useState( false );
+	const [ digestPreview, setDigestPreview ] = useState( null );
+	const [ digestBusy, setDigestBusy ] = useState( '' );
+	const [ digestResult, setDigestResult ] = useState( null );
+	const [ siemStatus, setSiemStatus ] = useState( null );
+	const [ siemTesting, setSiemTesting ] = useState( false );
+	const [ siemResult, setSiemResult ] = useState( null );
 
 	const hasManageCapability = can( 'manage_settings' );
 	const canTestAlerts = can( 'manage_alerts' );
@@ -200,6 +206,50 @@ export default function Settings() {
 
 	useEffect( load, [ hasManageCapability ] ); // eslint-disable-line react-hooks/exhaustive-deps
 
+	const loadSiemStatus = () => {
+		if ( ! hasManageCapability ) {
+			return;
+		}
+		get( '/siem' ).then( setSiemStatus ).catch( () => setSiemStatus( null ) );
+	};
+
+	useEffect( loadSiemStatus, [ hasManageCapability ] ); // eslint-disable-line react-hooks/exhaustive-deps
+
+	const previewDigest = () => {
+		setDigestBusy( 'preview' );
+		setDigestResult( null );
+		get( '/digest/preview' )
+			.then( ( res ) => setDigestPreview( res ) )
+			.catch( ( err ) => setDigestResult( { type: 'error', message: ( err && err.message ) || __( 'The preview could not be built.', 'tbsh-compliance-audit-logger' ) } ) )
+			.finally( () => setDigestBusy( '' ) );
+	};
+
+	const sendDigest = () => {
+		setDigestBusy( 'send' );
+		setDigestResult( null );
+		post( '/digest/send' )
+			.then( ( res ) => setDigestResult( { type: 'success', message: res.message } ) )
+			.catch( ( err ) => setDigestResult( { type: 'error', message: ( err && err.message ) || __( 'The digest could not be sent.', 'tbsh-compliance-audit-logger' ) } ) )
+			.finally( () => setDigestBusy( '' ) );
+	};
+
+	const testSiem = () => {
+		setSiemTesting( true );
+		setSiemResult( null );
+		post( '/siem/test' )
+			.then( ( res ) => setSiemResult( { type: 'success', message: res.message } ) )
+			.catch( ( err ) => setSiemResult( { type: 'error', message: ( err && err.message ) || __( 'The test event failed.', 'tbsh-compliance-audit-logger' ) } ) )
+			.finally( () => {
+				setSiemTesting( false );
+				loadSiemStatus();
+			} );
+	};
+
+	const toggleExcludedRole = ( role, checked ) => {
+		const current = Array.isArray( settings.exclude_roles ) ? settings.exclude_roles : [];
+		handleChange( 'exclude_roles', checked ? [ ...current, role ] : current.filter( ( r ) => r !== role ) );
+	};
+
 	const handleChange = ( field, val ) => {
 		setSettings( ( prev ) => ( {
 			...prev,
@@ -218,7 +268,8 @@ export default function Settings() {
 
 	const validate = ( typed ) => {
 		const emails = String( settings.alert_emails || '' ).split( /[\s,;]+/ ).map( ( e ) => e.trim() ).filter( Boolean );
-		const badEmails = emails.filter( ( e ) => ! looksLikeEmail( e ) );
+		const digestEmails = String( settings.digest_recipients || '' ).split( /[\s,;]+/ ).map( ( e ) => e.trim() ).filter( Boolean );
+		const badEmails = [ ...emails, ...digestEmails ].filter( ( e ) => ! looksLikeEmail( e ) );
 		if ( badEmails.length ) {
 			return sprintf(
 				/* translators: %s: comma-separated invalid addresses */
@@ -534,9 +585,79 @@ export default function Settings() {
 							description={ __( 'Terms created, renamed or deleted in categories, tags and other taxonomies with an admin screen. Bulk changes are summarised.', 'tbsh-compliance-audit-logger' ) }
 						/>
 
+						{ meta.woocommerce_active && (
+							<Toggle
+								id="tbsh-log-woocommerce"
+								label={ __( 'Log WooCommerce Store Changes', 'tbsh-compliance-audit-logger' ) }
+								checked={ settings.log_woocommerce_events !== false }
+								disabled={ disabled }
+								onChange={ ( v ) => handleChange( 'log_woocommerce_events', v ) }
+								description={ __( 'Order status changes and edits by staff, refunds, deleted orders, product price/stock/download changes, coupons and store settings (names only, never values). Customer details are never logged.', 'tbsh-compliance-audit-logger' ) }
+							/>
+						) }
+
 						<p style={ helpStyle }>
 							{ __( 'Always logged, regardless of these switches: theme and plugin file editor changes, role and capability grants, Super Admin changes, privacy requests, content exports and, on multisite, network site and setting changes.', 'tbsh-compliance-audit-logger' ) }
 						</p>
+					</div>
+
+					{ /* Logging exclusions */ }
+					<div className="tbsh-card" style={ { padding: '20px' } }>
+						<h3 style={ cardTitleStyle }>
+							{ __( 'Logging Exclusions', 'tbsh-compliance-audit-logger' ) }
+						</h3>
+						<Notice
+							type="warning"
+							message={ __( 'Excluded activity is not recorded and cannot be used as audit evidence. Errors, critical events and security-relevant events (failed logins, role and capability changes, file edits, setting changes, integrity checks) are always logged.', 'tbsh-compliance-audit-logger' ) }
+						/>
+
+						<div className="tbsh-form-group">
+							<label className="tbsh-form-label" htmlFor="tbsh-exclude-users">{ __( 'Exclude activity by these usernames', 'tbsh-compliance-audit-logger' ) }</label>
+							<textarea
+								id="tbsh-exclude-users"
+								className="tbsh-form-control"
+								rows="2"
+								disabled={ disabled }
+								placeholder="integration-bot, sync-user"
+								value={ settings.exclude_users || '' }
+								onChange={ ( e ) => handleChange( 'exclude_users', e.target.value ) }
+							/>
+							<span style={ helpStyle }>{ __( 'Comma-separated. Useful for service accounts that make routine automated changes.', 'tbsh-compliance-audit-logger' ) }</span>
+						</div>
+
+						<fieldset className="tbsh-form-group" style={ { border: 0, padding: 0, margin: '0 0 16px' } }>
+							<legend className="tbsh-form-label">{ __( 'Exclude activity by these roles', 'tbsh-compliance-audit-logger' ) }</legend>
+							<div className="tbsh-row" style={ { flexWrap: 'wrap', gap: '8px 16px' } }>
+								{ Object.keys( meta.roles || {} ).map( ( role ) => (
+									<label key={ role } htmlFor={ `tbsh-exclude-role-${ role }` } style={ { display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px' } }>
+										<input
+											id={ `tbsh-exclude-role-${ role }` }
+											type="checkbox"
+											disabled={ disabled }
+											checked={ Array.isArray( settings.exclude_roles ) && settings.exclude_roles.includes( role ) }
+											onChange={ ( e ) => toggleExcludedRole( role, e.target.checked ) }
+										/>
+										{ meta.roles[ role ] }
+									</label>
+								) ) }
+							</div>
+						</fieldset>
+
+						<div className="tbsh-form-group" style={ { marginBottom: 0 } }>
+							<label className="tbsh-form-label" htmlFor="tbsh-exclude-types">{ __( 'Exclude these event types', 'tbsh-compliance-audit-logger' ) }</label>
+							<textarea
+								id="tbsh-exclude-types"
+								className="tbsh-form-control"
+								rows="2"
+								disabled={ disabled }
+								placeholder="media_uploaded, comment_edited"
+								value={ settings.exclude_event_types || '' }
+								onChange={ ( e ) => handleChange( 'exclude_event_types', e.target.value ) }
+							/>
+							<span style={ helpStyle }>
+								{ __( 'Comma-separated event type names as shown in the Activity Logs. Protected types are rejected when saving.', 'tbsh-compliance-audit-logger' ) }
+							</span>
+						</div>
 					</div>
 
 					{ /* Alert channels */ }
@@ -788,6 +909,14 @@ export default function Settings() {
 								onChange={ ( v ) => handleChange( 'auto_core_checksum', v ) }
 								description={ __( 'Run WordPress.org core checksum verification on the same cron schedule.', 'tbsh-compliance-audit-logger' ) }
 							/>
+							<Toggle
+								id="tbsh-file-integrity"
+								label={ __( 'Schedule Plugin, Theme & Uploads File Scans', 'tbsh-compliance-audit-logger' ) }
+								checked={ settings.auto_file_integrity }
+								disabled={ disabled }
+								onChange={ ( v ) => handleChange( 'auto_file_integrity', v ) }
+								description={ __( 'Compare plugins with WordPress.org checksums, other plugins and themes with their recorded baseline, and search uploads for PHP files, on the same schedule. Results are in the Integrity Center.', 'tbsh-compliance-audit-logger' ) }
+							/>
 						</div>
 					</div>
 
@@ -876,6 +1005,193 @@ export default function Settings() {
 								{ __( 'Alert and off-site vault delivery history.', 'tbsh-compliance-audit-logger' ) }
 							</span>
 						</div>
+					</div>
+
+					{ /* Compliance digest */ }
+					<div className="tbsh-card" style={ { padding: '20px' } }>
+						<h3 style={ cardTitleStyle }>
+							{ __( 'Compliance Digest', 'tbsh-compliance-audit-logger' ) }
+						</h3>
+						<p className="tbsh-muted" style={ { marginTop: 0 } }>
+							{ __( 'A periodic email summarising activity, errors, incidents and NIS2 deadlines, integrity checks, readiness and governance items. Each digest is recorded in the audit log as evidence of regular log review.', 'tbsh-compliance-audit-logger' ) }
+						</p>
+
+						<div className="tbsh-form-group">
+							<label className="tbsh-form-label" htmlFor="tbsh-digest-frequency">{ __( 'Frequency', 'tbsh-compliance-audit-logger' ) }</label>
+							<select
+								id="tbsh-digest-frequency"
+								className="tbsh-form-control"
+								disabled={ disabled }
+								value={ settings.digest_frequency || 'off' }
+								onChange={ ( e ) => handleChange( 'digest_frequency', e.target.value ) }
+							>
+								<option value="off">{ __( 'Off', 'tbsh-compliance-audit-logger' ) }</option>
+								<option value="weekly">{ __( 'Weekly', 'tbsh-compliance-audit-logger' ) }</option>
+								<option value="monthly">{ __( 'Monthly (first day of the month)', 'tbsh-compliance-audit-logger' ) }</option>
+							</select>
+							{ settings.digest_frequency !== 'off' && meta.digest_last_sent && (
+								<span style={ helpStyle }>
+									{ sprintf(
+										/* translators: %s: date and time */
+										__( 'Current period started: %s', 'tbsh-compliance-audit-logger' ),
+										meta.digest_last_sent
+									) }
+								</span>
+							) }
+						</div>
+
+						<div className="tbsh-form-group">
+							<label className="tbsh-form-label" htmlFor="tbsh-digest-recipients">{ __( 'Recipients', 'tbsh-compliance-audit-logger' ) }</label>
+							<input
+								id="tbsh-digest-recipients"
+								type="text"
+								className="tbsh-form-control"
+								disabled={ disabled }
+								placeholder={ settings.alert_emails || meta.admin_email || '' }
+								value={ settings.digest_recipients || '' }
+								onChange={ ( e ) => handleChange( 'digest_recipients', e.target.value ) }
+							/>
+							<span style={ helpStyle }>{ __( 'Comma-separated. Leave empty to use the alert email recipients.', 'tbsh-compliance-audit-logger' ) }</span>
+						</div>
+
+						<Toggle
+							id="tbsh-digest-attach"
+							label={ __( 'Attach a signed executive report', 'tbsh-compliance-audit-logger' ) }
+							checked={ settings.digest_attach_report }
+							disabled={ disabled }
+							onChange={ ( v ) => handleChange( 'digest_attach_report', v ) }
+							description={ __( 'Generates and stores a signed report for the period and attaches it to the email.', 'tbsh-compliance-audit-logger' ) }
+						/>
+						<Toggle
+							id="tbsh-digest-skip"
+							label={ __( 'Skip the email when nothing needs attention', 'tbsh-compliance-audit-logger' ) }
+							checked={ settings.digest_skip_empty }
+							disabled={ disabled }
+							onChange={ ( v ) => handleChange( 'digest_skip_empty', v ) }
+							description={ __( 'Leave off if your auditor expects proof of review for every period.', 'tbsh-compliance-audit-logger' ) }
+						/>
+
+						<div className="tbsh-row" style={ { gap: '8px', flexWrap: 'wrap' } }>
+							<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" onClick={ previewDigest } disabled={ !! digestBusy }>
+								{ digestBusy === 'preview' ? __( 'Building…', 'tbsh-compliance-audit-logger' ) : __( 'Preview', 'tbsh-compliance-audit-logger' ) }
+							</button>
+							<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" onClick={ sendDigest } disabled={ !! digestBusy }>
+								<Icon name="alerts" />
+								{ digestBusy === 'send' ? __( 'Sending…', 'tbsh-compliance-audit-logger' ) : __( 'Send now', 'tbsh-compliance-audit-logger' ) }
+							</button>
+						</div>
+						<span style={ helpStyle }>{ __( 'Preview and Send use the saved settings; save changes first.', 'tbsh-compliance-audit-logger' ) }</span>
+						{ digestResult && <Notice type={ digestResult.type } message={ digestResult.message } /> }
+					</div>
+
+					{ /* SIEM forwarding */ }
+					<div className="tbsh-card" style={ { padding: '20px' } }>
+						<h3 style={ cardTitleStyle }>
+							{ __( 'SIEM & Log Forwarding', 'tbsh-compliance-audit-logger' ) }
+						</h3>
+						<p className="tbsh-muted" style={ { marginTop: 0 } }>
+							{ __( 'Send every audit entry, with its chain hash, to your SIEM or log platform within minutes. A copy outside this server is the strongest protection against log tampering. Entries are kept and retried while the destination is unreachable.', 'tbsh-compliance-audit-logger' ) }
+						</p>
+
+						<Toggle
+							id="tbsh-siem-enabled"
+							label={ __( 'Forward audit entries', 'tbsh-compliance-audit-logger' ) }
+							checked={ settings.siem_enabled }
+							disabled={ disabled }
+							onChange={ ( v ) => handleChange( 'siem_enabled', v ) }
+							description={ __( 'Starts with new entries; existing history is not re-sent.', 'tbsh-compliance-audit-logger' ) }
+						/>
+
+						<div className="tbsh-form-group">
+							<label className="tbsh-form-label" htmlFor="tbsh-siem-transport">{ __( 'Destination type', 'tbsh-compliance-audit-logger' ) }</label>
+							<select
+								id="tbsh-siem-transport"
+								className="tbsh-form-control"
+								disabled={ disabled }
+								value={ settings.siem_transport || 'https' }
+								onChange={ ( e ) => handleChange( 'siem_transport', e.target.value ) }
+							>
+								<option value="https">{ __( 'HTTPS JSON endpoint (Elastic, Datadog, Sumo Logic, custom)', 'tbsh-compliance-audit-logger' ) }</option>
+								<option value="splunk_hec">{ __( 'Splunk HTTP Event Collector', 'tbsh-compliance-audit-logger' ) }</option>
+								<option value="syslog_tls">{ __( 'Syslog over TLS (RFC 5424)', 'tbsh-compliance-audit-logger' ) }</option>
+								<option value="syslog_tcp">{ __( 'Syslog over TCP, unencrypted (RFC 5424)', 'tbsh-compliance-audit-logger' ) }</option>
+							</select>
+						</div>
+
+						{ ( settings.siem_transport === 'syslog_tls' || settings.siem_transport === 'syslog_tcp' ) ? (
+							<div className="tbsh-row" style={ { gap: '12px', flexWrap: 'wrap' } }>
+								<div className="tbsh-form-group" style={ { flex: '2 1 200px' } }>
+									<label className="tbsh-form-label" htmlFor="tbsh-siem-host">{ __( 'Syslog host', 'tbsh-compliance-audit-logger' ) }</label>
+									<input id="tbsh-siem-host" type="text" className="tbsh-form-control" disabled={ disabled } placeholder="logs.example.com" value={ settings.siem_host || '' } onChange={ ( e ) => handleChange( 'siem_host', e.target.value ) } />
+								</div>
+								<div className="tbsh-form-group" style={ { flex: '1 1 100px' } }>
+									<label className="tbsh-form-label" htmlFor="tbsh-siem-port">{ __( 'Port', 'tbsh-compliance-audit-logger' ) }</label>
+									<input id="tbsh-siem-port" type="number" min="1" max="65535" className="tbsh-form-control" disabled={ disabled } value={ settings.siem_port || 6514 } onChange={ ( e ) => handleChange( 'siem_port', Math.min( 65535, Math.max( 1, parseInt( e.target.value, 10 ) || 1 ) ) ) } />
+								</div>
+							</div>
+						) : (
+							<>
+								<SecretField
+									{ ...secretProps( 'siem_url', settings.siem_transport === 'splunk_hec' ? __( 'Collector URL', 'tbsh-compliance-audit-logger' ) : __( 'Endpoint URL', 'tbsh-compliance-audit-logger' ), {
+										reveal: true,
+										emptyPlaceholder: settings.siem_transport === 'splunk_hec' ? 'https://splunk.example.com:8088/services/collector/event' : 'https://logs.example.com/ingest',
+									} ) }
+								/>
+								<SecretField
+									{ ...secretProps( 'siem_token', settings.siem_transport === 'splunk_hec' ? __( 'HEC token', 'tbsh-compliance-audit-logger' ) : __( 'Bearer token', 'tbsh-compliance-audit-logger' ), {
+										optional: settings.siem_transport !== 'splunk_hec',
+										help: settings.siem_transport === 'splunk_hec' ? '' : __( 'Sent as a bearer token and used to sign each batch (X-TBSH-Signature).', 'tbsh-compliance-audit-logger' ),
+									} ) }
+								/>
+							</>
+						) }
+
+						<div className="tbsh-form-group">
+							<label className="tbsh-form-label" htmlFor="tbsh-siem-severity">{ __( 'Minimum severity forwarded', 'tbsh-compliance-audit-logger' ) }</label>
+							<select
+								id="tbsh-siem-severity"
+								className="tbsh-form-control"
+								disabled={ disabled }
+								value={ settings.siem_min_severity || 'info' }
+								onChange={ ( e ) => handleChange( 'siem_min_severity', e.target.value ) }
+							>
+								{ severityOptions().map( ( [ value, label ] ) => (
+									<option key={ value } value={ value }>{ label }</option>
+								) ) }
+							</select>
+						</div>
+
+						{ siemStatus && siemStatus.ready && (
+							<p style={ { ...helpStyle, marginLeft: 0 } } role="status">
+								{ sprintf(
+									/* translators: 1: number of forwarded entries, 2: number waiting */
+									__( 'Forwarded: %1$d entries. Waiting: %2$d.', 'tbsh-compliance-audit-logger' ),
+									siemStatus.sent_total,
+									siemStatus.backlog
+								) }
+								{ siemStatus.last_success_at && ` ${ sprintf(
+									/* translators: %s: date and time */
+									__( 'Last delivery: %s.', 'tbsh-compliance-audit-logger' ),
+									siemStatus.last_success_at
+								) }` }
+							</p>
+						) }
+						{ siemStatus && siemStatus.failing && siemStatus.last_error && (
+							<Notice
+								type="warning"
+								message={ sprintf(
+									/* translators: %s: error message */
+									__( 'Forwarding is failing and will retry automatically. Last error: %s', 'tbsh-compliance-audit-logger' ),
+									siemStatus.last_error
+								) }
+							/>
+						) }
+
+						<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" onClick={ testSiem } disabled={ siemTesting }>
+							{ siemTesting ? __( 'Sending…', 'tbsh-compliance-audit-logger' ) : __( 'Send test event', 'tbsh-compliance-audit-logger' ) }
+						</button>
+						<span style={ helpStyle }>{ __( 'Private and internal addresses are refused unless a developer allows them with the tbsh_cal_allow_private_siem_endpoints filter.', 'tbsh-compliance-audit-logger' ) }</span>
+						{ siemResult && <Notice type={ siemResult.type } message={ siemResult.message } /> }
 					</div>
 
 					{ /* AI incident analysis */ }
@@ -993,6 +1309,18 @@ export default function Settings() {
 
 					<div className="tbsh-card" style={ { padding: '20px' } }>
 						<h3 style={ cardTitleStyle }>
+							{ __( 'Setup Assistant', 'tbsh-compliance-audit-logger' ) }
+						</h3>
+						<p className="tbsh-muted" style={ { marginTop: 0 } }>
+							{ __( 'Pick your compliance frameworks and apply recommended notifications, scheduled checks and retention in four short steps.', 'tbsh-compliance-audit-logger' ) }
+						</p>
+						<a href="#/setup" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm">
+							{ __( 'Run the setup assistant', 'tbsh-compliance-audit-logger' ) }
+						</a>
+					</div>
+
+					<div className="tbsh-card" style={ { padding: '20px' } }>
+						<h3 style={ cardTitleStyle }>
 							{ __( 'Plugin Removal Policy', 'tbsh-compliance-audit-logger' ) }
 						</h3>
 						<div className="tbsh-form-group">
@@ -1021,6 +1349,32 @@ export default function Settings() {
 					</div>
 				</div>
 			</form>
+
+			<Modal
+				title={ __( 'Compliance digest preview', 'tbsh-compliance-audit-logger' ) }
+				isOpen={ !! digestPreview }
+				onClose={ () => setDigestPreview( null ) }
+			>
+				{ digestPreview && (
+					<div className="tbsh-stack">
+						<p style={ { margin: 0, fontSize: '13px' } }>
+							{ digestPreview.recipients && digestPreview.recipients.length
+								? sprintf(
+									/* translators: %s: comma-separated email addresses */
+									__( 'Would be sent to: %s', 'tbsh-compliance-audit-logger' ),
+									digestPreview.recipients.join( ', ' )
+								)
+								: __( 'No valid recipient is configured.', 'tbsh-compliance-audit-logger' ) }
+						</p>
+						<iframe
+							title={ __( 'Compliance digest preview', 'tbsh-compliance-audit-logger' ) }
+							sandbox=""
+							srcDoc={ digestPreview.html }
+							style={ { width: '100%', height: '60vh', border: '1px solid var(--tbsh-border-color)', borderRadius: '6px', background: '#fff' } }
+						/>
+					</div>
+				) }
+			</Modal>
 
 			{ /* Rendered outside the form so the modal's close button cannot submit it. */ }
 			<Modal

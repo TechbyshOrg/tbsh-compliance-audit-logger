@@ -69,6 +69,11 @@ function tbsh_cal_uninstall_site() {
 		'tbsh_cal_needs_setup',
 		'tbsh_cal_baselines_updated',
 		'tbsh_cal_pro_settings',
+		'tbsh_cal_file_integrity_state',
+		'tbsh_cal_file_integrity_result',
+		'tbsh_cal_digest_state',
+		'tbsh_cal_siem_state',
+		'tbsh_cal_setup_state',
 	);
 	foreach ( $options as $option ) {
 		delete_option( $option );
