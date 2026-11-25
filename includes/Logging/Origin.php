@@ -201,18 +201,14 @@ class Origin {
 	}
 
 	/**
-	 * LIKE pattern matching entries made by an actor (attribution lives in metadata_json).
+	 * Validate an actor filter value for the indexed `actor` column of the log table.
 	 *
 	 * @param string $actor Actor value.
-	 * @return string Pattern for `metadata_json LIKE %s`, or '' for an unknown actor.
+	 * @return string The actor, or '' when it is not a known actor.
 	 */
-	public static function actor_like( $actor ) {
-		global $wpdb;
+	public static function filter_value( $actor ) {
 		$actor = (string) $actor;
-		if ( ! in_array( $actor, self::ACTORS, true ) ) {
-			return '';
-		}
-		return '%' . $wpdb->esc_like( '"_actor":"' . $actor . '"' ) . '%';
+		return in_array( $actor, self::ACTORS, true ) ? $actor : '';
 	}
 
 	/**

@@ -710,11 +710,12 @@ class ExtensionIntegrity {
 		$body  = json_decode( (string) wp_remote_retrieve_body( $response ), true );
 		$files = array();
 		foreach ( (array) ( $body['files'] ?? array() ) as $rel => $hashes ) {
+			// MD5 is only consulted when a file has no SHA-256 sum (see compare_wporg()),
+			// so keep it only then: it halves the cached list of large plugins.
+			$algo     = empty( $hashes['sha256'] ) ? 'md5' : 'sha256';
 			$accepted = array();
-			foreach ( array( 'sha256', 'md5' ) as $algo ) {
-				foreach ( (array) ( $hashes[ $algo ] ?? array() ) as $hash ) {
-					$accepted[] = $algo . ':' . strtolower( (string) $hash );
-				}
+			foreach ( (array) ( $hashes[ $algo ] ?? array() ) as $hash ) {
+				$accepted[] = $algo . ':' . strtolower( (string) $hash );
 			}
 			$files[ (string) $rel ] = $accepted;
 		}

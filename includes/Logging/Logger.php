@@ -60,6 +60,11 @@ class Logger {
 	private static $initialized = false;
 
 	/**
+	 * Query arguments whose values are never stored (see redact_url()).
+	 */
+	const SECRET_QUERY_KEYS = array( 'tbsh_cal_audit', 'key', 'token', 'access_token', 'auth', 'password', 'pass', 'pwd', 'secret', 'signature', 'code' );
+
+	/**
 	 * Register hooks.
 	 */
 	public static function init() {
@@ -162,8 +167,8 @@ class Logger {
 
 		// Request info.
 		$request_method = isset( $_SERVER['REQUEST_METHOD'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) : '';
-		$request_uri    = isset( $_SERVER['REQUEST_URI'] ) ? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-		$referrer       = isset( $_SERVER['HTTP_REFERER'] ) ? esc_url_raw( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) : '';
+		$request_uri    = isset( $_SERVER['REQUEST_URI'] ) ? self::redact_url( esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) ) ) : '';
+		$referrer       = isset( $_SERVER['HTTP_REFERER'] ) ? self::redact_url( esc_url_raw( wp_unslash( $_SERVER['HTTP_REFERER'] ) ) ) : '';
 
 		// Extra args.
 		$object_type     = isset( $args['object_type'] ) ? sanitize_text_field( $args['object_type'] ) : '';
@@ -175,7 +180,8 @@ class Logger {
 			$metadata = array( 'value' => $metadata );
 		}
 		// Attribution (actor, channel, application password, ability); overrides caller-supplied keys.
-		$metadata_json   = wp_json_encode( array_merge( $metadata, Origin::current() ) );
+		$origin          = Origin::current();
+		$metadata_json   = wp_json_encode( array_merge( $metadata, $origin ) );
 		$compliance_tags = isset( $args['compliance_tags'] ) ? sanitize_text_field( $args['compliance_tags'] ) : $event_category;
 
 		// Add to queue.
@@ -200,6 +206,8 @@ class Logger {
 			'metadata_json'    => $metadata_json,
 			'compliance_tags'  => $compliance_tags,
 			'created_at'       => current_time( 'mysql' ),
+			// Indexed copy of the hashed `_actor` key, for "Made by" filters.
+			'actor'            => (string) ( $origin['_actor'] ?? '' ),
 		);
 
 		self::$log_queue[] = $entry;
@@ -344,6 +352,23 @@ class Logger {
 
 		// Clear queue.
 		self::$log_queue = array();
+	}
+
+	/**
+	 * Replace secret query values in a URL before it is stored.
+	 *
+	 * Entries are hash-chained and copied to exports, SIEM and vaults, so a stored
+	 * token (an auditor link, a password-reset key) could never be removed again.
+	 *
+	 * @param string $url URL or request path.
+	 * @return string
+	 */
+	public static function redact_url( $url ) {
+		if ( '' === $url || false === strpos( $url, '=' ) ) {
+			return $url;
+		}
+		$keys = implode( '|', array_map( 'preg_quote', self::SECRET_QUERY_KEYS ) );
+		return (string) preg_replace( '/([?&](?:amp;)?(?:' . $keys . ')=)[^&#]*/i', '$1REDACTED', $url );
 	}
 
 	/**

@@ -84,6 +84,7 @@ export default function ActivityLogs() {
 
 	const [ logs, setLogs ] = useState( [] );
 	const [ totalItems, setTotalItems ] = useState( 0 );
+	const [ totalCapped, setTotalCapped ] = useState( false );
 	const [ totalPages, setTotalPages ] = useState( 1 );
 	const [ page, setPage ] = useState( 1 );
 	const [ perPage, setPerPage ] = useState( 20 );
@@ -123,6 +124,7 @@ export default function ActivityLogs() {
 			.then( ( data ) => {
 				setLogs( data.logs || [] );
 				setTotalItems( data.total || 0 );
+				setTotalCapped( !! data.total_capped );
 				setTotalPages( Math.max( 1, data.pages || 1 ) );
 				setError( null );
 			} )
@@ -522,11 +524,17 @@ export default function ActivityLogs() {
 							<option value="100">100</option>
 						</select>
 						<span style={ { fontSize: '13px', color: 'var(--tbsh-text-secondary)', marginInlineStart: '12px' } } aria-live="polite">
-							{ sprintf(
-								/* translators: %s: number of entries */
-								_n( '%s entry', '%s entries', totalItems, 'tbsh-compliance-audit-logger' ),
-								totalItems.toLocaleString()
-							) }
+							{ totalCapped
+								? sprintf(
+									/* translators: %s: number of entries, e.g. 10,000 */
+									__( 'More than %s entries. Narrow the filters, or use Export for all of them.', 'tbsh-compliance-audit-logger' ),
+									totalItems.toLocaleString()
+								)
+								: sprintf(
+									/* translators: %s: number of entries */
+									_n( '%s entry', '%s entries', totalItems, 'tbsh-compliance-audit-logger' ),
+									totalItems.toLocaleString()
+								) }
 						</span>
 					</div>
 

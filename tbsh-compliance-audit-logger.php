@@ -295,7 +295,10 @@ class TBSH_Compliance_Audit_Logger {
 		\TBSHComplianceAuditLogger\Security\AccessControl::init();
 
 		// Activation happened while the old separate edition was still loaded: finish setup now.
-		if ( get_option( 'tbsh_cal_needs_setup' ) ) {
+		// The flag is always stored autoloaded (see ProCompat), so read it from the
+		// preloaded options: get_option() on a missing option costs a query per request.
+		$autoloaded = wp_load_alloptions();
+		if ( ! empty( $autoloaded['tbsh_cal_needs_setup'] ) ) {
 			$this->ensure_defaults();
 			\TBSHComplianceAuditLogger\Helpers\CronScheduler::sync();
 			delete_option( 'tbsh_cal_needs_setup' );

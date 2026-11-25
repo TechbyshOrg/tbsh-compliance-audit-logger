@@ -12,7 +12,6 @@ use TBSHComplianceAuditLogger\Integrity\ChainVerifier;
 use TBSHComplianceAuditLogger\Integrity\CoreChecksum;
 use TBSHComplianceAuditLogger\Integrity\ExtensionIntegrity;
 use TBSHComplianceAuditLogger\Logging\Logger;
-use TBSHComplianceAuditLogger\Logging\Origin;
 use TBSHComplianceAuditLogger\Risk\RiskRegister;
 use TBSHComplianceAuditLogger\Vendors\VendorRegister;
 
@@ -270,11 +269,11 @@ class ComplianceDigest {
 		// Entries attributed to AI agents (see Logging\Origin).
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$by_agents = (int) $wpdb->get_var( $wpdb->prepare(
-			'SELECT COUNT(*) FROM %i WHERE created_at >= %s AND created_at <= %s AND metadata_json LIKE %s',
+			'SELECT COUNT(*) FROM %i WHERE actor = %s AND created_at >= %s AND created_at <= %s',
 			$logs,
+			'agent',
 			$since,
-			$until,
-			Origin::actor_like( 'agent' )
+			$until
 		) );
 
 		$incidents = Schema::table( 'incidents' );

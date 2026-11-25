@@ -278,6 +278,7 @@ export default function Dashboard( { navigate } ) {
 					<h3 id="tbsh-common-title" className="tbsh-section-title">
 						{ __( 'Most common actions', 'tbsh-compliance-audit-logger' ) }
 					</h3>
+					<p className="tbsh-muted" style={ { margin: '0 0 8px', fontSize: '12px' } }>{ __( 'Last 30 days', 'tbsh-compliance-audit-logger' ) }</p>
 					{ stats.most_common_events && stats.most_common_events.length > 0 ? (
 						<ul className="tbsh-list-plain">
 							{ stats.most_common_events.map( ( evt ) => (
@@ -285,7 +286,7 @@ export default function Dashboard( { navigate } ) {
 									<button
 										type="button"
 										className="tbsh-list-row"
-										onClick={ () => openLogs( { search: evt.name } ) }
+										onClick={ () => openLogs( { search: evt.name, dateStart: stats.top_since } ) }
 										aria-label={ sprintf(
 											/* translators: 1: event title, 2: number of events */
 											__( '%1$s: %2$s events. Show them in the activity log.', 'tbsh-compliance-audit-logger' ),
@@ -308,6 +309,7 @@ export default function Dashboard( { navigate } ) {
 					<h3 id="tbsh-users-title" className="tbsh-section-title">
 						{ __( 'Most active users', 'tbsh-compliance-audit-logger' ) }
 					</h3>
+					<p className="tbsh-muted" style={ { margin: '0 0 8px', fontSize: '12px' } }>{ __( 'Last 30 days', 'tbsh-compliance-audit-logger' ) }</p>
 					{ stats.most_active_users && stats.most_active_users.length > 0 ? (
 						<ul className="tbsh-list-plain">
 							{ stats.most_active_users.map( ( usr ) => (
@@ -315,7 +317,7 @@ export default function Dashboard( { navigate } ) {
 									<button
 										type="button"
 										className="tbsh-list-row"
-										onClick={ () => ( Number( usr.user_id ) > 0 ? openLogs( { userId: Number( usr.user_id ), userLabel: usr.username } ) : openLogs( { search: usr.username } ) ) }
+										onClick={ () => ( Number( usr.user_id ) > 0 ? openLogs( { userId: Number( usr.user_id ), userLabel: usr.username, dateStart: stats.top_since } ) : openLogs( { search: usr.username, dateStart: stats.top_since } ) ) }
 										aria-label={ sprintf(
 											/* translators: 1: username, 2: number of events */
 											__( '%1$s: %2$s events. Show them in the activity log.', 'tbsh-compliance-audit-logger' ),

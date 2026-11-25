@@ -22,7 +22,7 @@ class BatchExporter {
 			wp_mkdir_p( $dir );
 			// Write an index.php and .htaccess to protect files from direct web access.
 			file_put_contents( $dir . 'index.php', '<?php // Silence' );
-			file_put_contents( $dir . '.htaccess', "Deny from all\n" );
+			file_put_contents( $dir . '.htaccess', "<IfModule mod_authz_core.c>\n\tRequire all denied\n</IfModule>\n<IfModule !mod_authz_core.c>\n\tOrder deny,allow\n\tDeny from all\n</IfModule>\n" );
 		}
 		return $dir;
 	}
@@ -71,10 +71,10 @@ class BatchExporter {
 			$args[]  = $like;
 		}
 
-		$actor_like = Origin::actor_like( $filters['actor'] ?? '' );
-		if ( '' !== $actor_like ) {
-			$where[] = 'metadata_json LIKE %s';
-			$args[]  = $actor_like;
+		$actor = Origin::filter_value( $filters['actor'] ?? '' );
+		if ( '' !== $actor ) {
+			$where[] = 'actor = %s';
+			$args[]  = $actor;
 		}
 
 		$where_clause = implode( ' AND ', $where );
@@ -97,7 +97,7 @@ class BatchExporter {
 		if ( 'csv' === $format ) {
 			// Add UTF-8 BOM.
 			fprintf( $file_handle, chr( 0xEF ) . chr( 0xBB ) . chr( 0xBF ) );
-			fputcsv( $file_handle, array(
+			\TBSHComplianceAuditLogger\Helpers\Csv::put( $file_handle, array(
 				'ID',
 				'UUID',
 				'Timestamp',
@@ -122,7 +122,7 @@ class BatchExporter {
 				'Made By',
 				'Via',
 				'Ability',
-			), ',', '"', '\\' );
+			) );
 		} elseif ( 'json' === $format ) {
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite
 			fwrite( $file_handle, "[\n" );
@@ -159,7 +159,7 @@ class BatchExporter {
 				if ( 'csv' === $format ) {
 					$meta = json_decode( (string) ( $log->metadata_json ?? '' ), true );
 					$meta = is_array( $meta ) ? $meta : array();
-					fputcsv( $file_handle, array(
+					\TBSHComplianceAuditLogger\Helpers\Csv::put( $file_handle, array(
 						$log->id,
 						$log->event_uuid,
 						$log->created_at,
@@ -184,7 +184,7 @@ class BatchExporter {
 						(string) ( $meta['_actor'] ?? '' ),
 						(string) ( $meta['_via'] ?? '' ),
 						(string) ( $meta['_ability'] ?? '' ),
-					), ',', '"', '\\' );
+					) );
 				} elseif ( 'json' === $format ) {
 					if ( ! $first_row ) {
 						// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite

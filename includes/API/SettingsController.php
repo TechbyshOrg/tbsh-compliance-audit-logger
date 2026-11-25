@@ -331,6 +331,21 @@ class SettingsController extends BaseController {
 			}
 		}
 
+		// A stored key must never follow a changed destination: when the AI provider or
+		// endpoint, or the SIEM URL, changes, the matching key has to be entered again.
+		$reentered = array();
+		$moved     = array(
+			'ai_api_key' => ( ( $new['ai_provider'] ?? 'none' ) !== ( $old['ai_provider'] ?? 'none' ) && 'none' !== ( $new['ai_provider'] ?? 'none' ) )
+				|| ( isset( $updates['ai_endpoint'] ) && '' !== $updates['ai_endpoint'] && $updates['ai_endpoint'] !== Secrets::get( 'ai_endpoint' ) ),
+			'siem_token' => isset( $updates['siem_url'] ) && '' !== $updates['siem_url'] && $updates['siem_url'] !== Secrets::get( 'siem_url' ),
+		);
+		foreach ( $moved as $key => $changed ) {
+			if ( $changed && ! isset( $updates[ $key ] ) && Secrets::has( $key ) ) {
+				$updates[ $key ] = '';
+				$reentered[]     = $key;
+			}
+		}
+
 		/**
 		 * Filter settings before save.
 		 *
@@ -359,7 +374,9 @@ class SettingsController extends BaseController {
 		SiemForwarder::on_settings_saved( $old, $new );
 
 		$payload            = self::payload();
-		$payload['message'] = __( 'Settings saved successfully.', 'tbsh-compliance-audit-logger' );
+		$payload['message'] = $reentered
+			? __( 'Settings saved. The destination changed, so the stored API key or token was removed: enter it again.', 'tbsh-compliance-audit-logger' )
+			: __( 'Settings saved successfully.', 'tbsh-compliance-audit-logger' );
 		return $this->success( $payload );
 	}
 

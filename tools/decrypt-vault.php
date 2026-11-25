@@ -48,6 +48,10 @@ if ( 0 !== strpos( (string) $head, 'TBSHVLT1' ) ) {
 	exit( 1 );
 }
 $iterations = unpack( 'N', substr( $head, 8, 4 ) )[1];
+if ( $iterations < 10000 || $iterations > 10000000 ) {
+	fwrite( STDERR, "Not a vault package (invalid key settings).\n" );
+	exit( 1 );
+}
 $key        = hash_pbkdf2( 'sha256', $pass, substr( $head, 12, 16 ), $iterations, 32, true );
 $state      = sodium_crypto_secretstream_xchacha20poly1305_init_pull( substr( $head, 28 ), $key );
 $dst        = fopen( $out, 'wb' );

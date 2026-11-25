@@ -11,6 +11,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 class LogsController extends BaseController {
 
 	/**
+	 * Entries counted at most for pagination; beyond it the list says "10,000+".
+	 */
+	const COUNT_CAP = 10000;
+
+	/**
 	 * Register routes.
 	 */
 	public function register_routes() {
@@ -101,11 +106,11 @@ class LogsController extends BaseController {
 			$args[]  = $event_type;
 		}
 
-		$actor_like = \TBSHComplianceAuditLogger\Logging\Origin::actor_like( $actor );
-		if ( '' !== $actor_like ) {
-			// Attribution is stored in the hashed metadata (see Logging\Origin).
-			$where[] = 'metadata_json LIKE %s';
-			$args[]  = $actor_like;
+		$actor = \TBSHComplianceAuditLogger\Logging\Origin::filter_value( $actor );
+		if ( '' !== $actor ) {
+			// Indexed copy of the hashed `_actor` metadata key (see Logging\Origin).
+			$where[] = 'actor = %s';
+			$args[]  = $actor;
 		}
 
 		if ( $user_id > 0 ) {
@@ -113,12 +118,11 @@ class LogsController extends BaseController {
 			$args[]  = $user_id;
 		}
 
-		if ( $site_id > 0 ) {
+		// Each site has its own table, so a single site needs no site filter (it would
+		// stop MySQL from counting through an index).
+		if ( $site_id > 0 && is_multisite() ) {
 			$where[] = 'site_id = %d';
 			$args[]  = $site_id;
-		} elseif ( ! is_multisite() ) {
-			$where[] = 'site_id = %d';
-			$args[]  = 1;
 		}
 
 		if ( ! empty( $date_start ) ) {
@@ -133,13 +137,15 @@ class LogsController extends BaseController {
 
 		$where_clause = implode( ' AND ', $where );
 
-		// Count Query.
-		$count_sql = "SELECT COUNT(*) FROM %i WHERE $where_clause";
-		$count_args = array_merge( array( $table_name ), $args );
+		// Count, capped: an exact count of millions of rows costs seconds on every page.
+		$count_sql = "SELECT COUNT(*) FROM ( SELECT 1 FROM %i WHERE $where_clause LIMIT %d ) AS capped";
+		$count_args = array_merge( array( $table_name ), $args, array( self::COUNT_CAP + 1 ) );
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		$count_sql = $wpdb->prepare( $count_sql, $count_args );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared
 		$total_items = intval( $wpdb->get_var( $count_sql ) );
+		$capped      = $total_items > self::COUNT_CAP;
+		$total_items = min( $total_items, self::COUNT_CAP );
 
 		// Items Query.
 		$items_sql = "SELECT * FROM %i WHERE $where_clause ORDER BY $orderby $order LIMIT %d OFFSET %d";
@@ -158,6 +164,7 @@ class LogsController extends BaseController {
 		return $this->success( array(
 			'logs'       => $logs,
 			'total'      => $total_items,
+			'total_capped' => $capped,
 			'pages'      => ceil( $total_items / $per_page ),
 			'page'       => $page,
 			'per_page'   => $per_page,

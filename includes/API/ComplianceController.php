@@ -48,8 +48,13 @@ class ComplianceController extends BaseController {
 		global $wpdb;
 		$table_logs = $wpdb->prefix . 'tbsh_cal_logs';
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
-		$results = $wpdb->get_results( $wpdb->prepare( 'SELECT event_category, COUNT(*) as count FROM %i GROUP BY event_category', $table_logs ) );
+		// Counting every entry takes seconds on large logs; cache it briefly.
+		$results = get_transient( 'tbsh_cal_category_counts' );
+		if ( ! is_array( $results ) ) {
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$results = (array) $wpdb->get_results( $wpdb->prepare( 'SELECT event_category, COUNT(*) as count FROM %i GROUP BY event_category', $table_logs ) );
+			set_transient( 'tbsh_cal_category_counts', $results, 10 * MINUTE_IN_SECONDS );
+		}
 
 		$counts = array_fill_keys(
 			array( 'Access Control', 'Identity Management', 'Authentication', 'Authorization', 'Change Management', 'Configuration Management', 'Security Monitoring', 'Incident Detection', 'Operational Security', 'Audit Trail' ),

@@ -225,7 +225,13 @@ class S3Compatible implements ProviderInterface {
 		 *
 		 * @param bool $allow Default false.
 		 */
-		$response = apply_filters( 'tbsh_cal_allow_private_vault_endpoints', false ) ? wp_remote_request( $url, $args ) : wp_safe_remote_request( $url, $args );
+		$allow_private = apply_filters( 'tbsh_cal_allow_private_vault_endpoints', false );
+		// Signed requests carry the access key and metadata: never send them over
+		// plain http to the internet (a private network may opt in, see above).
+		if ( ! $allow_private && 0 !== stripos( $url, 'https://' ) ) {
+			return array( 'ok' => false, 'code' => 0, 'message' => __( 'The storage endpoint must use https.', 'tbsh-compliance-audit-logger' ), 'body' => '', 'etag' => '' );
+		}
+		$response = $allow_private ? wp_remote_request( $url, $args ) : wp_safe_remote_request( $url, $args );
 
 		if ( is_wp_error( $response ) ) {
 			return array( 'ok' => false, 'code' => 0, 'message' => $response->get_error_message(), 'body' => '', 'etag' => '' );

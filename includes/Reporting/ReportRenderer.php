@@ -39,12 +39,7 @@ class ReportRenderer {
 	private static function csv( array $data ) {
 		$fh = fopen( 'php://temp', 'r+' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen
 		$put = function ( array $row ) use ( $fh ) {
-			// Neutralise spreadsheet formula injection.
-			$row = array_map( function ( $v ) {
-				$v = (string) $v;
-				return ( '' !== $v && in_array( $v[0], array( '=', '+', '-', '@', "\t", "\r" ), true ) ) ? "'" . $v : $v;
-			}, $row );
-			fputcsv( $fh, $row, ',', '"', '\\' );
+			\TBSHComplianceAuditLogger\Helpers\Csv::put( $fh, $row );
 		};
 
 		$meta = $data['meta'];

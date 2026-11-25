@@ -61,6 +61,10 @@ class Packager {
 			return new \WP_Error( 'tbsh_cal_storage', __( 'The private temporary folder could not be created.', 'tbsh-compliance-audit-logger' ) );
 		}
 
+		// A build cut short by a fatal error or time limit leaves its unencrypted
+		// temporary file behind; remove such leftovers before starting.
+		self::sweep( $dir );
+
 		$plain  = $dir . Storage::unique_name( 'plain', 'jsonl.gz' );
 		$gz     = gzopen( $plain, 'wb6' );
 		$since  = (int) $vault->last_synced_log_id;
@@ -204,6 +208,11 @@ class Packager {
 			return new \WP_Error( 'tbsh_cal_vault_format', 'Not a vault package (bad header).' );
 		}
 		$iterations = unpack( 'N', substr( $head, 8, 4 ) )[1];
+		// Packages are written with ITERATIONS; refuse values that would fail or hang.
+		if ( $iterations < 10000 || $iterations > 10000000 ) {
+			fclose( $src ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
+			return new \WP_Error( 'tbsh_cal_vault_format', 'Not a vault package (invalid key settings).' );
+		}
 		$salt       = substr( $head, 12, 16 );
 		$header     = substr( $head, 28 );
 		$key        = hash_pbkdf2( 'sha256', $passphrase, $salt, $iterations, 32, true );
@@ -235,6 +244,19 @@ class Packager {
 		fclose( $src ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 		fclose( $dst ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 		return true;
+	}
+
+	/**
+	 * Delete temporary package files older than an hour (leftovers of interrupted builds).
+	 *
+	 * @param string $dir Temporary folder, with trailing slash.
+	 */
+	private static function sweep( $dir ) {
+		foreach ( array_merge( (array) glob( $dir . 'plain*' ), (array) glob( $dir . 'vault*' ) ) as $file ) {
+			if ( is_file( $file ) && filemtime( $file ) < time() - HOUR_IN_SECONDS ) {
+				wp_delete_file( $file );
+			}
+		}
 	}
 
 	/**

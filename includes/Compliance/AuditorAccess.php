@@ -286,8 +286,12 @@ class AuditorAccess {
 
 		if ( isset( $_GET['tbsh_cal_portal'] ) ) {
 			$token = isset( $_COOKIE[ self::COOKIE ] ) ? sanitize_text_field( wp_unslash( $_COOKIE[ self::COOKIE ] ) ) : '';
-			$row   = self::validate( $token );
+			if ( self::rate_limited() ) {
+				self::deny_page( 429 );
+			}
+			$row = self::validate( $token );
 			if ( ! $row ) {
+				self::record_failure();
 				self::deny_page( 403 );
 			}
 			self::render_portal( $row );

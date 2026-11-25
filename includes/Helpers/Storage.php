@@ -129,6 +129,9 @@ class Storage {
 	 */
 	public static function delete_all() {
 		self::rrmdir( self::base_dir() );
+		// Log exports live in their own folder (see Export\BatchExporter).
+		$upload = wp_upload_dir( null, false );
+		self::rrmdir( trailingslashit( $upload['basedir'] ) . 'tbsh-compliance-exports/' );
 	}
 
 	/**

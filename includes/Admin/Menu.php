@@ -139,7 +139,8 @@ class Menu {
 					'nonce'        => wp_create_nonce( 'wp_rest' ),
 					'site_id'      => get_current_blog_id(),
 					'capabilities' => AccessControl::current_user_caps(),
-					'settings'     => get_option( 'tbsh_cal_settings', array() ),
+					// Recipients, hosts and exclusions are only for users who may manage settings.
+					'settings'     => current_user_can( 'tbsh_cal_manage_settings' ) ? get_option( 'tbsh_cal_settings', array() ) : array(),
 					'today'        => wp_date( 'Y-m-d' ),
 					'setupState'   => current_user_can( 'tbsh_cal_manage_settings' ) ? \TBSHComplianceAuditLogger\API\AutomationController::setup_state() : 'complete',
 				) );

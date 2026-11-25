@@ -21,19 +21,28 @@ use TBSHComplianceAuditLogger\Helpers\CronScheduler;
 use TBSHComplianceAuditLogger\Helpers\Storage;
 use TBSHComplianceAuditLogger\Security\AccessControl;
 
-$tbsh_cal_settings = get_option( 'tbsh_cal_settings', array() );
-
-if ( isset( $tbsh_cal_settings['cleanup_on_uninstall'] ) && 'delete' === $tbsh_cal_settings['cleanup_on_uninstall'] ) {
-	if ( is_multisite() ) {
-		$tbsh_cal_sites = get_sites( array( 'fields' => 'ids', 'number' => 0 ) );
-		foreach ( $tbsh_cal_sites as $tbsh_cal_blog_id ) {
-			switch_to_blog( $tbsh_cal_blog_id );
+// Each site decides for itself: data is removed only where it chose "delete".
+if ( is_multisite() ) {
+	$tbsh_cal_sites = get_sites( array( 'fields' => 'ids', 'number' => 0 ) );
+	foreach ( $tbsh_cal_sites as $tbsh_cal_blog_id ) {
+		switch_to_blog( $tbsh_cal_blog_id );
+		if ( tbsh_cal_wants_cleanup() ) {
 			tbsh_cal_uninstall_site();
-			restore_current_blog();
 		}
-	} else {
-		tbsh_cal_uninstall_site();
+		restore_current_blog();
 	}
+} elseif ( tbsh_cal_wants_cleanup() ) {
+	tbsh_cal_uninstall_site();
+}
+
+/**
+ * Whether the current site chose to delete its data on uninstall.
+ *
+ * @return bool
+ */
+function tbsh_cal_wants_cleanup() {
+	$settings = get_option( 'tbsh_cal_settings', array() );
+	return isset( $settings['cleanup_on_uninstall'] ) && 'delete' === $settings['cleanup_on_uninstall'];
 }
 
 /**
@@ -82,6 +91,15 @@ function tbsh_cal_uninstall_site() {
 
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE meta_key = %s', $wpdb->usermeta, 'tbsh_cal_behavior_baseline' ) );
+
+	// Cached data (checksums, share links, dashboard summaries).
+	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+	$wpdb->query( $wpdb->prepare(
+		'DELETE FROM %i WHERE option_name LIKE %s OR option_name LIKE %s',
+		$wpdb->options,
+		$wpdb->esc_like( '_transient_tbsh_cal_' ) . '%',
+		$wpdb->esc_like( '_transient_timeout_tbsh_cal_' ) . '%'
+	) );
 
 	CronScheduler::clear_all();
 	Storage::delete_all();

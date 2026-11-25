@@ -55,6 +55,16 @@ class VaultManager {
 	);
 
 	/**
+	 * Fields that decide where credentials are sent. Changing one requires the
+	 * credentials to be entered again (the encryption passphrase never leaves the site).
+	 */
+	const DESTINATION = array(
+		's3_compatible' => array( 'endpoint' ),
+		'ftp'           => array( 'host', 'port', 'mode' ),
+		'remote_site'   => array( 'url' ),
+	);
+
+	/**
 	 * Register hooks.
 	 */
 	public static function init() {
@@ -146,6 +156,34 @@ class VaultManager {
 				continue; // Keep existing secret.
 			}
 			$creds[ $field ] = 'url' === $field || 'endpoint' === $field ? esc_url_raw( $value ) : sanitize_text_field( $value );
+		}
+
+		// A stored password or key must never follow the vault to a new destination:
+		// whoever changes the address must also type the credentials again.
+		if ( $row ) {
+			$before = self::credentials( $row ) ?? array();
+			$moved  = false;
+			foreach ( self::DESTINATION[ $type ] ?? array() as $field ) {
+				if ( (string) ( $before[ $field ] ?? '' ) !== (string) ( $creds[ $field ] ?? '' ) ) {
+					$moved = true;
+				}
+			}
+			if ( $moved ) {
+				$missing = array();
+				foreach ( self::FIELDS[ $type ] as $field => list( $secret, $required ) ) {
+					if ( $secret && 'passphrase' !== $field && '' !== (string) ( $before[ $field ] ?? '' ) && '' === trim( (string) ( $input[ $field ] ?? '' ) ) ) {
+						$missing[] = ucwords( str_replace( '_', ' ', $field ) );
+					}
+				}
+				if ( $missing ) {
+					return new \WP_Error(
+						'tbsh_cal_reenter_secret',
+						/* translators: %s: field names */
+						sprintf( __( 'The storage address changed. Enter these credentials again: %s.', 'tbsh-compliance-audit-logger' ), implode( ', ', $missing ) ),
+						array( 'status' => 400 )
+					);
+				}
+			}
 		}
 
 		$is_active = ! empty( $data['is_active'] );

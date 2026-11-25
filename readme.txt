@@ -283,6 +283,13 @@ Improved
 * Improved: Accepting the current files of a very large plugin or theme as its integrity baseline now runs in short steps with progress, so it no longer hits server time limits.
 * Improved: The admin app now loads each screen on demand, making the first load much smaller.
 * Improved: Clearer plugin description, FAQ and in-plugin help text. The Help page now covers every feature and uses ISO/IEC 27001:2022 control numbers.
+* Improved: Activity Logs, the "Made by" filter, the Dashboard and Compliance Overview stay fast on very large logs (tested with 2.3 million entries: pages that took 7–17 seconds now load in milliseconds). Lists with more than 10,000 matching entries say so instead of counting every one.
+* Improved: The Dashboard's "Most common actions" and "Most active users" now cover the last 30 days.
+* Improved: The plugin no longer adds a database query to front-end page views.
+* Security: Secret values in logged addresses (auditor link tokens, password-reset keys, access tokens) are replaced with "REDACTED" before they are stored.
+* Security: CSV log exports neutralise cells that a spreadsheet would run as a formula.
+* Security: Changing where an off-site vault, the AI analysis or SIEM forwarding sends data now requires entering its password, key or token again.
+* Security: Plain-http S3 endpoints are refused unless private vault endpoints are allowed; the auditor portal rate-limits invalid links on every path; unfinished vault packages are cleaned up; uninstall respects each site's own choice and also removes exports and cached data.
 
 Fixed
 

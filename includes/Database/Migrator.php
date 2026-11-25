@@ -37,6 +37,7 @@ class Migrator {
 		'migrate_legacy_vaults',
 		'migrate_legacy_settings',
 		'schedule_cron',
+		'add_log_actor_column',
 	);
 
 	/**
@@ -444,6 +445,19 @@ class Migrator {
 	 */
 	private static function schedule_cron() {
 		\TBSHComplianceAuditLogger\Helpers\CronScheduler::sync();
+		return true;
+	}
+
+	/**
+	 * Add the indexed `actor` column to the log table (sites that already ran create_tables).
+	 *
+	 * The column is a copy of the hashed `_actor` metadata key, kept only so "Made by"
+	 * filters can use an index. Entries written before this step keep an empty value.
+	 *
+	 * @return bool
+	 */
+	private static function add_log_actor_column() {
+		Schema::create_tables();
 		return true;
 	}
 
