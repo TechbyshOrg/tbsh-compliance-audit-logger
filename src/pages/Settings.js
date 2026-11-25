@@ -496,6 +496,7 @@ export default function Settings() {
 							checked={ settings.log_content_events !== false }
 							disabled={ disabled }
 							onChange={ ( v ) => handleChange( 'log_content_events', v ) }
+							description={ __( 'Status changes, deletions and edits to published, private or scheduled content (which fields changed, not the text itself).', 'tbsh-compliance-audit-logger' ) }
 						/>
 
 						<Toggle
@@ -505,6 +506,37 @@ export default function Settings() {
 							disabled={ disabled }
 							onChange={ ( v ) => handleChange( 'log_media_events', v ) }
 						/>
+
+						<Toggle
+							id="tbsh-log-site-structure"
+							label={ __( 'Log Site Design and Navigation Changes', 'tbsh-compliance-audit-logger' ) }
+							checked={ settings.log_site_structure_events !== false }
+							disabled={ disabled }
+							onChange={ ( v ) => handleChange( 'log_site_structure_events', v ) }
+							description={ __( 'Menus, widgets, theme customisations, Customizer publishes and Site Editor templates, template parts, styles, navigation, synced patterns and additional CSS.', 'tbsh-compliance-audit-logger' ) }
+						/>
+
+						<Toggle
+							id="tbsh-log-comments"
+							label={ __( 'Log Comment Moderation', 'tbsh-compliance-audit-logger' ) }
+							checked={ settings.log_comment_events !== false }
+							disabled={ disabled }
+							onChange={ ( v ) => handleChange( 'log_comment_events', v ) }
+							description={ __( 'Approvals, spam, trash, edits and deletions made by signed-in users. Visitor submissions and commenter names are not logged; bulk actions are summarised.', 'tbsh-compliance-audit-logger' ) }
+						/>
+
+						<Toggle
+							id="tbsh-log-taxonomies"
+							label={ __( 'Log Category and Tag Changes', 'tbsh-compliance-audit-logger' ) }
+							checked={ settings.log_taxonomy_events !== false }
+							disabled={ disabled }
+							onChange={ ( v ) => handleChange( 'log_taxonomy_events', v ) }
+							description={ __( 'Terms created, renamed or deleted in categories, tags and other taxonomies with an admin screen. Bulk changes are summarised.', 'tbsh-compliance-audit-logger' ) }
+						/>
+
+						<p style={ helpStyle }>
+							{ __( 'Always logged, regardless of these switches: theme and plugin file editor changes, role and capability grants, Super Admin changes, privacy requests, content exports and, on multisite, network site and setting changes.', 'tbsh-compliance-audit-logger' ) }
+						</p>
 					</div>
 
 					{ /* Alert channels */ }
@@ -680,7 +712,7 @@ export default function Settings() {
 							checked={ settings.detect_config_change }
 							disabled={ disabled }
 							onChange={ ( v ) => handleChange( 'detect_config_change', v ) }
-							description={ __( 'Changes to siteurl, home, admin_email, users_can_register or default_role.', 'tbsh-compliance-audit-logger' ) }
+							description={ __( 'Changes to siteurl, home, admin_email, users_can_register or default_role, and code edited in the theme or plugin file editor.', 'tbsh-compliance-audit-logger' ) }
 						/>
 						<Toggle
 							id="tbsh-detect-integrity"

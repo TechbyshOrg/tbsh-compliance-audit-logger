@@ -59,6 +59,14 @@ class IncidentDetector {
 				'title'    => __( 'Critical site setting changed', 'tbsh-compliance-audit-logger' ),
 				'mapping'  => 'ISO 27001 A.8.9, SOC 2 CC8.1, DORA Art. 9',
 			),
+			'file_edited'             => array(
+				'rule'     => 'code_change',
+				'setting'  => 'detect_config_change',
+				'severity' => 'error',
+				'window'   => HOUR_IN_SECONDS,
+				'title'    => __( 'Code edited in the dashboard file editor', 'tbsh-compliance-audit-logger' ),
+				'mapping'  => 'ISO 27001 A.8.32, SOC 2 CC8.1, NIS2 Art. 21(2)(e)',
+			),
 			'core_checksum_check'     => array(
 				'rule'     => 'core_integrity',
 				'setting'  => 'detect_integrity',
@@ -128,6 +136,9 @@ class IncidentDetector {
 					return;
 				}
 				break;
+			case 'file_edited':
+				$subject = (string) ( $entry['object_type'] ?? '' ) . ':' . (string) ( $entry['object_id'] ?? '' );
+				break;
 			case 'core_checksum_check':
 				if ( 'fail' !== ( $meta['status'] ?? '' ) ) {
 					return;
@@ -188,6 +199,9 @@ class IncidentDetector {
 			case 'option_update':
 				/* translators: %s: option name */
 				return sprintf( __( 'Site setting "%s"', 'tbsh-compliance-audit-logger' ), $subject );
+			case 'file_edited':
+				/* translators: %s: "plugin:" or "theme:" followed by the file path */
+				return sprintf( __( 'File %s', 'tbsh-compliance-audit-logger' ), $subject );
 			case 'core_checksum_check':
 				return __( 'WordPress core files', 'tbsh-compliance-audit-logger' );
 			case 'chain_compromised':

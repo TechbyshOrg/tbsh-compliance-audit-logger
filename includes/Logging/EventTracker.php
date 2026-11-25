@@ -22,6 +22,12 @@ class EventTracker {
 		'default_role',
 		'permalink_structure',
 		'admin_email',
+		'blog_public',
+		'show_on_front',
+		'page_on_front',
+		'wp_page_for_privacy_policy',
+		'default_comment_status',
+		'comment_registration',
 		'tbsh_cal_settings',
 	);
 
@@ -63,6 +69,11 @@ class EventTracker {
 
 		// Site Events.
 		add_action( 'updated_option', array( __CLASS__, 'track_option_update' ), 10, 3 );
+
+		// Extended coverage: security-critical changes (always on), site structure and content.
+		Trackers\SecurityTracker::init();
+		Trackers\SiteStructureTracker::init();
+		Trackers\ContentTracker::init();
 	}
 
 	/**

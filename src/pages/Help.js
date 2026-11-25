@@ -95,7 +95,7 @@ export default function Help() {
 			<div className="tbsh-grid-2">
 				<GuideSection icon="incidents" title={__('Incident Center & NIS2 deadlines', 'tbsh-compliance-audit-logger')}>
 					<p style={textStyle}>
-						{__('Incidents are opened manually or automatically by the detection rules in Settings (brute-force logins, administrator grants, critical setting changes, log tampering, modified core files, failing off-site vaults and, if enabled, behavioural anomalies). Each incident moves through open, investigating, contained, resolved and closed, with notes, linked evidence and framework mappings.', 'tbsh-compliance-audit-logger')}
+						{__('Incidents are opened manually or automatically by the detection rules in Settings (brute-force logins, administrator grants, critical setting changes, code edited in the theme or plugin file editor, log tampering, modified core files, failing off-site vaults and, if enabled, behavioural anomalies). Each incident moves through open, investigating, contained, resolved and closed, with notes, linked evidence and framework mappings.', 'tbsh-compliance-audit-logger')}
 					</p>
 					<p style={nextTextStyle}>
 						{__('When an incident is marked NIS2-significant, the Article 23 reporting stages are tracked from its detection time:', 'tbsh-compliance-audit-logger')}

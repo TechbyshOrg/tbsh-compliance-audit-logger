@@ -35,7 +35,7 @@ Designed to assist compliance officers, developers, and security teams in meetin
 **Audit trail & integrity**
 
 *   **Tamper-Evident Chaining:** Link logs cryptographically using SHA-256 signatures and verify the chain on demand or with WP-CLI.
-*   **Granular Activity Tracking:** Log logins and failed logins, user and role changes, plugin and theme changes, content, media, settings and application passwords.
+*   **Granular Activity Tracking:** Log logins and failed logins, user, role and capability changes, Super Admin grants, plugin and theme changes, edits made in the theme and plugin file editor, content and edits to published content, media, menus, widgets, Customizer and Site Editor changes, comment moderation, categories and tags, settings, privacy requests, content exports, multisite network changes and application passwords. Bulk actions are summarised so the log stays readable.
 *   **Core File Integrity:** Compare WordPress core files against the official checksums from WordPress.org, manually or on a schedule.
 *   **Evidence Vault:** Capture point-in-time snapshots of themes, plugins, capabilities and system configuration, manually or daily/weekly.
 *   **GDPR Privacy Masking:** Anonymize client IP addresses and user agents using local cryptographic salts, with WordPress personal data exporter and eraser support.
@@ -199,6 +199,8 @@ Back up your database first. Once this version is active, the separate edition i
 == Changelog ==
 
 = 2.0.0 =
+* New: Wider activity coverage: theme and plugin file editor edits (with before/after file hashes), roles and capabilities granted outside the role dropdown, Super Admin changes, edits to published content, menus, widgets, theme customisations, Customizer and Site Editor changes, comment moderation, category and tag changes, privacy requests, content exports and multisite network changes.
+* New: Direct grants of administrator or other sensitive capabilities are flagged as privilege escalation, and file editor changes open an incident under the configuration-change rule.
 * The separate edition is merged into this plugin: every feature is now included, with no paid tier.
 * New: Incident Center with automatic detection rules and NIS2 Article 23 (24h / 72h / 1 month) tracking.
 * New: Alerts via email, Slack, Discord, Microsoft Teams Workflows, Telegram and signed webhooks, queued with retries and a delivery log.

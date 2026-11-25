@@ -630,7 +630,7 @@
         The lifecycle of a logged event is built to maximize server efficiency while guaranteeing absolute cryptographic integrity:
       </p>
       <ol>
-        <li><strong>Event Capture:</strong> The plugin hooks into specific WordPress core actions (like logins, theme swaps, profile updates, and plugin upgrades) inside <code>EventTracker.php</code>.</li>
+        <li><strong>Event Capture:</strong> The plugin hooks into specific WordPress core actions (like logins, theme swaps, profile updates, and plugin upgrades) inside <code>EventTracker.php</code> and the focused trackers in <code>Logging/Trackers/</code> (security, site structure and content). Bulk actions such as emptying spam or importing terms are summarised: more than five events of the same kind in one request become a single summary entry.</li>
         <li><strong>Runtime Queuing:</strong> To avoid interrupting page rendering, the logged event is not immediately written to the database. Instead, it is appended to an in-memory runtime queue managed by <code>Logger::$log_queue</code>.</li>
         <li><strong>Flushing at Shutdown:</strong> When WordPress triggers the PHP <code>shutdown</code> hook (meaning the page has completed loading and is rendered for the client browser), the queue is flushed.</li>
         <li><strong>Sequential Chaining:</strong> During the database flush:
@@ -684,7 +684,7 @@
             </tr>
             <tr>
               <td><code>/includes/Logging/</code></td>
-              <td>Core logging hooks listeners and the shutdown flush queuing queue engine.</td>
+              <td>Core logging hooks listeners and the shutdown flush queuing queue engine. <code>Trackers/</code> holds the security, site structure and content trackers.</td>
             </tr>
             <tr>
               <td><code>/includes/Privacy/</code></td>
@@ -832,6 +832,46 @@ Logger::log(
         ]
     ]
 );</code></pre>
+      </div>
+
+      <h3>Tracked Events</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Area</th><th>Event types</th><th>Setting</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>Logins and accounts</td><td><code>user_login</code>, <code>user_logout</code>, <code>failed_login</code>, <code>excessive_failed_logins</code>, <code>user_registration</code>, <code>user_deletion</code>, <code>profile_update</code>, <code>password_change</code>, <code>password_reset</code>, <code>app_password_created</code>, <code>app_password_deleted</code>, <code>app_password_failed</code></td><td>Always</td></tr>
+            <tr><td>Roles and privileges</td><td><code>role_change</code>, <code>user_access_changed</code> (roles or capabilities granted/revoked outside the role dropdown, e.g. <code>add_role()</code>, <code>add_cap()</code> or direct meta writes), <code>super_admin_granted</code>, <code>super_admin_revoked</code>, <code>privilege_escalation</code></td><td>Always</td></tr>
+            <tr><td>Code and software</td><td><code>file_edited</code> (theme/plugin file editor, with SHA-256 before and after), <code>plugin_activation</code>, <code>plugin_deactivation</code>, <code>plugin_install</code>, <code>plugin_update</code>, <code>plugin_deletion</code>, <code>theme_activation</code>, <code>theme_install</code>, <code>theme_update</code>, <code>core_update</code></td><td>Always</td></tr>
+            <tr><td>Settings</td><td><code>option_update</code> (monitored options, filterable), <code>network_option_update</code> (multisite)</td><td>Always</td></tr>
+            <tr><td>Data protection</td><td><code>content_exported</code>, <code>privacy_request_created</code>, <code>privacy_request_confirmed</code>, <code>personal_data_exported</code>, <code>personal_data_erased</code> (request IDs only, never requester emails)</td><td>Always</td></tr>
+            <tr><td>Multisite network</td><td><code>site_created</code>, <code>site_deleted</code>, <code>site_updated</code> (address, public, archived, spam, deleted, mature)</td><td>Always</td></tr>
+            <tr><td>Content</td><td><code>post_status_change</code>, <code>post_deleted</code>, <code>post_updated</code> (edits to published, private or scheduled content; changed field names only)</td><td><code>log_content_events</code></td></tr>
+            <tr><td>Media</td><td><code>media_uploaded</code>, <code>media_deleted</code></td><td><code>log_media_events</code></td></tr>
+            <tr><td>Site design and navigation</td><td><code>menu_created</code>, <code>menu_updated</code>, <code>menu_deleted</code>, <code>widgets_updated</code>, <code>theme_mods_updated</code>, <code>customizer_published</code>, <code>design_created</code>, <code>design_updated</code>, <code>design_trashed</code>, <code>design_deleted</code> (templates, template parts, global styles, navigation, synced patterns, additional CSS)</td><td><code>log_site_structure_events</code></td></tr>
+            <tr><td>Comments</td><td><code>comment_status_changed</code>, <code>comment_edited</code>, <code>comment_deleted</code> (signed-in users only; no commenter names)</td><td><code>log_comment_events</code></td></tr>
+            <tr><td>Categories, tags and taxonomies</td><td><code>term_created</code>, <code>term_updated</code>, <code>term_deleted</code></td><td><code>log_taxonomy_events</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Tracking Filters</h3>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr><th>Filter</th><th>Purpose</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><code>tbsh_cal_should_log</code></td><td>Return <code>false</code> to skip an event (<code>$should_log, $event_type, $args</code>).</td></tr>
+            <tr><td><code>tbsh_cal_log_args</code></td><td>Adjust an event's context before it is queued.</td></tr>
+            <tr><td><code>tbsh_cal_monitored_options</code></td><td>Site options whose changes are logged as <code>option_update</code>.</td></tr>
+            <tr><td><code>tbsh_cal_monitored_network_options</code></td><td>Network options logged as <code>network_option_update</code> on multisite.</td></tr>
+            <tr><td><code>tbsh_cal_sensitive_capabilities</code></td><td>Role and capability names whose direct grant is logged as <code>privilege_escalation</code> (default includes <code>administrator</code>, <code>manage_options</code>, <code>install_plugins</code>, <code>edit_users</code>, <code>promote_users</code> and network management capabilities).</td></tr>
+            <tr><td><code>tbsh_cal_site_editor_post_types</code></td><td>Non-public post types logged as site design items.</td></tr>
+            <tr><td><code>tbsh_cal_track_taxonomy</code></td><td>Return <code>false</code> to stop logging term changes for a taxonomy (<code>$tracked, $taxonomy</code>).</td></tr>
+          </tbody>
+        </table>
       </div>
 
       <h3>Custom Database Tables Created</h3>
@@ -1040,7 +1080,8 @@ $integrity_hash = hash('sha256', $canonical_string);</code></pre>
           </thead>
           <tbody>
             <tr><td>Brute-force login attack</td><td><code>excessive_failed_logins</code></td><td>critical</td><td>1 hour per targeted username</td><td><code>detect_brute_force</code></td></tr>
-            <tr><td>Administrator privileges granted</td><td><code>privilege_escalation</code></td><td>critical</td><td>1 day per user</td><td><code>detect_privilege_escalation</code></td></tr>
+            <tr><td>Administrator privileges granted</td><td><code>privilege_escalation</code> (administrator role, Super Admin or a sensitive capability granted)</td><td>critical</td><td>1 day per user</td><td><code>detect_privilege_escalation</code></td></tr>
+            <tr><td>Code edited in the dashboard file editor</td><td><code>file_edited</code></td><td>error</td><td>1 hour per file</td><td><code>detect_config_change</code></td></tr>
             <tr><td>Critical site setting changed</td><td><code>option_update</code> on <code>siteurl</code>, <code>home</code>, <code>admin_email</code>, <code>users_can_register</code> or <code>default_role</code></td><td>error</td><td>1 hour per option</td><td><code>detect_config_change</code></td></tr>
             <tr><td>WordPress core files modified</td><td><code>core_checksum_check</code> with status <code>fail</code></td><td>critical</td><td>1 day</td><td><code>detect_integrity</code></td></tr>
             <tr><td>Audit log tampering detected</td><td><code>chain_compromised</code></td><td>critical</td><td>1 day</td><td><code>detect_integrity</code></td></tr>
@@ -1289,7 +1330,10 @@ gunzip -c restore.jsonl.gz | head</code></pre>
             <tr><td><code>enable_logging</code></td><td>true</td><td>Master switch for activity logging.</td></tr>
             <tr><td><code>min_severity</code></td><td>info</td><td>Minimum severity to record (<code>info</code>, <code>notice</code>, <code>warning</code>, <code>error</code>, <code>critical</code>).</td></tr>
             <tr><td><code>anonymize_ips</code></td><td>true</td><td>Hash IP addresses and user agents with HMAC-SHA-256.</td></tr>
-            <tr><td><code>log_content_events</code> / <code>log_media_events</code></td><td>true</td><td>Log post/page and media library changes.</td></tr>
+            <tr><td><code>log_content_events</code> / <code>log_media_events</code></td><td>true</td><td>Log post/page status changes, deletions and edits to live content, and media library changes.</td></tr>
+            <tr><td><code>log_site_structure_events</code></td><td>true</td><td>Log menus, widgets, theme customisations, Customizer publishes and Site Editor items.</td></tr>
+            <tr><td><code>log_comment_events</code></td><td>true</td><td>Log comment moderation by signed-in users.</td></tr>
+            <tr><td><code>log_taxonomy_events</code></td><td>true</td><td>Log category, tag and custom taxonomy term changes.</td></tr>
             <tr><td><code>auto_evidence</code></td><td>true</td><td>Capture evidence snapshots automatically.</td></tr>
             <tr><td><code>evidence_frequency</code></td><td>daily</td><td><code>daily</code> or <code>weekly</code>; also the cadence of automatic core checksums.</td></tr>
             <tr><td><code>auto_core_checksum</code></td><td>false</td><td>Verify core files against WordPress.org checksums on the evidence schedule.</td></tr>
