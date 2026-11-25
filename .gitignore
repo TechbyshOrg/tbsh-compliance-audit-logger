@@ -34,10 +34,8 @@ Thumbs.db
 .env.test.local
 .env.production.local
 
-# Dynamic Exports (allow security placeholders to be tracked)
-/exports/*
-!/exports/.htaccess
-!/exports/index.php
+# Local export output (the plugin writes exports to uploads)
+/exports/
 
 # Release files
 *.zip

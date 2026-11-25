@@ -20,9 +20,6 @@ src/
 # Exclude Documentation (retained under docs/ in repo but excluded from distribution build)
 docs/
 
-# Exclude exports directory
-exports/
-
 # Exclude release packages
 *.zip
 
