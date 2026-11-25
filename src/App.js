@@ -49,7 +49,7 @@ function storedTheme() {
 		if ( 'true' === value || 'false' === value ) {
 			return 'true' === value;
 		}
-	} catch ( e ) {
+	} catch {
 		// Storage unavailable.
 	}
 	return null;
@@ -133,7 +133,7 @@ export default function App() {
 		setThemeChoice( next );
 		try {
 			window.localStorage.setItem( THEME_KEY, next ? 'true' : 'false' );
-		} catch ( e ) {
+		} catch {
 			// Storage unavailable; the choice lasts for this visit only.
 		}
 	};

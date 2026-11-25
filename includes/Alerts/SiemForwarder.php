@@ -460,13 +460,13 @@ class SiemForwarder {
 	 * @return array
 	 */
 	private static function syslog( array $events, $host, $port, $tls ) {
-		$ips = filter_var( $host, FILTER_VALIDATE_IP ) ? array( $host ) : (array) gethostbynamel( $host );
+		$ips = \TBSHComplianceAuditLogger\Helpers\Network::resolve( $host );
 		if ( ! $ips ) {
 			return array( 'ok' => false, 'message' => 'The syslog host could not be resolved.' );
 		}
 		if ( ! self::allow_private() ) {
 			foreach ( $ips as $ip ) {
-				if ( ! filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
+				if ( ! \TBSHComplianceAuditLogger\Helpers\Network::is_public_ip( $ip ) ) {
 					return array( 'ok' => false, 'message' => 'The syslog host resolves to a private or reserved address.' );
 				}
 			}

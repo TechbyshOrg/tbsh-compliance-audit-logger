@@ -104,7 +104,7 @@ export default function AuditorAccess() {
 				urlRef.current.select();
 				try {
 					setCopied( document.execCommand( 'copy' ) );
-				} catch ( e ) {
+				} catch {
 					setCopied( false );
 				}
 			}

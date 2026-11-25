@@ -61,7 +61,7 @@ const loadColumns = () => {
 	try {
 		const saved = JSON.parse( window.localStorage.getItem( COLUMNS_KEY ) || 'null' );
 		return saved && typeof saved === 'object' ? { ...DEFAULT_COLUMNS, ...saved } : DEFAULT_COLUMNS;
-	} catch ( e ) {
+	} catch {
 		return DEFAULT_COLUMNS;
 	}
 };
@@ -138,7 +138,7 @@ export default function ActivityLogs() {
 	useEffect( () => {
 		try {
 			window.localStorage.setItem( COLUMNS_KEY, JSON.stringify( visibleColumns ) );
-		} catch ( e ) {
+		} catch {
 			// Storage unavailable; the choice lasts for this visit only.
 		}
 	}, [ visibleColumns ] );

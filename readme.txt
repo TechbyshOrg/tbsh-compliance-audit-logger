@@ -1,7 +1,7 @@
 === Compliance Audit Log – Tamper-Evident Activity Log ===
 Contributors: techbysh
 Tags: audit-log, activity-log, audit-trail, compliance, nis2
-Requires at least: 6.2
+Requires at least: 6.6
 Tested up to: 7.1
 Requires PHP: 8.0
 Stable tag: 2.0.0
@@ -46,7 +46,7 @@ Bulk actions are summarised so the log stays readable. Logging exclusions can si
 * **Hash-chain verification** in one click or with `wp tbsh-cal verify-chain`. If the chain breaks, an incident is opened and an alert is sent.
 * **File integrity scans:** WordPress core and WordPress.org plugins are checked against official checksums. Other plugins, themes and must-use plugins are checked against a signed local baseline. The uploads folder is searched for hidden PHP files.
 * **Evidence snapshots** of your plugins, themes, capabilities and configuration, taken manually or daily or weekly.
-* **Encrypted off-site copies** of logs, incidents and snapshots on S3-compatible storage (AWS S3, Cloudflare R2, Wasabi, Backblaze B2, MinIO, Google Cloud Storage), an FTP/FTPS server or another WordPress site running this plugin.
+* **Encrypted off-site copies** of logs, incidents and snapshots on S3-compatible storage (AWS S3, Cloudflare R2, Wasabi, Backblaze B2, MinIO, Google Cloud Storage), an FTPS server or another WordPress site running this plugin.
 
 = Respond to incidents =
 
@@ -108,6 +108,10 @@ All data stays in your WordPress database and uploads folder. IP addresses and b
 * Ask questions in the [support forum](https://wordpress.org/support/plugin/tbsh-compliance-audit-logger/).
 * Developers can add their own events with `tbsh_cal_log()`, and use WP-CLI commands and granular capabilities.
 
+== Credits ==
+
+PDF reports in non-Western scripts use DejaVu Sans (https://dejavu-fonts.github.io/), bundled in `assets/fonts/` with its license (Bitstream Vera license; DejaVu changes are in the public domain).
+
 == Source Code ==
 
 The complete, unminified source code and build tooling for this plugin can be found in our public repository at:
@@ -143,7 +147,7 @@ The plugin works without any external service. Apart from the items below, nothi
 
 13. **S3-compatible object storage** (the endpoint the administrator enters; Amazon S3 in the chosen region when left empty): optional off-site evidence vault. Used only after an administrator creates and activates an S3-compatible vault: when "Test connection" is clicked (a small probe object is written and deleted), on each scheduled sync (hourly, daily or weekly), and on manual or WP-CLI syncs. Sent: an encrypted package containing audit log rows added since the last sync, the incident register with notes, and evidence snapshots captured since the last sync, plus your access key for request signing. The file name contains your site's host name and a timestamp. The content is encrypted on your server with your vault passphrase, which is never sent. Terms and privacy policies of common providers: Amazon S3 https://aws.amazon.com/service-terms/ and https://aws.amazon.com/privacy/ ; Google Cloud Storage https://cloud.google.com/terms and https://cloud.google.com/terms/cloud-privacy-notice ; Cloudflare R2 https://www.cloudflare.com/terms/ and https://www.cloudflare.com/privacypolicy/ ; Wasabi https://wasabi.com/legal/terms-of-use and https://wasabi.com/legal/privacy-policy ; Backblaze B2 https://www.backblaze.com/company/policy/terms-of-service and https://www.backblaze.com/company/policy/privacy . For any other endpoint (for example your own MinIO server), the terms of whoever operates it apply.
 
-14. **FTP / FTPS server** (the host the administrator enters): optional off-site evidence vault, under the same conditions and with the same encrypted package as item 13, plus the FTP username and password you configured. Use FTPS (the default) so credentials are not sent in clear text. The terms and privacy policy of whoever operates the server apply.
+14. **FTP / FTPS server** (the host the administrator enters): optional off-site evidence vault, under the same conditions and with the same encrypted package as item 13, plus the FTP username and password you configured. Only FTPS is supported, so credentials are not sent in clear text (plain FTP is turned off unless a developer enables it with the `tbsh_cal_allow_plain_ftp` filter). The terms and privacy policy of whoever operates the server apply.
 
 15. **Another WordPress site running this plugin** (the receiver URL the administrator enters): optional off-site evidence vault, under the same conditions and with the same encrypted package as item 13. Each request also carries your site URL, the file name, a timestamp and an HMAC-SHA256 signature made with the receiver's token. The receiving site stores the package encrypted and never learns the passphrase. The terms and privacy policy of whoever operates that site apply.
 
@@ -201,10 +205,10 @@ Yes. In **Auditor Access**, create a link with a label and a lifetime of 1 to 90
 Yes. The Export Center creates CSV or JSON exports with filters for dates, categories, severity and who made the change, and can create expiring share links. For real-time forwarding, open **Settings → SIEM & Log Forwarding** and choose an HTTPS endpoint, Splunk HTTP Event Collector or syslog over TLS/TCP. Entries are sent in order with their chain hashes and retried if the destination is down.
 
 = Can I create PDF compliance reports? =
-Yes. In **Compliance Reports**, choose PDF, HTML, CSV or JSON. PDF files are created on your server without extra libraries. Every report is signed with SHA-256 and HMAC-SHA256 and can be verified later. The built-in PDF fonts cover Western European languages; for other scripts, choose HTML and use your browser's "Save as PDF".
+Yes. In **Compliance Reports**, choose PDF, HTML, CSV or JSON. PDF files are created on your server without extra libraries. Every report is signed with SHA-256 and HMAC-SHA256 and can be verified later. PDFs show Latin (including Central and Eastern European), Greek, Cyrillic, Armenian, Georgian and Vietnamese text, using a bundled font only when a report needs it. For Arabic, Hebrew, Indic, Thai, Chinese, Japanese and Korean, choose HTML and use your browser's "Save as PDF".
 
 = How do encrypted off-site vaults work, and how do I restore one? =
-Add a vault (S3-compatible storage, FTP/FTPS, or another WordPress site running this plugin) and choose a passphrase. On its schedule, the plugin packs new log entries, the incident register and new evidence snapshots, encrypts them on your server (XChaCha20-Poly1305) and uploads them. Keep the passphrase safe: without it a package cannot be decrypted. To restore, run `wp tbsh-cal vault-decrypt <file>`, or `php tools/decrypt-vault.php <file>` on any computer with the PHP sodium extension.
+Add a vault (S3-compatible storage, FTPS, or another WordPress site running this plugin) and choose a passphrase. On its schedule, the plugin packs new log entries, the incident register and new evidence snapshots, encrypts them on your server (XChaCha20-Poly1305) and uploads them. Keep the passphrase safe: without it a package cannot be decrypted. To restore, run `wp tbsh-cal vault-decrypt <file>`, or `php tools/decrypt-vault.php <file>` on any computer with the PHP sodium extension.
 
 = Is AI analysis on by default, and what is sent? =
 No, it is off by default. It works only after an administrator chooses a provider and API key (or a self-hosted endpoint), and only when someone clicks to analyse a specific incident. Only that incident's fields are sent. Log entries, IP hashes and user records are never sent.
@@ -286,6 +290,11 @@ Improved
 * Improved: Activity Logs, the "Made by" filter, the Dashboard and Compliance Overview stay fast on very large logs (tested with 2.3 million entries: pages that took 7–17 seconds now load in milliseconds). Lists with more than 10,000 matching entries say so instead of counting every one.
 * Improved: The Dashboard's "Most common actions" and "Most active users" now cover the last 30 days.
 * Improved: The plugin no longer adds a database query to front-end page views.
+* Improved: Searching Activity Logs and the Forensic Timeline uses a full-text index on large logs (whole words and word beginnings), and falls back to an exact search when that finds nothing.
+* Improved: PDF reports show Greek, Cyrillic, Central and Eastern European, Armenian, Georgian and Vietnamese text, with an embedded subset of the bundled DejaVu Sans font; Western European reports stay as small as before.
+* Improved: Site Network changes (a site that cannot be read or recovers, a failed audit-log integrity check, new errors) are recorded in the audit log, so they reach SIEM forwarding and alerts, and the compliance digest has a Site Network section.
+* Security: Plain FTP vaults are turned off (they send the FTP password unencrypted); use FTPS. On multisite, FTP hosts and self-hosted AI endpoints must be public addresses unless the network administrator allows private ones.
+* Improved: Build tools updated (development only); the release workflow uses Node 22.
 * Security: Secret values in logged addresses (auditor link tokens, password-reset keys, access tokens) are replaced with "REDACTED" before they are stored.
 * Security: CSV log exports neutralise cells that a spreadsheet would run as a formula.
 * Security: Changing where an off-site vault, the AI analysis or SIEM forwarding sends data now requires entering its password, key or token again.

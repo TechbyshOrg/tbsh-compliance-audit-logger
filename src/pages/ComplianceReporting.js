@@ -412,7 +412,7 @@ export default function ComplianceReporting() {
 									) ) }
 								</select>
 								<span className="tbsh-muted" style={ { display: 'block', fontSize: '12px', marginTop: '4px' } }>
-									{ __( 'PDF files open anywhere and are signed like every other format. PDF supports Western European characters; for other scripts choose HTML and print it to PDF from your browser.', 'tbsh-compliance-audit-logger' ) }
+									{ __( 'PDF files open anywhere and are signed like every other format. PDF supports Latin, Greek, Cyrillic, Armenian, Georgian and Vietnamese text; for Arabic, Hebrew, Indic, Thai or Chinese, Japanese and Korean choose HTML and print it to PDF from your browser.', 'tbsh-compliance-audit-logger' ) }
 								</span>
 							</div>
 							<div className="tbsh-form-group">

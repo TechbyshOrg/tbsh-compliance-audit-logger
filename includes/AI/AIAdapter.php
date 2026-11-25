@@ -222,7 +222,7 @@ class AIAdapter {
 				'model'    => $model,
 				'messages' => array( array( 'role' => 'user', 'content' => $prompt ) ),
 			),
-			'ollama' === ( get_option( 'tbsh_cal_settings', array() )['ai_provider'] ?? '' )
+			self::allow_local_endpoint()
 		);
 		if ( is_wp_error( $data ) ) {
 			return $data;
@@ -262,12 +262,33 @@ class AIAdapter {
 	}
 
 	/**
+	 * Whether the self-hosted endpoint may be on a private or local address.
+	 *
+	 * Allowed on single sites (a local Ollama server is common). On multisite,
+	 * sub-site administrators must not reach the internal network unless the
+	 * network administrator allows it.
+	 *
+	 * @return bool
+	 */
+	private static function allow_local_endpoint() {
+		if ( 'ollama' !== ( get_option( 'tbsh_cal_settings', array() )['ai_provider'] ?? '' ) ) {
+			return false;
+		}
+		/**
+		 * Allow self-hosted AI endpoints on private addresses on multisite.
+		 *
+		 * @param bool $allow Default false.
+		 */
+		return ! is_multisite() || (bool) apply_filters( 'tbsh_cal_allow_private_ai_endpoints', false );
+	}
+
+	/**
 	 * POST JSON and decode, surfacing provider errors.
 	 *
 	 * @param string $url        URL.
 	 * @param array  $headers    Headers.
 	 * @param array  $body       Body.
-	 * @param bool   $allow_local Allow private/local hosts (self-hosted endpoints chosen by an administrator).
+	 * @param bool   $allow_local Allow private/local hosts (see allow_local_endpoint()).
 	 * @return array|\WP_Error
 	 */
 	private static function post( $url, array $headers, array $body, $allow_local = false ) {

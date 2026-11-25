@@ -14,12 +14,12 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
 
       - name: Install dependencies
@@ -59,10 +59,12 @@ jobs:
           echo "ZIP_NAME=$ZIP_NAME" >> $GITHUB_ENV
 
       - name: Upload release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: Release ${{ github.ref_name }}
           tag_name: ${{ github.ref_name }}
           files: ${{ env.ZIP_NAME }}
+          # Test tags such as 2.0.0-rc1 are marked as pre-releases.
+          prerelease: ${{ contains(github.ref_name, '-') }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

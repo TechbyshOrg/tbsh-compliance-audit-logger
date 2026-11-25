@@ -3,12 +3,12 @@ import Icon from './Icon';
 /**
  * Empty, no-results or error state, optionally with the next step as a button.
  *
- * @param {Object}   props
- * @param {string}   props.title       Heading.
- * @param {string}   props.description Explanation.
- * @param {string}   props.icon        Icon name.
- * @param {string}   props.actionLabel Button text.
- * @param {Function} props.onAction    Button handler.
+ * @param {Object}     props
+ * @param {string}     props.title       Heading.
+ * @param {string}     props.description Explanation.
+ * @param {string}     props.icon        Icon name.
+ * @param {string}     props.actionLabel Button text.
+ * @param {() => void} props.onAction    Button handler.
  */
 export default function EmptyState( { title, description, icon = 'info', actionLabel = '', onAction = null } ) {
 	return (

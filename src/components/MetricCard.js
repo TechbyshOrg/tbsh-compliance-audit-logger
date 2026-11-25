@@ -3,15 +3,15 @@ import Icon from './Icon';
 /**
  * Key figure. With `onClick` the whole card is a button that opens the related view.
  *
- * @param {Object}   props
- * @param {string}   props.title     Label.
- * @param {*}        props.value     Value.
- * @param {string}   props.icon      Icon name.
- * @param {string}   props.desc      Supporting text.
- * @param {string}   props.status    Optional status modifier.
- * @param {string}   props.className Extra class.
- * @param {Function} props.onClick   Opens the related view.
- * @param {string}   props.cta       Link text shown under the value, e.g. "View events".
+ * @param {Object}     props
+ * @param {string}     props.title     Label.
+ * @param {unknown}    props.value     Value.
+ * @param {string}     props.icon      Icon name.
+ * @param {string}     props.desc      Supporting text.
+ * @param {string}     props.status    Optional status modifier.
+ * @param {string}     props.className Extra class.
+ * @param {() => void} props.onClick   Opens the related view.
+ * @param {string}     props.cta       Link text shown under the value, e.g. "View events".
  */
 export default function MetricCard( { title, value, icon, desc, status = '', className = '', onClick = null, cta = '' } ) {
 	const statusClass = status ? `tbsh-card-${ status }` : '';

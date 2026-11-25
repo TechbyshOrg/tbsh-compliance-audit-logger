@@ -346,7 +346,7 @@ const providerFields = () => ( {
 		{ key: 'port', kind: 'number', label: __( 'Port', 'tbsh-compliance-audit-logger' ), placeholder: '21' },
 		{ key: 'mode', kind: 'select', label: __( 'Connection mode', 'tbsh-compliance-audit-logger' ), options: [
 			{ value: 'ftps', label: __( 'FTPS — FTP over TLS (recommended)', 'tbsh-compliance-audit-logger' ) },
-			{ value: 'ftp', label: __( 'FTP — unencrypted', 'tbsh-compliance-audit-logger' ) },
+			{ value: 'ftp', legacy: true, label: __( 'FTP — unencrypted (no longer supported)', 'tbsh-compliance-audit-logger' ) },
 		] },
 		{ key: 'passive', kind: 'checkbox', label: __( 'Use passive mode', 'tbsh-compliance-audit-logger' ) },
 		{ key: 'path', kind: 'text', label: __( 'Remote folder', 'tbsh-compliance-audit-logger' ), placeholder: '/' },
@@ -567,11 +567,13 @@ function VaultForm( { vault, types, onSaved, onCancel } ) {
 				<div className="tbsh-form-group" key={ f.key }>
 					<label className="tbsh-form-label" htmlFor={ id }>{ f.label }</label>
 					<select id={ id } className="tbsh-form-control" value={ config[ f.key ] || '' } onChange={ ( e ) => setCfg( f.key, e.target.value ) }>
-						{ f.options.map( ( o ) => <option key={ o.value } value={ o.value }>{ o.label }</option> ) }
+						{ f.options
+							.filter( ( o ) => ! o.legacy || config[ f.key ] === o.value || ( window.tbshCalApiSettings && window.tbshCalApiSettings.allowPlainFtp ) )
+							.map( ( o ) => <option key={ o.value } value={ o.value }>{ o.label }</option> ) }
 					</select>
 					{ 'mode' === f.key && 'ftp' === config.mode && (
 						<span className="tbsh-muted" style={ { display: 'block', fontSize: '12px', marginTop: '4px' } }>
-							{ __( 'Warning: plain FTP sends your username, password and data unencrypted over the network. The backup packages themselves are still encrypted with your passphrase, but your FTP credentials can be intercepted. Use FTPS whenever the server supports it.', 'tbsh-compliance-audit-logger' ) }
+							{ __( 'Plain FTP sends your FTP username and password unencrypted, so it is no longer supported. Choose FTPS and save. The backup packages themselves were always encrypted with your passphrase.', 'tbsh-compliance-audit-logger' ) }
 						</span>
 					) }
 				</div>
@@ -732,7 +734,7 @@ function VaultsPanel() {
 
 	useEffect( () => {
 		fetchVaults();
-	}, [] ); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [] );
 
 	useEffect( () => {
 		fetchHistory();

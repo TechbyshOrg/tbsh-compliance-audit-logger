@@ -12,12 +12,12 @@ let nextId = 0;
  * Moves focus into the dialog when it opens, keeps Tab inside it, closes on Escape (only the
  * top-most dialog), and returns focus to the control that opened it.
  *
- * @param {Object}   props
- * @param {string}   props.title    Title.
- * @param {boolean}  props.isOpen   Visibility.
- * @param {Function} props.onClose  Close handler (Escape, overlay click, close button).
- * @param {string}   props.size     '' (default 600px) or 'lg' (wide).
- * @param {*}        props.children Content.
+ * @param {Object}     props
+ * @param {string}     props.title    Title.
+ * @param {boolean}    props.isOpen   Visibility.
+ * @param {() => void} props.onClose  Close handler (Escape, overlay click, close button).
+ * @param {string}     props.size     '' (default 600px) or 'lg' (wide).
+ * @param {unknown}    props.children Content.
  */
 export default function Modal( { title, isOpen, onClose, size = '', children } ) {
 	const dialogRef = useRef( null );

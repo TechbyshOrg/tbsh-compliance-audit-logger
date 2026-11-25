@@ -137,6 +137,7 @@ class Schema {
 			KEY created_at (created_at),
 			KEY user_id (user_id),
 			KEY actor (actor),
+			FULLTEXT KEY search_text (event_title,event_message,username,object_type),
 			KEY event_type (event_type),
 			KEY event_category (event_category),
 			KEY severity (severity),

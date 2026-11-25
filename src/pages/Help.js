@@ -213,7 +213,7 @@ export default function Help() {
 
 				<GuideSection icon="reports" title={__('Compliance reports', 'tbsh-compliance-audit-logger')}>
 					<p style={textStyle}>
-						{__('Generate executive, NIS2 (per incident and stage), DORA, ISO 27001, SOC 2, incident, risk and vendor reports. Formats: PDF, HTML (print-ready), CSV and JSON. PDF covers Western European characters; for other scripts print the HTML version to PDF.', 'tbsh-compliance-audit-logger')}
+						{__('Generate executive, NIS2 (per incident and stage), DORA, ISO 27001, SOC 2, incident, risk and vendor reports. Formats: PDF, HTML (print-ready), CSV and JSON. PDF covers Latin, Greek, Cyrillic, Armenian, Georgian and Vietnamese text; for Arabic, Hebrew, Indic, Thai or Chinese, Japanese and Korean, print the HTML version to PDF.', 'tbsh-compliance-audit-logger')}
 					</p>
 					<p style={nextTextStyle}>
 						{__('Every report file is signed when it is generated: a SHA-256 hash of the file plus an HMAC-SHA256 signature made with a key unique to this site. "Verify" recomputes both from the stored file, so any modification, or a signature not made by this site, fails verification.', 'tbsh-compliance-audit-logger')}
@@ -222,7 +222,7 @@ export default function Help() {
 
 				<GuideSection icon="database" title={__('Off-site vaults', 'tbsh-compliance-audit-logger')}>
 					<p style={textStyle}>
-						{__('Vaults copy new logs, incidents, incident notes and evidence off-site on an hourly, daily or weekly schedule. Providers: S3-compatible object storage, FTP/FTPS, or another WordPress site running this plugin ("Remote site"; the receiving site must enable the vault receiver in Settings).', 'tbsh-compliance-audit-logger')}
+						{__('Vaults copy new logs, incidents, incident notes and evidence off-site on an hourly, daily or weekly schedule. Providers: S3-compatible object storage, FTPS, or another WordPress site running this plugin ("Remote site"; the receiving site must enable the vault receiver in Settings).', 'tbsh-compliance-audit-logger')}
 					</p>
 					<p style={nextTextStyle}>
 						{__('Each package (.tbshvault) is encrypted before upload with a passphrase you choose (PBKDF2-SHA256 key derivation, XChaCha20-Poly1305). Keep the passphrase safe: without it the packages cannot be restored. To restore, decrypt a package to gzip-compressed JSON Lines with:', 'tbsh-compliance-audit-logger')}

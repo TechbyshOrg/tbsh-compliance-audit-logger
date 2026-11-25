@@ -227,6 +227,7 @@ class SiteNetwork {
 			return new \WP_Error( 'tbsh_cal_not_found', __( 'Site not found.', 'tbsh-compliance-audit-logger' ), array( 'status' => 404 ) );
 		}
 		$site    = $sites[ $id ];
+		$before  = $site;
 		$summary = self::collect( $site );
 		if ( is_wp_error( $summary ) ) {
 			$site['status']        = 'error';
@@ -243,8 +244,119 @@ class SiteNetwork {
 		if ( isset( $latest[ $id ] ) ) {
 			$latest[ $id ] = $site;
 			self::save( $latest );
+			self::report_changes( $before, $site );
 		}
 		return self::public_view( $site );
+	}
+
+	/**
+	 * Record what changed on a connected site in this site's audit log.
+	 *
+	 * Only changes are recorded (not every hourly refresh). Being normal audit
+	 * entries, they reach SIEM forwarding, alerts and the compliance digest.
+	 *
+	 * @param array $before Site before the refresh.
+	 * @param array $after  Site after the refresh.
+	 */
+	private static function report_changes( array $before, array $after ) {
+		$was_error = 'error' === ( $before['status'] ?? '' );
+		$is_error  = 'error' === ( $after['status'] ?? '' );
+		$old       = is_array( $before['summary'] ?? null ) ? $before['summary'] : null;
+		$new       = is_array( $after['summary'] ?? null ) ? $after['summary'] : null;
+
+		if ( $is_error && ! $was_error ) {
+			self::log_change( 'network_site_unreachable', 'warning', __( 'Connected site cannot be read', 'tbsh-compliance-audit-logger' ), $after, array( 'error' => (string) ( $after['last_error'] ?? '' ) ) );
+			return;
+		}
+		if ( $is_error ) {
+			return;
+		}
+		if ( $was_error ) {
+			self::log_change( 'network_site_recovered', 'info', __( 'Connected site can be read again', 'tbsh-compliance-audit-logger' ), $after );
+		}
+		if ( ! $new ) {
+			return;
+		}
+
+		if ( 'compromised' === $new['integrity'] && 'compromised' !== ( $old['integrity'] ?? '' ) ) {
+			self::log_change( 'network_site_integrity_failed', 'critical', __( 'Audit log of a connected site failed its integrity check', 'tbsh-compliance-audit-logger' ), $after, array( 'verified_at' => $new['verified_at'] ) );
+		}
+
+		// Errors and critical events newer than the ones seen at the previous refresh.
+		// The first refresh only records a baseline, so connecting a site adds no noise.
+		if ( $old ) {
+			$seen = '';
+			foreach ( (array) $old['latest'] as $row ) {
+				$seen = max( $seen, (string) $row['created_at'] );
+			}
+			$fresh = array_values( array_filter( (array) $new['latest'], function ( $row ) use ( $seen ) {
+				return (string) $row['created_at'] > $seen;
+			} ) );
+			if ( $fresh ) {
+				$critical = (bool) array_filter( $fresh, function ( $row ) {
+					return 'critical' === $row['severity'];
+				} );
+				self::log_change(
+					'network_site_errors',
+					$critical ? 'error' : 'warning',
+					/* translators: %d: number of events */
+					sprintf( _n( '%d new error on a connected site', '%d new errors on a connected site', count( $fresh ), 'tbsh-compliance-audit-logger' ), count( $fresh ) ),
+					$after,
+					array( 'events' => $fresh )
+				);
+			}
+		}
+	}
+
+	/**
+	 * Audit-log a change seen on a connected site.
+	 *
+	 * @param string $type     Event type.
+	 * @param string $severity Severity.
+	 * @param string $title    Title.
+	 * @param array  $site     Site.
+	 * @param array  $extra    Extra metadata.
+	 */
+	private static function log_change( $type, $severity, $title, array $site, array $extra = array() ) {
+		Logger::log(
+			$type,
+			'Security Monitoring',
+			$severity,
+			$title,
+			/* translators: 1: site name, 2: site address */
+			sprintf( __( '%1$s (%2$s)', 'tbsh-compliance-audit-logger' ), $site['label'], $site['url'] ),
+			array(
+				'object_type' => 'network_site',
+				'object_id'   => $site['id'],
+				'metadata'    => array_merge( array( 'url' => $site['url'], 'label' => $site['label'] ), $extra ),
+			)
+		);
+	}
+
+	/**
+	 * Connected sites for the compliance digest.
+	 *
+	 * @return array{sites:array,unreachable:int,compromised:int,open_incidents:int}
+	 */
+	public static function digest() {
+		$out = array( 'sites' => array(), 'unreachable' => 0, 'compromised' => 0, 'open_incidents' => 0 );
+		foreach ( self::stored() as $site ) {
+			$summary = is_array( $site['summary'] ?? null ) ? $site['summary'] : array();
+			$row     = array(
+				'label'          => (string) $site['label'],
+				'url'            => (string) $site['url'],
+				'reachable'      => 'error' !== ( $site['status'] ?? '' ),
+				'readiness'      => $summary['readiness'] ?? null,
+				'integrity'      => (string) ( $summary['integrity'] ?? 'unverified' ),
+				'open_incidents' => isset( $summary['open_incidents'] ) ? (int) $summary['open_incidents'] : null,
+				'critical'       => (int) ( $summary['critical_events'] ?? 0 ),
+			);
+			$out['unreachable']    += $row['reachable'] ? 0 : 1;
+			$out['compromised']    += 'compromised' === $row['integrity'] ? 1 : 0;
+			$out['open_incidents'] += (int) $row['open_incidents'];
+			$out['sites'][]         = $row;
+		}
+		return $out;
 	}
 
 	/**

@@ -43,15 +43,29 @@ class ForensicTimeline {
 			$where[] = 'user_id = %d';
 			$args[]  = intval( $filters['user_id'] );
 		}
-		if ( ! empty( $filters['search'] ) ) {
-			$where[] = '(event_title LIKE %s OR event_message LIKE %s OR username LIKE %s)';
-			$like    = '%' . $wpdb->esc_like( $filters['search'] ) . '%';
-			$args[]  = $like;
-			$args[]  = $like;
-			$args[]  = $like;
-		}
-
-		$where_clause = implode( ' AND ', $where );
+		$search = isset( $filters['search'] ) ? trim( (string) $filters['search'] ) : '';
+		$exact  = false;
+		do {
+			$try_where = $where;
+			$try_args  = $args;
+			$mode      = '';
+			if ( '' !== $search ) {
+				// The faster of index and substring search; substring search when the
+				// index finds nothing (see LogSearch::choose()).
+				list( $search_sql, $search_args, $mode ) = $exact
+					? \TBSHComplianceAuditLogger\Logging\LogSearch::clause( $search, true )
+					: \TBSHComplianceAuditLogger\Logging\LogSearch::choose( $search, $where, $args );
+				$try_where[] = $search_sql;
+				$try_args    = array_merge( $try_args, $search_args );
+			}
+			$where_clause = implode( ' AND ', $try_where );
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			$found = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM ( SELECT 1 FROM %i WHERE $where_clause LIMIT 1 ) AS any_row", array_merge( array( $table_name ), $try_args ) ) );
+			$retry = 'fulltext' === $mode && 0 === $found;
+			$exact = true;
+		} while ( $retry );
+		$where = $try_where;
+		$args  = $try_args;
 
 		$page     = max( 1, isset( $filters['page'] ) ? intval( $filters['page'] ) : 1 );
 		$per_page = max( 1, min( 100, isset( $filters['per_page'] ) ? intval( $filters['per_page'] ) : 50 ) );

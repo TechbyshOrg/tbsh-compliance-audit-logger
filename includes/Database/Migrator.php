@@ -38,6 +38,7 @@ class Migrator {
 		'migrate_legacy_settings',
 		'schedule_cron',
 		'add_log_actor_column',
+		'add_log_search_index',
 	);
 
 	/**
@@ -458,6 +459,19 @@ class Migrator {
 	 */
 	private static function add_log_actor_column() {
 		Schema::create_tables();
+		return true;
+	}
+
+	/**
+	 * Add the full-text index used by log searches (see Logging\LogSearch).
+	 *
+	 * Servers without InnoDB full-text support keep the substring search.
+	 *
+	 * @return bool
+	 */
+	private static function add_log_search_index() {
+		Schema::create_tables();
+		delete_transient( \TBSHComplianceAuditLogger\Logging\LogSearch::INDEX_CACHE );
 		return true;
 	}
 

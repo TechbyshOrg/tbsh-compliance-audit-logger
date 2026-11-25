@@ -616,7 +616,7 @@
       <div class="alert alert-warning">
         <h4>System Requirements</h4>
         <ul>
-          <li>WordPress version <strong>6.2</strong> or higher.</li>
+          <li>WordPress version <strong>6.6</strong> or higher.</li>
           <li>PHP version <strong>8.0</strong> or higher.</li>
           <li>MySQL / MariaDB database with standard transactional locking support.</li>
           <li>Working WP-Cron (or a real cron job calling <code>wp-cron.php</code>) for alerts, retention and vault syncs.</li>
@@ -718,7 +718,7 @@
             </tr>
             <tr>
               <td><code>/includes/Vaults/</code></td>
-              <td>Off-site vault manager, encrypted package builder, providers (S3-compatible, FTP/FTPS, remote site) and the vault receiver.</td>
+              <td>Off-site vault manager, encrypted package builder, providers (S3-compatible, FTPS, remote site) and the vault receiver.</td>
             </tr>
             <tr>
               <td><code>/includes/AI/</code></td>
@@ -922,6 +922,9 @@ do_action( 'tbsh_cal_log', 'invoice_approved', array( 'title' => 'Invoice approv
             <tr><td><code>tbsh_cal_mcp_namespaces</code></td><td>REST namespaces served by MCP servers (default <code>mcp</code>, <code>mcp-adapter</code>, <code>wp-mcp</code>); requests to them are attributed to AI agents.</td></tr>
             <tr><td><code>tbsh_cal_log_readonly_abilities</code></td><td>Return <code>true</code> to also log runs of read-only abilities (<code>$log, $ability</code>).</td></tr>
             <tr><td><code>tbsh_cal_allow_private_network_sites</code></td><td>Return <code>true</code> to connect Site Network sites on private or loopback addresses, or over plain http (internal networks). Off by default.</td></tr>
+            <tr><td><code>tbsh_cal_allow_plain_ftp</code></td><td>Return <code>true</code> to allow vaults over plain, unencrypted FTP (for example on a closed network). Off by default because it sends the FTP password in clear text; use FTPS.</td></tr>
+            <tr><td><code>tbsh_cal_allow_private_ai_endpoints</code></td><td>Multisite only: return <code>true</code> to let sub-sites use a self-hosted AI endpoint on a private or local address. Single sites can always use one. (On multisite, FTP vault hosts must likewise be public unless <code>tbsh_cal_allow_private_vault_endpoints</code> returns <code>true</code>.)</td></tr>
+            <tr><td><code>tbsh_cal_pdf_font</code></td><td>Path of the TrueType font (TrueType outlines, not a collection) embedded in PDF reports that contain characters outside Western European languages. Default: the bundled DejaVu Sans.</td></tr>
             <tr><td><code>tbsh_cal_allow_private_siem_endpoints</code></td><td>Return <code>true</code> to allow SIEM forwarding to private, loopback or reserved addresses (internal collectors). Off by default to prevent request forgery against internal services.</td></tr>
             <tr><td><code>tbsh_cal_log</code> (action)</td><td>Add an event through the public API (see above).</td></tr>
           </tbody>
@@ -1254,7 +1257,7 @@ $integrity_hash = hash('sha256', $canonical_string);</code></pre>
           </tbody>
         </table>
       </div>
-      <p>Formats are <strong>PDF</strong> (A4, generated on the server without extra libraries, with repeated table headers and page numbers), <strong>HTML</strong> (print-ready), <strong>CSV</strong> and <strong>JSON</strong>. Every format is signed. PDF uses the standard PDF fonts, which cover Western European characters; other characters are replaced and the report says so, so for other scripts use HTML and the browser's <em>Print → Save as PDF</em>.</p>
+      <p>Formats are <strong>PDF</strong> (A4, generated on the server without extra libraries, with repeated table headers and page numbers), <strong>HTML</strong> (print-ready), <strong>CSV</strong> and <strong>JSON</strong>. Every format is signed. PDF uses the standard PDF fonts for Western European text. When a report contains other characters, it is generated again with an embedded subset of the bundled DejaVu Sans font, which covers Latin (including Central and Eastern European), Greek, Cyrillic, Armenian, Georgian and Vietnamese; the text stays searchable and copyable. Scripts that need shaping or right-to-left layout (Arabic, Hebrew, Indic, Thai) and characters the font lacks (Chinese, Japanese, Korean, emoji) are replaced and the report says so: use HTML and the browser's <em>Print → Save as PDF</em>. Developers can embed another TrueType font with the <code>tbsh_cal_pdf_font</code> filter.</p>
       <div class="alert alert-info">
         <h4>Signing & Verification</h4>
         Every stored report gets a SHA-256 content hash and an HMAC-SHA256 signature over that hash, keyed with a site secret derived from the plugin's encryption key. Verification recomputes both from the stored file, so any change to the file, or a signature produced without this site's key, fails verification.
@@ -1683,7 +1686,8 @@ wp tbsh-cal verify-chain</code></pre>
         <li><strong>Alerts, retention or vault syncs never run:</strong> they depend on WP-Cron, which only runs when the site receives traffic. If <code>DISABLE_WP_CRON</code> is set or traffic is low, call <code>wp-cron.php</code> from a real cron job (for example every 5 minutes) or run <code>wp cron event run --due-now</code>. System Health shows whether the maintenance hook is scheduled.</li>
         <li><strong>An alert shows "failed" in the Alert Center:</strong> read the stored response message. Webhook URLs must be public <code>https://</code> URLs; private or local addresses are refused.</li>
         <li><strong>S3 vault: "Access Denied":</strong> the key needs <code>s3:PutObject</code> and <code>s3:DeleteObject</code> on the bucket/prefix (the connection test writes and deletes a probe object), plus <code>s3:AbortMultipartUpload</code> for packages over 8 MiB, which use multipart upload (initiating, uploading parts and completing are covered by <code>s3:PutObject</code>; a failed multipart upload is aborted). For non-AWS providers, enter the provider's endpoint and enable path-style addressing if required. Self-hosted endpoints on private networks are blocked unless the <code>tbsh_cal_allow_private_vault_endpoints</code> filter returns <code>true</code>.</li>
-        <li><strong>FTP/FTPS vault is unavailable:</strong> the PHP <code>ftp</code> extension is not installed on the server (System Health reports this). Use an S3-compatible or remote-site vault, or ask your host to enable it.</li>
+        <li><strong>Plain FTP vault stopped working:</strong> plain FTP sends the password unencrypted and is turned off. Edit the vault and choose FTPS (a developer can re-enable plain FTP on a closed network with the <code>tbsh_cal_allow_plain_ftp</code> filter).</li>
+        <li><strong>FTPS vault is unavailable:</strong> the PHP <code>ftp</code> extension is not installed on the server (System Health reports this). Use an S3-compatible or remote-site vault, or ask your host to enable it.</li>
         <li><strong>Private files are publicly readable (nginx):</strong> nginx ignores <code>.htaccess</code>. Add a deny rule; System Health reports a failure while files in <code>uploads/tbsh-compliance-private/</code> can be downloaded.
           <div class="code-container">
             <div class="code-header">

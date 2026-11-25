@@ -75,7 +75,7 @@ const isHttpsUrl = ( value ) => {
 	try {
 		const url = new URL( value );
 		return url.protocol === 'https:' && !! url.hostname;
-	} catch ( e ) {
+	} catch {
 		return false;
 	}
 };
@@ -84,7 +84,7 @@ const isHttpUrl = ( value ) => {
 	try {
 		const url = new URL( value );
 		return ( url.protocol === 'https:' || url.protocol === 'http:' ) && !! url.hostname;
-	} catch ( e ) {
+	} catch {
 		return false;
 	}
 };
@@ -117,19 +117,19 @@ function Toggle( { id, label, checked, onChange, disabled, description } ) {
 /**
  * Write-only secret input. The stored value is never shown; its masked hint is the placeholder.
  *
- * @param {Object}   props
- * @param {string}   props.secretKey        Secret key in the settings store.
- * @param {string}   props.label            Field label.
- * @param {Object}   props.secrets          Stored-secret status keyed by secret key.
- * @param {string}   props.value            Newly typed value.
- * @param {Function} props.onChange         Called with the typed value.
- * @param {Function} props.onRemove         Removes the stored secret.
- * @param {boolean}  props.disabled         Disables the field.
- * @param {string}   props.help             Help text.
- * @param {boolean}  props.reveal           Shows the typed value in plain text.
- * @param {string}   props.emptyPlaceholder Placeholder when no secret is stored.
- * @param {boolean}  props.optional         Marks the field as optional.
- * @param {Function} props.onGenerate       Generates a new value.
+ * @param {Object}                  props
+ * @param {string}                  props.secretKey        Secret key in the settings store.
+ * @param {string}                  props.label            Field label.
+ * @param {Object}                  props.secrets          Stored-secret status keyed by secret key.
+ * @param {string}                  props.value            Newly typed value.
+ * @param {(value: string) => void} props.onChange         Called with the typed value.
+ * @param {() => void}              props.onRemove         Removes the stored secret.
+ * @param {boolean}                 props.disabled         Disables the field.
+ * @param {string}                  props.help             Help text.
+ * @param {boolean}                 props.reveal           Shows the typed value in plain text.
+ * @param {string}                  props.emptyPlaceholder Placeholder when no secret is stored.
+ * @param {boolean}                 props.optional         Marks the field as optional.
+ * @param {() => void}              props.onGenerate       Generates a new value.
  */
 function SecretField( { secretKey, label, secrets, value, onChange, onRemove, disabled, help, reveal, emptyPlaceholder, optional, onGenerate } ) {
 	const id = `tbsh-secret-${ secretKey }`;
@@ -244,7 +244,7 @@ export default function Settings() {
 			} );
 	};
 
-	useEffect( load, [ hasManageCapability ] ); // eslint-disable-line react-hooks/exhaustive-deps
+	useEffect( load, [ hasManageCapability ] );
 
 	const loadSiemStatus = () => {
 		if ( ! hasManageCapability ) {
@@ -253,7 +253,7 @@ export default function Settings() {
 		get( '/siem' ).then( setSiemStatus ).catch( () => setSiemStatus( null ) );
 	};
 
-	useEffect( loadSiemStatus, [ hasManageCapability ] ); // eslint-disable-line react-hooks/exhaustive-deps
+	useEffect( loadSiemStatus, [ hasManageCapability ] );
 
 	const previewDigest = () => {
 		setDigestBusy( 'preview' );
@@ -470,7 +470,7 @@ export default function Settings() {
 					setTimeout( () => setCopied( false ), 2000 );
 				} ).catch( () => {} );
 			}
-		} catch ( e ) {
+		} catch {
 			// Clipboard unavailable: the field stays selectable.
 		}
 	};

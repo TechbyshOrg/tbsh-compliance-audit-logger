@@ -23,10 +23,10 @@ const sectionStyle = { borderTop: '1px solid var(--tbsh-border-color)', paddingT
 /**
  * Details of one audit log entry.
  *
- * @param {Object}   props
- * @param {Object}   props.log     Entry already loaded (Activity Logs), or null.
- * @param {number}   props.logId   Entry ID to load (Dashboard), or 0.
- * @param {Function} props.onClose Close handler.
+ * @param {Object}     props
+ * @param {Object}     props.log     Entry already loaded (Activity Logs), or null.
+ * @param {number}     props.logId   Entry ID to load (Dashboard), or 0.
+ * @param {() => void} props.onClose Close handler.
  */
 export default function LogDetailModal( { log = null, logId = 0, onClose } ) {
 	const [ loaded, setLoaded ] = useState( null );

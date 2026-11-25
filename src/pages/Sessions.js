@@ -13,7 +13,7 @@ const formatDate = ( iso ) => {
 	}
 	try {
 		return new Date( iso ).toLocaleString();
-	} catch ( e ) {
+	} catch {
 		return iso;
 	}
 };

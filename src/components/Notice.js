@@ -1,9 +1,9 @@
 /**
  * Inline status message, announced to screen readers when it appears.
  *
- * @param {Object} props
- * @param {string} props.type    success|warning|error|info.
- * @param {*}      props.message Message.
+ * @param {Object}  props
+ * @param {string}  props.type    success|warning|error|info.
+ * @param {unknown} props.message Message.
  */
 export default function Notice( { type = 'info', message } ) {
 	if ( ! message ) {

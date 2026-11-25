@@ -302,7 +302,11 @@ class ComplianceDigest {
 			'files' => is_array( $files ) ? (string) $files['status'] : 'unverified',
 		);
 
+		$network = \TBSHComplianceAuditLogger\Network\SiteNetwork::digest();
+
 		$attention = $by_severity['error'] + $by_severity['critical'] > 0
+			|| $network['unreachable'] > 0
+			|| $network['compromised'] > 0
 			|| $opened > 0
 			|| $overdue
 			|| $vault_failures > 0
@@ -341,6 +345,7 @@ class ComplianceDigest {
 				'vendor_renewals_soon'   => (int) $vendor['renewals_soon'],
 			),
 			'vault_failures' => $vault_failures,
+			'network'        => $network,
 		);
 	}
 
@@ -460,6 +465,37 @@ class ComplianceDigest {
 			<li style="color:#b91c1c;"><?php /* translators: %d: count */ echo esc_html( sprintf( __( 'Failed off-site vault syncs: %d', 'tbsh-compliance-audit-logger' ), $d['vault_failures'] ) ); ?></li>
 		<?php endif; ?>
 	</ul>
+
+	<?php if ( ! empty( $d['network']['sites'] ) ) : ?>
+		<h2 style="<?php echo esc_attr( $h2 ); ?>"><?php echo esc_html__( 'Site Network', 'tbsh-compliance-audit-logger' ); ?></h2>
+		<ul style="font-size:14px;padding-left:20px;margin:0;">
+			<?php foreach ( $d['network']['sites'] as $site ) : ?>
+				<li<?php echo ( ! $site['reachable'] || 'compromised' === $site['integrity'] ) ? ' style="color:#b91c1c;"' : ''; ?>>
+					<strong><?php echo esc_html( $site['label'] ); ?></strong>:
+					<?php
+					if ( ! $site['reachable'] ) {
+						echo esc_html__( 'cannot be read (check its auditor link)', 'tbsh-compliance-audit-logger' );
+					} else {
+						$parts = array();
+						if ( null !== $site['readiness'] ) {
+							/* translators: %d: score */
+							$parts[] = sprintf( __( 'readiness %d', 'tbsh-compliance-audit-logger' ), (int) $site['readiness'] );
+						}
+						if ( null !== $site['open_incidents'] ) {
+							/* translators: %d: count */
+							$parts[] = sprintf( __( 'open incidents: %d', 'tbsh-compliance-audit-logger' ), $site['open_incidents'] );
+						}
+						$parts[] = 'compromised' === $site['integrity']
+							? __( 'audit log integrity FAILED', 'tbsh-compliance-audit-logger' )
+							/* translators: %s: integrity state */
+							: sprintf( __( 'audit log: %s', 'tbsh-compliance-audit-logger' ), $site['integrity'] );
+						echo esc_html( implode( ' · ', $parts ) );
+					}
+					?>
+				</li>
+			<?php endforeach; ?>
+		</ul>
+	<?php endif; ?>
 
 	<h2 style="<?php echo esc_attr( $h2 ); ?>"><?php echo esc_html__( 'Governance', 'tbsh-compliance-audit-logger' ); ?></h2>
 	<ul style="font-size:14px;padding-left:20px;margin:0;">

@@ -108,11 +108,11 @@ function ReadOnlyField( { label, value } ) {
 /**
  * Incident detail view (lives inside a Modal).
  *
- * @param {Object}   props                 Props.
- * @param {number}   props.id              Incident ID.
- * @param {boolean}  props.canManage       Write access.
- * @param {Function} props.onChanged       Called after any successful change.
- * @param {Function} props.onRequestDelete Called with the incident to ask for deletion.
+ * @param {Object}                     props                 Props.
+ * @param {number}                     props.id              Incident ID.
+ * @param {boolean}                    props.canManage       Write access.
+ * @param {() => void}                 props.onChanged       Called after any successful change.
+ * @param {(incident: Object) => void} props.onRequestDelete Called with the incident to ask for deletion.
  */
 function IncidentDetail( { id, canManage, onChanged, onRequestDelete } ) {
 	const [ incident, setIncident ] = useState( null );
@@ -184,7 +184,7 @@ function IncidentDetail( { id, canManage, onChanged, onRequestDelete } ) {
 				setError( errMessage( err, __( 'Failed to load the incident.', 'tbsh-compliance-audit-logger' ) ) );
 				setLoading( false );
 			} );
-	}, [ id ] ); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [ id ] );
 
 	useEffect( () => {
 		load();

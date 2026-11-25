@@ -81,15 +81,6 @@ class LogsController extends BaseController {
 		$where = array( '1=1' );
 		$args  = array();
 
-		if ( ! empty( $search ) ) {
-			$where[] = '(event_title LIKE %s OR event_message LIKE %s OR username LIKE %s OR object_type LIKE %s)';
-			$like    = '%' . $wpdb->esc_like( $search ) . '%';
-			$args[]  = $like;
-			$args[]  = $like;
-			$args[]  = $like;
-			$args[]  = $like;
-		}
-
 		$severity_filter = \TBSHComplianceAuditLogger\Logging\Logger::severity_filter( $severity );
 		if ( $severity_filter ) {
 			$where[] = $severity_filter[0];
@@ -135,15 +126,32 @@ class LogsController extends BaseController {
 			$args[]  = $date_end . ' 23:59:59';
 		}
 
-		$where_clause = implode( ' AND ', $where );
-
 		// Count, capped: an exact count of millions of rows costs seconds on every page.
-		$count_sql = "SELECT COUNT(*) FROM ( SELECT 1 FROM %i WHERE $where_clause LIMIT %d ) AS capped";
-		$count_args = array_merge( array( $table_name ), $args, array( self::COUNT_CAP + 1 ) );
-		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
-		$count_sql = $wpdb->prepare( $count_sql, $count_args );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared
-		$total_items = intval( $wpdb->get_var( $count_sql ) );
+		$count = function ( array $where, array $args ) use ( $wpdb, $table_name ) {
+			$where_clause = implode( ' AND ', $where );
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $where_clause holds only placeholders.
+			$sql = $wpdb->prepare( "SELECT COUNT(*) FROM ( SELECT 1 FROM %i WHERE $where_clause LIMIT %d ) AS capped", array_merge( array( $table_name ), $args, array( self::COUNT_CAP + 1 ) ) );
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared
+			return intval( $wpdb->get_var( $sql ) );
+		};
+
+		$search_mode = '';
+		if ( '' !== $search ) {
+			// Whole words through the full-text index or the substring search, whichever
+			// is faster (see LogSearch::choose()); when the index finds nothing, the
+			// substring search runs so matches inside words still appear.
+			list( $search_sql, $search_args, $search_mode ) = \TBSHComplianceAuditLogger\Logging\LogSearch::choose( $search, $where, $args );
+			$total_items = $count( array_merge( $where, array( $search_sql ) ), array_merge( $args, $search_args ) );
+			if ( 'fulltext' === $search_mode && 0 === $total_items ) {
+				list( $search_sql, $search_args, $search_mode ) = \TBSHComplianceAuditLogger\Logging\LogSearch::clause( $search, true );
+				$total_items = $count( array_merge( $where, array( $search_sql ) ), array_merge( $args, $search_args ) );
+			}
+			$where = array_merge( $where, array( $search_sql ) );
+			$args  = array_merge( $args, $search_args );
+		} else {
+			$total_items = $count( $where, $args );
+		}
+		$where_clause = implode( ' AND ', $where );
 		$capped      = $total_items > self::COUNT_CAP;
 		$total_items = min( $total_items, self::COUNT_CAP );
 
@@ -165,6 +173,7 @@ class LogsController extends BaseController {
 			'logs'       => $logs,
 			'total'      => $total_items,
 			'total_capped' => $capped,
+			'search_mode'  => $search_mode,
 			'pages'      => ceil( $total_items / $per_page ),
 			'page'       => $page,
 			'per_page'   => $per_page,

@@ -63,14 +63,86 @@ class PdfWriter {
 	private $lossy = false;
 
 	/**
+	 * Embedded Unicode font, or null for the standard Helvetica fonts.
+	 *
+	 * @var TrueTypeFont|null
+	 */
+	private $font = null;
+
+	/**
+	 * Bytes per encoded character: 1 (Windows-1252) or 2 (glyph IDs, Identity-H).
+	 *
+	 * @var int
+	 */
+	private $unit = 1;
+
+	/**
+	 * Glyphs used with the embedded font: glyph ID => code point (for the ToUnicode map).
+	 *
+	 * @var array
+	 */
+	private $used = array();
+
+	/**
+	 * Encoded space.
+	 *
+	 * @var string
+	 */
+	private $space = ' ';
+
+	/**
+	 * Constructor.
+	 *
+	 * @param TrueTypeFont|null $font Unicode font to embed, or null for Helvetica.
+	 */
+	public function __construct( $font = null ) {
+		if ( $font instanceof TrueTypeFont ) {
+			$this->font = $font;
+			$this->unit = 2;
+		}
+		$this->space = $this->encode( ' ' );
+	}
+
+	/**
 	 * Render report data as a PDF document.
+	 *
+	 * Text that fits the standard fonts gives the same small file as before. When
+	 * characters would be lost (for example Greek, Cyrillic, Polish or Vietnamese),
+	 * the report is rendered again with an embedded subset of a Unicode font.
 	 *
 	 * @param array $data Report data (meta, sections).
 	 * @return string PDF bytes.
 	 */
 	public static function render( array $data ) {
 		$writer = new self();
-		return $writer->document( $data );
+		$pdf    = $writer->document( $data );
+		if ( $writer->lossy ) {
+			$font = self::unicode_font();
+			if ( $font ) {
+				$pdf = ( new self( $font ) )->document( $data );
+			}
+		}
+		return $pdf;
+	}
+
+	/**
+	 * The Unicode font for reports (DejaVu Sans, bundled), loaded once per request.
+	 *
+	 * @return TrueTypeFont|null
+	 */
+	private static function unicode_font() {
+		static $font = false;
+		if ( false === $font ) {
+			/**
+			 * Path of the TrueType font embedded in PDF reports that need characters
+			 * outside Western European languages (for example a CJK TrueType font).
+			 *
+			 * @param string $path Font file (.ttf with TrueType outlines).
+			 */
+			$path = (string) apply_filters( 'tbsh_cal_pdf_font', TBSH_CAL_PATH . 'assets/fonts/DejaVuSans.ttf' );
+			$font = TrueTypeFont::load( $path );
+		}
+		return $font;
 	}
 
 	/**
@@ -385,7 +457,12 @@ class PdfWriter {
 	 * @param array  $color RGB.
 	 */
 	private function text( $x, $y, $text, $size, $bold, array $color ) {
-		$this->out .= sprintf( "BT %.3f %.3f %.3f rg /%s %.2f Tf %.2f %.2f Td (%s) Tj ET\n", $color[0], $color[1], $color[2], $bold ? 'F2' : 'F1', $size, $x, $y, self::escape( $text ) );
+		if ( $bold && $this->font ) {
+			// One embedded font: bold is drawn as filled and outlined text.
+			$this->out .= sprintf( "q %.3f %.3f %.3f rg %.3f %.3f %.3f RG %.2f w BT 2 Tr /F1 %.2f Tf %.2f %.2f Td %s Tj ET Q\n", $color[0], $color[1], $color[2], $color[0], $color[1], $color[2], $size * 0.035, $size, $x, $y, $this->pdf_text( $text ) );
+			return;
+		}
+		$this->out .= sprintf( "BT %.3f %.3f %.3f rg /%s %.2f Tf %.2f %.2f Td %s Tj ET\n", $color[0], $color[1], $color[2], $bold ? 'F2' : 'F1', $size, $x, $y, $this->pdf_text( $text ) );
 	}
 
 	/**
@@ -398,12 +475,12 @@ class PdfWriter {
 	 * @return string[]
 	 */
 	private function wrap( $text, $width, $size, $bold = false ) {
-		$encoded = $this->encode( $text );
-		$lines   = array();
-		foreach ( preg_split( "/\r\n|\n|\r/", $encoded ) as $para ) {
+		$lines = array();
+		foreach ( preg_split( "/\r\n|\n|\r/", str_replace( "\t", '    ', (string) $text ) ) as $para ) {
 			$line = '';
-			foreach ( preg_split( '/ +/', $para ) as $word ) {
-				$candidate = '' === $line ? $word : $line . ' ' . $word;
+			foreach ( preg_split( '/ +/', $para ) as $raw ) {
+				$word      = $this->encode( $raw );
+				$candidate = '' === $line ? $word : $line . $this->space . $word;
 				if ( $this->measure_encoded( $candidate, $size, $bold ) <= $width ) {
 					$line = $candidate;
 					continue;
@@ -412,19 +489,41 @@ class PdfWriter {
 					$lines[] = $line;
 				}
 				// Break words longer than the cell (hashes, URLs).
-				while ( $this->measure_encoded( $word, $size, $bold ) > $width && strlen( $word ) > 1 ) {
-					$cut = strlen( $word );
-					while ( $cut > 1 && $this->measure_encoded( substr( $word, 0, $cut ), $size, $bold ) > $width ) {
+				while ( $this->measure_encoded( $word, $size, $bold ) > $width && $this->length( $word ) > 1 ) {
+					$cut = $this->length( $word );
+					while ( $cut > 1 && $this->measure_encoded( $this->part( $word, 0, $cut ), $size, $bold ) > $width ) {
 						--$cut;
 					}
-					$lines[] = substr( $word, 0, $cut );
-					$word    = substr( $word, $cut );
+					$lines[] = $this->part( $word, 0, $cut );
+					$word    = $this->part( $word, $cut );
 				}
 				$line = $word;
 			}
 			$lines[] = $line;
 		}
 		return $lines ? $lines : array( '' );
+	}
+
+	/**
+	 * Number of characters in encoded text.
+	 *
+	 * @param string $text Encoded text.
+	 * @return int
+	 */
+	private function length( $text ) {
+		return intdiv( strlen( $text ), $this->unit );
+	}
+
+	/**
+	 * Characters of encoded text.
+	 *
+	 * @param string   $text   Encoded text.
+	 * @param int      $start  First character.
+	 * @param int|null $length Number of characters, or null for the rest.
+	 * @return string
+	 */
+	private function part( $text, $start, $length = null ) {
+		return null === $length ? (string) substr( $text, $start * $this->unit ) : (string) substr( $text, $start * $this->unit, $length * $this->unit );
 	}
 
 	/**
@@ -449,6 +548,12 @@ class PdfWriter {
 	 */
 	private function measure_encoded( $text, $size, $bold = false ) {
 		$units = 0;
+		if ( $this->font ) {
+			foreach ( '' === $text ? array() : unpack( 'n*', $text ) as $gid ) {
+				$units += $this->font->width( $gid );
+			}
+			return $units * $size / 1000 * ( $bold ? 1.04 : 1 );
+		}
 		$len   = strlen( $text );
 		for ( $i = 0; $i < $len; $i++ ) {
 			$code   = ord( $text[ $i ] );
@@ -466,6 +571,9 @@ class PdfWriter {
 	private function encode( $text ) {
 		$text = str_replace( "\t", '    ', (string) $text );
 		$text = preg_replace( '/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $text );
+		if ( $this->font ) {
+			return $this->encode_glyphs( $text );
+		}
 		if ( function_exists( 'mb_convert_encoding' ) ) {
 			$converted = mb_convert_encoding( $text, 'Windows-1252', 'UTF-8' );
 			if ( mb_convert_encoding( $converted, 'UTF-8', 'Windows-1252' ) !== $text ) {
@@ -478,6 +586,103 @@ class PdfWriter {
 			$this->lossy = true;
 		}
 		return $ascii;
+	}
+
+	/**
+	 * UTF-8 to two-byte glyph IDs of the embedded font.
+	 *
+	 * Characters the font lacks, and scripts that need shaping or right-to-left
+	 * layout (which this writer does not do), become "?" and mark the PDF lossy.
+	 *
+	 * @param string $text UTF-8 text.
+	 * @return string
+	 */
+	private function encode_glyphs( $text ) {
+		if ( class_exists( '\Normalizer' ) ) {
+			$normal = \Normalizer::normalize( $text, \Normalizer::FORM_C );
+			$text   = false === $normal ? $text : $normal;
+		}
+		$out = '';
+		foreach ( (array) preg_split( '//u', $text, -1, PREG_SPLIT_NO_EMPTY ) as $char ) {
+			$cp  = self::code_point( "\n" === $char || "\r" === $char ? ' ' : $char );
+			$gid = self::needs_shaping( $cp ) ? 0 : $this->font->glyph( $cp );
+			if ( ! $gid ) {
+				$this->lossy = true;
+				$cp          = 63; // "?"
+				$gid         = $this->font->glyph( 63 );
+			}
+			$this->used[ $gid ] = $cp;
+			$out               .= pack( 'n', $gid );
+		}
+		return $out;
+	}
+
+	/**
+	 * Code point of one UTF-8 character.
+	 *
+	 * @param string $char Character.
+	 * @return int
+	 */
+	private static function code_point( $char ) {
+		$b = array_values( (array) unpack( 'C*', $char ) );
+		switch ( count( $b ) ) {
+			case 1:
+				return $b[0];
+			case 2:
+				return ( ( $b[0] & 0x1F ) << 6 ) | ( $b[1] & 0x3F );
+			case 3:
+				return ( ( $b[0] & 0x0F ) << 12 ) | ( ( $b[1] & 0x3F ) << 6 ) | ( $b[2] & 0x3F );
+			case 4:
+				return ( ( $b[0] & 0x07 ) << 18 ) | ( ( $b[1] & 0x3F ) << 12 ) | ( ( $b[2] & 0x3F ) << 6 ) | ( $b[3] & 0x3F );
+		}
+		return 63;
+	}
+
+	/**
+	 * Whether a code point belongs to a script that needs shaping or right-to-left
+	 * layout (Hebrew, Arabic, Syriac, Indic, Thai, Lao, Tibetan, Myanmar, Khmer…).
+	 *
+	 * @param int $cp Code point.
+	 * @return bool
+	 */
+	private static function needs_shaping( $cp ) {
+		$ranges = array( array( 0x0590, 0x08FF ), array( 0x0900, 0x0DFF ), array( 0x0E00, 0x0FFF ), array( 0x1000, 0x109F ), array( 0x1780, 0x18AF ), array( 0xA8E0, 0xA8FF ), array( 0xFB1D, 0xFDFF ), array( 0xFE70, 0xFEFF ) );
+		foreach ( $ranges as $r ) {
+			if ( $cp >= $r[0] && $cp <= $r[1] ) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Encoded text as a PDF string operand.
+	 *
+	 * @param string $text Encoded text.
+	 * @return string
+	 */
+	private function pdf_text( $text ) {
+		return $this->font ? '<' . strtoupper( bin2hex( $text ) ) . '>' : '(' . self::escape( $text ) . ')';
+	}
+
+	/**
+	 * UTF-8 as a UTF-16BE hex string with byte-order mark (for document information).
+	 *
+	 * @param string $text UTF-8 text.
+	 * @return string
+	 */
+	private static function utf16_hex( $text ) {
+		$out = 'FEFF';
+		foreach ( (array) preg_split( '//u', (string) $text, -1, PREG_SPLIT_NO_EMPTY ) as $char ) {
+			$cp = self::code_point( $char );
+			if ( $cp > 0xFFFF ) {
+				$cp  -= 0x10000;
+				$out .= sprintf( '%04X%04X', 0xD800 | ( $cp >> 10 ), 0xDC00 | ( $cp & 0x3FF ) );
+			} else {
+				$out .= sprintf( '%04X', $cp );
+			}
+		}
+		return '<' . $out . '>';
 	}
 
 	/**
@@ -540,17 +745,28 @@ class PdfWriter {
 
 		$catalog = $add( '' ); // Filled in below.
 		$tree    = $add( '' );
-		$regular = $add( '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>' );
-		$bold    = $add( '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>' );
 		$label   = $this->encode( $title . ( '' !== $organisation ? ' — ' . $organisation : '' ) );
+		// Footers are encoded before the font is written, so every glyph is in the subset.
+		$page_labels = array();
+		foreach ( array_keys( $this->pages ) as $n ) {
+			/* translators: 1: page number, 2: total pages */
+			$page_labels[ $n ] = $this->encode( sprintf( __( 'Page %1$d of %2$d', 'tbsh-compliance-audit-logger' ), $n + 1, $total ) );
+		}
+		$this->encode( '...' );
+		if ( $this->font ) {
+			$regular = $this->embed_font( $add );
+			$bold    = $regular;
+		} else {
+			$regular = $add( '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>' );
+			$bold    = $add( '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>' );
+		}
 
 		$kids = array();
 		foreach ( $this->pages as $n => $content ) {
-			/* translators: 1: page number, 2: total pages */
-			$page_label = $this->encode( sprintf( __( 'Page %1$d of %2$d', 'tbsh-compliance-audit-logger' ), $n + 1, $total ) );
+			$page_label = $page_labels[ $n ];
 			$footer     = sprintf( "0.886 0.910 0.941 RG 0.5 w %.2f %.2f m %.2f %.2f l S\n", self::MARGIN, self::MARGIN + 14, self::PAGE_W - self::MARGIN, self::MARGIN + 14 );
-			$footer    .= sprintf( "BT 0.28 0.33 0.41 rg /F1 7.5 Tf %.2f %.2f Td (%s) Tj ET\n", self::MARGIN, self::MARGIN, self::escape( $this->fit( $label, $this->width() - 80, 7.5 ) ) );
-			$footer    .= sprintf( "BT 0.28 0.33 0.41 rg /F1 7.5 Tf %.2f %.2f Td (%s) Tj ET\n", self::PAGE_W - self::MARGIN - $this->measure_encoded( $page_label, 7.5 ), self::MARGIN, self::escape( $page_label ) );
+			$footer    .= sprintf( "BT 0.28 0.33 0.41 rg /F1 7.5 Tf %.2f %.2f Td %s Tj ET\n", self::MARGIN, self::MARGIN, $this->pdf_text( $this->fit( $label, $this->width() - 80, 7.5 ) ) );
+			$footer    .= sprintf( "BT 0.28 0.33 0.41 rg /F1 7.5 Tf %.2f %.2f Td %s Tj ET\n", self::PAGE_W - self::MARGIN - $this->measure_encoded( $page_label, 7.5 ), self::MARGIN, $this->pdf_text( $page_label ) );
 			$stream     = $content . $footer;
 			$filter     = '';
 			if ( function_exists( 'gzcompress' ) ) {
@@ -565,7 +781,8 @@ class PdfWriter {
 		$objects[ $tree - 1 ]    = sprintf( '<< /Type /Pages /Kids [%s] /Count %d >>', implode( ' ', array_map( function ( $k ) {
 			return $k . ' 0 R';
 		}, $kids ) ), $total );
-		$info = $add( sprintf( '<< /Title (%s) /Producer (%s) /CreationDate (D:%s) >>', self::escape( $this->encode( $title ) ), self::escape( 'TBSH Compliance Audit Logger' ), gmdate( 'YmdHis' ) . 'Z' ) );
+		$info_title = $this->font ? self::utf16_hex( $title ) : '(' . self::escape( $this->encode( $title ) ) . ')';
+		$info       = $add( sprintf( '<< /Title %s /Producer (%s) /CreationDate (D:%s) >>', $info_title, self::escape( 'TBSH Compliance Audit Logger' ), gmdate( 'YmdHis' ) . 'Z' ) );
 
 		$pdf     = "%PDF-1.4\n%\xE2\xE3\xCF\xD3\n";
 		$offsets = array();
@@ -583,6 +800,82 @@ class PdfWriter {
 	}
 
 	/**
+	 * Write the embedded font objects (Type0 / CIDFontType2, Identity-H) and return the font object.
+	 *
+	 * @param callable $add Adds an object and returns its number.
+	 * @return int
+	 */
+	private function embed_font( callable $add ) {
+		$font = $this->font;
+		$m    = $font->metrics;
+		ksort( $this->used );
+		$tag  = substr( strtoupper( preg_replace( '/[^a-z]/i', '', base64_encode( md5( implode( ',', array_keys( $this->used ) ), true ) ) ) ) . 'AAAAAA', 0, 6 );
+		$name = $tag . '+' . $font->name;
+
+		$file   = $font->subset( array_keys( $this->used ) );
+		$length = strlen( $file );
+		$filter = '';
+		if ( function_exists( 'gzcompress' ) ) {
+			$file   = gzcompress( $file, 6 );
+			$filter = ' /Filter /FlateDecode';
+		}
+		$file_obj = $add( sprintf( "<< /Length %d /Length1 %d%s >>\nstream\n%s\nendstream", strlen( $file ), $length, $filter, $file ) );
+
+		$descriptor = $add( sprintf(
+			'<< /Type /FontDescriptor /FontName /%s /Flags 32 /FontBBox [%d %d %d %d] /ItalicAngle 0 /Ascent %d /Descent %d /CapHeight %d /StemV 80 /FontFile2 %d 0 R >>',
+			$name,
+			$m['bbox'][0],
+			$m['bbox'][1],
+			$m['bbox'][2],
+			$m['bbox'][3],
+			$m['ascent'],
+			$m['descent'],
+			$m['cap_height'],
+			$file_obj
+		) );
+
+		$widths = '';
+		foreach ( array_keys( $this->used ) as $gid ) {
+			$widths .= sprintf( '%d [%d] ', $gid, round( $font->width( $gid ) ) );
+		}
+		$cid = $add( sprintf( '<< /Type /Font /Subtype /CIDFontType2 /BaseFont /%s /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor %d 0 R /DW 1000 /W [%s] /CIDToGIDMap /Identity >>', $name, $descriptor, trim( $widths ) ) );
+
+		// ToUnicode: lets readers copy, search and read the text aloud.
+		$map = '';
+		foreach ( array_chunk( $this->used, 100, true ) as $chunk ) {
+			$map .= count( $chunk ) . " beginbfchar\n";
+			foreach ( $chunk as $gid => $cp ) {
+				// utf16_hex() returns "<FEFF…>"; the CMap takes the code units without the byte-order mark.
+				$map .= sprintf( "<%04X> <%s>\n", $gid, substr( self::utf16_hex( self::utf8( $cp ) ), 5, -1 ) );
+			}
+			$map .= "endbfchar\n";
+		}
+		$cmap = "/CIDInit /ProcSet findresource begin\n12 dict begin\nbegincmap\n/CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def\n/CMapName /Adobe-Identity-UCS def\n/CMapType 2 def\n1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n" . $map . "endcmap\nCMapName currentdict /CMap defineresource pop\nend\nend";
+		$to_unicode = $add( sprintf( "<< /Length %d >>\nstream\n%s\nendstream", strlen( $cmap ), $cmap ) );
+
+		return $add( sprintf( '<< /Type /Font /Subtype /Type0 /BaseFont /%s /Encoding /Identity-H /DescendantFonts [%d 0 R] /ToUnicode %d 0 R >>', $name, $cid, $to_unicode ) );
+	}
+
+	/**
+	 * UTF-8 for a code point.
+	 *
+	 * @param int $cp Code point.
+	 * @return string
+	 */
+	private static function utf8( $cp ) {
+		if ( $cp < 0x80 ) {
+			return chr( $cp );
+		}
+		if ( $cp < 0x800 ) {
+			return chr( 0xC0 | ( $cp >> 6 ) ) . chr( 0x80 | ( $cp & 0x3F ) );
+		}
+		if ( $cp < 0x10000 ) {
+			return chr( 0xE0 | ( $cp >> 12 ) ) . chr( 0x80 | ( ( $cp >> 6 ) & 0x3F ) ) . chr( 0x80 | ( $cp & 0x3F ) );
+		}
+		return chr( 0xF0 | ( $cp >> 18 ) ) . chr( 0x80 | ( ( $cp >> 12 ) & 0x3F ) ) . chr( 0x80 | ( ( $cp >> 6 ) & 0x3F ) ) . chr( 0x80 | ( $cp & 0x3F ) );
+	}
+
+	/**
 	 * Shorten encoded text to a width with an ellipsis.
 	 *
 	 * @param string $text  Encoded text.
@@ -594,9 +887,10 @@ class PdfWriter {
 		if ( $this->measure_encoded( $text, $size ) <= $width ) {
 			return $text;
 		}
-		while ( strlen( $text ) > 1 && $this->measure_encoded( $text . '...', $size ) > $width ) {
-			$text = substr( $text, 0, -1 );
+		$dots = $this->encode( '...' );
+		while ( $this->length( $text ) > 1 && $this->measure_encoded( $text . $dots, $size ) > $width ) {
+			$text = $this->part( $text, 0, $this->length( $text ) - 1 );
 		}
-		return $text . '...';
+		return $text . $dots;
 	}
 }

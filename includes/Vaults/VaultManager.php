@@ -186,6 +186,10 @@ class VaultManager {
 			}
 		}
 
+		if ( 'ftp' === $type && 'ftp' === ( $creds['mode'] ?? 'ftps' ) && ! Providers\Ftp::plain_allowed() ) {
+			return new \WP_Error( 'tbsh_cal_invalid', Providers\Ftp::plain_refused_message(), array( 'status' => 400 ) );
+		}
+
 		$is_active = ! empty( $data['is_active'] );
 		if ( $is_active ) {
 			foreach ( self::FIELDS[ $type ] as $field => list( $secret, $required ) ) {
