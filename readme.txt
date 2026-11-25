@@ -41,6 +41,7 @@ Designed to assist compliance officers, developers, and security teams in meetin
 *   **WooCommerce Audit Trail:** Order status changes and edits by staff, refunds, deleted orders, product price, stock and download changes, coupons and store settings, without logging customer data.
 *   **Active Sessions:** See who is signed in on which device and end a session or sign a user out everywhere during an incident.
 *   **Logging Exclusions:** Silence routine activity from service accounts, roles or event types; security-relevant events and errors are always kept.
+*   **Site Network:** See the readiness score, activity, errors, failed sign-ins, open incidents and log integrity of all your sites on one page. Each site is connected with one of its own read-only, expiring auditor links, so nothing new is installed or exposed on it.
 *   **AI Agent Attribution:** Every entry records who or what made the change (a person, an AI agent, an integration, an automated task or a visitor) and how it arrived (browser, REST API, MCP, XML-RPC, cron or WP-CLI), including the application password and the WordPress ability used. Ability runs by AI agents and MCP servers are logged, with refused and failed attempts. Filter the log by "Made by".
 *   **Developer API:** Add your own events to the tamper-evident log with `tbsh_cal_log()` or `do_action( 'tbsh_cal_log', ... )`.
 *   **Evidence Vault:** Capture point-in-time snapshots of themes, plugins, capabilities and system configuration, manually or daily/weekly.
@@ -70,7 +71,7 @@ Designed to assist compliance officers, developers, and security teams in meetin
 **Evidence & reporting**
 
 *   **Executive Dashboard & Readiness Score:** Computed from your real data, with framework coverage for NIS2, DORA, ISO/IEC 27001:2022 and SOC 2.
-*   **Signed Compliance Reports:** Executive, NIS2, DORA, ISO/IEC 27001, SOC 2, incident, risk and third-party reports in print-ready HTML (use your browser's "Save as PDF"), CSV or JSON. Each report is signed with SHA-256 and HMAC-SHA256 and can be verified later.
+*   **Signed Compliance Reports:** Executive, NIS2, DORA, ISO/IEC 27001, SOC 2, incident, risk and third-party reports as PDF, print-ready HTML, CSV or JSON. Each report is signed with SHA-256 and HMAC-SHA256 and can be verified later.
 *   **Encrypted Off-Site Evidence Vaults:** Push encrypted evidence packages (logs, incidents and snapshots) to S3-compatible storage (AWS S3, Google Cloud Storage via HMAC interoperability keys, Cloudflare R2, Wasabi, Backblaze B2, MinIO), an FTP/FTPS server, or another WordPress site running this plugin. Packages are encrypted with libsodium secretstream (XChaCha20-Poly1305) using a PBKDF2-derived passphrase key, and can be restored with `wp tbsh-cal vault-decrypt` or the bundled `tools/decrypt-vault.php`, even without WordPress.
 *   **Read-Only Auditor Links:** Give external auditors expiring (up to 90 days), revocable, read-only access. Tokens are stored only as hashes.
 *   **Unified Data Retention:** Per-type retention for logs (archived, then purged with hash-chain re-anchoring), closed incidents, evidence and alert/vault delivery history.
@@ -119,6 +120,8 @@ The plugin works without any external service. Apart from the items below, nothi
 
 16. **Your SIEM or log platform** (the HTTPS endpoint, Splunk HTTP Event Collector URL or syslog host the administrator enters): optional real-time log forwarding. Used only after an administrator enables SIEM forwarding in Settings, and when a test event is sent. Sent: each new audit log entry at or above the chosen severity (event type, category, severity, title, message, username, user ID and role, object type and ID, hashed IP address, request method and path, compliance tags, event metadata and the entry's chain hashes), your site URL and, for HTTPS and Splunk, the token you configured. Private and internal addresses are refused unless a developer allows them. The terms and privacy policy of whoever operates that destination apply.
 
+17. **Your other websites (Site Network)** (the sites an administrator connects with their auditor links): optional. Used only after an administrator connects a site, then hourly and when "Refresh" is clicked. Sent to that site: read-only requests with the auditor link token in a header. Received: that site's readiness score, event counts, open incidents, log integrity status and its latest five error or critical events. Only https and public addresses are contacted unless a developer allows private ones. Those sites are operated by you or your clients.
+
 == Installation ==
 
 1. Back up your database if you are upgrading.
@@ -164,7 +167,7 @@ Add a vault (S3-compatible storage, FTP/FTPS, or another WordPress site running 
 No. It stays off until an administrator picks a provider, model and API key (or endpoint), and it runs only when someone clicks to analyse a specific incident. Only incident fields are sent. The key is stored encrypted.
 
 = Can I generate a PDF report? =
-Reports are produced as print-ready HTML, CSV or JSON. Open the HTML report and use your browser's "Print" -> "Save as PDF". Each stored report is signed and can be verified in 'Compliance Reports'.
+Yes. Choose "PDF" as the format in Compliance Reports. PDF files are created on your server without extra libraries and are signed like every other format. The built-in PDF fonts cover Western European languages; for other scripts choose HTML and use your browser's "Print" -> "Save as PDF". Each stored report can be verified in 'Compliance Reports'.
 
 = How do auditor links work? =
 In 'Auditor Access', create a link with a label and a lifetime of 1 to 90 days. The link is shown only once. It gives read-only access to dashboards, logs, evidence, incidents, registers and reports, and can be revoked at any time.
@@ -233,6 +236,12 @@ Back up your database first. Once this version is active, the separate edition i
 * Improved: Accessibility and usability across the admin: dialogs keep keyboard focus, status messages are announced, focus is always visible, text and form fields meet WCAG 2.2 AA contrast in light and dark mode, and every filter is labelled.
 * Improved: Every page shows its title and purpose, the menu collapses on small screens, wide tables scroll instead of being cut off, and dark mode follows your system setting until you choose.
 * Improved: The Dashboard shows what needs attention (critical events today, open incidents, file changes, unverified log) and every figure opens the matching filtered activity log.
+* New: PDF reports, generated on the server and signed like the other formats.
+* New: Site Network: one overview of other sites running this plugin, connected with their read-only auditor links.
+* Improved: Activity Logs and exports can show errors and critical events together; the dashboard's "Errors and critical" figure opens exactly those entries.
+* Fixed: Off-site vault sync failed on servers without the PHP sodium extension; packages are now encrypted with WordPress's built-in sodium_compat as well, and stay compatible both ways.
+* Fixed: Score colours, status icons and the integrity check time now meet WCAG AA contrast; long hashes and URLs wrap instead of widening the page on small screens; tab rows wrap.
+* Improved: Leaving Settings with unsaved changes asks first, including with the browser's back and forward buttons.
 * Improved: Activity Logs shows times in your site's date format, lists active filters with one-click removal, and remembers your column choice; Settings shows an unsaved-changes bar with Save and Discard and links to each section.
 * Improved: Accepting the current files of a very large plugin or theme as its integrity baseline now runs in short steps with progress, so it no longer hits server time limits.
 * New: Setup assistant for new installs, logging exclusions for service accounts, roles and event types, and a public `tbsh_cal_log()` developer API.

@@ -180,13 +180,12 @@ export default function BehavioralAnomaly() {
 												<td><code>{ item.action || '—' }</code></td>
 												<td>
 													<span className={ `tbsh-badge tbsh-badge-${ score >= 85 ? 'danger' : 'warning' }` }>
-														{ /* translators: %d: anomaly score */ }
-														{ sprintf( __( '%d/100', 'tbsh-compliance-audit-logger' ), score ) }
+																												{ sprintf( /* translators: %d: anomaly score */ __( '%d/100', 'tbsh-compliance-audit-logger' ), score ) }
 													</span>
 												</td>
 												<td>
 													{ reasons.length > 0 ? (
-														<ul style={ { margin: 0, paddingLeft: '16px', listStyle: 'disc' } }>
+														<ul style={ { margin: 0, paddingInlineStart: '16px', listStyle: 'disc' } }>
 															{ reasons.map( ( r, idx ) => (
 																<li key={ idx }>{ r }</li>
 															) ) }
@@ -262,7 +261,7 @@ export default function BehavioralAnomaly() {
 										<td>
 											{ b.active_days }
 											{ ( Number( b.active_days ) || 0 ) < 5 && (
-												<span className="tbsh-badge tbsh-badge-info" style={ { marginLeft: '6px' } }>
+												<span className="tbsh-badge tbsh-badge-info" style={ { marginInlineStart: '6px' } }>
 													{ __( 'Learning', 'tbsh-compliance-audit-logger' ) }
 												</span>
 											) }

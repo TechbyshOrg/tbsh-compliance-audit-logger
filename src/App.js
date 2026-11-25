@@ -30,6 +30,7 @@ const SystemHealth = lazy( () => import( /* webpackChunkName: "page-health" */ '
 const Settings = lazy( () => import( /* webpackChunkName: "page-settings" */ './pages/Settings' ) );
 const Setup = lazy( () => import( /* webpackChunkName: "page-setup" */ './pages/Setup' ) );
 const Help = lazy( () => import( /* webpackChunkName: "page-help" */ './pages/Help' ) );
+const SiteNetwork = lazy( () => import( /* webpackChunkName: "page-network" */ './pages/SiteNetwork' ) );
 
 const THEME_KEY = 'tbshCalDarkMode';
 
@@ -77,9 +78,25 @@ export default function App() {
 	const firstRender = useRef( true );
 	const baseTitle = useRef( document.title );
 
+	// Current route for the hashchange handler, and a flag for the address we restore ourselves.
+	const routeRef = useRef( route );
+	const restoringHash = useRef( false );
+	routeRef.current = route;
+
 	useEffect( () => {
 		const handleHashChange = () => {
-			setRoute( window.location.hash.replace( '#/', '' ) || defaultRoute );
+			const next = window.location.hash.replace( '#/', '' ) || defaultRoute;
+			if ( restoringHash.current ) {
+				restoringHash.current = false;
+				return;
+			}
+			// Back/forward buttons and typed addresses also respect unsaved changes.
+			if ( next !== routeRef.current && ! confirmLeave() ) {
+				restoringHash.current = true;
+				window.location.hash = `#/${ routeRef.current }`;
+				return;
+			}
+			setRoute( next );
 		};
 		window.addEventListener( 'hashchange', handleHashChange );
 		return () => window.removeEventListener( 'hashchange', handleHashChange );
@@ -135,6 +152,7 @@ export default function App() {
 				},
 				{ id: 'executive', label: __( 'Executive Dashboard', 'tbsh-compliance-audit-logger' ), icon: 'executive', cap: 'view_analytics', description: __( 'Compliance readiness, risk and trends at a glance for management.', 'tbsh-compliance-audit-logger' ) },
 				{ id: 'compliance', label: __( 'Compliance Overview', 'tbsh-compliance-audit-logger' ), icon: 'compliance', cap: 'view_logs', description: __( 'How well the site meets each framework, and the controls that need work.', 'tbsh-compliance-audit-logger' ) },
+				{ id: 'network', label: __( 'Site Network', 'tbsh-compliance-audit-logger' ), icon: 'shield', cap: 'view_analytics', description: __( 'Readiness, errors and incidents of your other sites in one place, read through their auditor links.', 'tbsh-compliance-audit-logger' ) },
 			],
 		},
 		{
@@ -266,6 +284,8 @@ export default function App() {
 				return <Settings />;
 			case 'help':
 				return <Help />;
+			case 'network':
+				return <SiteNetwork />;
 			default:
 				return <Dashboard navigate={ navigate } />;
 		}

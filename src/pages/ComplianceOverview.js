@@ -36,34 +36,35 @@ export default function ComplianceOverview() {
 	const coverage = data.coverage;
 
 	// Color helpers for readiness scores.
+	// Text colours (the *-text tokens meet WCAG AA contrast in light and dark mode).
 	const getScoreColor = (score) => {
-		if (score >= 90) return 'var(--tbsh-success)';
-		if (score >= 60) return 'var(--tbsh-warning)';
-		return 'var(--tbsh-danger)';
+		if (score >= 90) {return 'var(--tbsh-success-text)';}
+		if (score >= 60) {return 'var(--tbsh-warning-text)';}
+		return 'var(--tbsh-danger-text)';
 	};
 
 	const frameworks = data.frameworks;
 
 	// Framework coverage helpers (85+ good, 60+ partial, else weak).
 	const getCoverageColor = (score) => {
-		if (score >= 85) return 'var(--tbsh-success)';
-		if (score >= 60) return 'var(--tbsh-warning)';
-		return 'var(--tbsh-danger)';
+		if (score >= 85) {return 'var(--tbsh-success-text)';}
+		if (score >= 60) {return 'var(--tbsh-warning-text)';}
+		return 'var(--tbsh-danger-text)';
 	};
 	const getCoverageClass = (score) => {
-		if (score >= 85) return 'is-success';
-		if (score >= 60) return 'is-warning';
+		if (score >= 85) {return 'is-success';}
+		if (score >= 60) {return 'is-warning';}
 		return 'is-danger';
 	};
 	const getStatusBadge = (status) => {
-		if (status === 'pass') return 'success';
-		if (status === 'warn') return 'warning';
+		if (status === 'pass') {return 'success';}
+		if (status === 'warn') {return 'warning';}
 		return 'danger';
 	};
 	const getStatusLabel = (status) => {
-		if (status === 'pass') return __('Pass', 'tbsh-compliance-audit-logger');
-		if (status === 'warn') return __('Warning', 'tbsh-compliance-audit-logger');
-		if (status === 'fail') return __('Fail', 'tbsh-compliance-audit-logger');
+		if (status === 'pass') {return __('Pass', 'tbsh-compliance-audit-logger');}
+		if (status === 'warn') {return __('Warning', 'tbsh-compliance-audit-logger');}
+		if (status === 'fail') {return __('Fail', 'tbsh-compliance-audit-logger');}
 		return status;
 	};
 
@@ -109,7 +110,7 @@ export default function ComplianceOverview() {
 						{coverage.score}%
 					</div>
 					<p style={{ margin: 0, color: 'var(--tbsh-text-muted)', fontSize: '13px', textAlign: 'center' }}>
-						{sprintf(__('Recorded %d system snapshots in compliance evidence vaults.', 'tbsh-compliance-audit-logger'), coverage.snapshots_recorded)}
+						{sprintf(/* translators: %d: number of snapshots */ __('Recorded %d system snapshots in compliance evidence vaults.', 'tbsh-compliance-audit-logger'), coverage.snapshots_recorded)}
 					</p>
 				</div>
 			</div>

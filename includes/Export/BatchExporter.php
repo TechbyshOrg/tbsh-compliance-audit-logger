@@ -54,9 +54,10 @@ class BatchExporter {
 			$where[] = 'event_category = %s';
 			$args[]  = $filters['category'];
 		}
-		if ( ! empty( $filters['severity'] ) ) {
-			$where[] = 'severity = %s';
-			$args[]  = $filters['severity'];
+		$severity_filter = \TBSHComplianceAuditLogger\Logging\Logger::severity_filter( $filters['severity'] ?? '' );
+		if ( $severity_filter ) {
+			$where[] = $severity_filter[0];
+			$args    = array_merge( $args, $severity_filter[1] );
 		}
 		if ( ! empty( $filters['user_id'] ) ) {
 			$where[] = 'user_id = %d';

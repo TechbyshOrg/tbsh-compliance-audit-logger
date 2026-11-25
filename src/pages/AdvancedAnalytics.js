@@ -52,8 +52,7 @@ export default function AdvancedAnalytics() {
 			>
 				{ PERIODS.map( ( p ) => (
 					<option key={ p } value={ p }>
-						{ /* translators: %d: number of days */ }
-						{ sprintf( __( 'Last %d days', 'tbsh-compliance-audit-logger' ), p ) }
+												{ sprintf( /* translators: %d: number of days */ __( 'Last %d days', 'tbsh-compliance-audit-logger' ), p ) }
 					</option>
 				) ) }
 			</select>
@@ -136,12 +135,10 @@ export default function AdvancedAnalytics() {
 			<div className="tbsh-card" style={ { marginBottom: '24px' } }>
 				<div className="tbsh-row-between" style={ { marginBottom: '8px' } }>
 					<h3 className="tbsh-section-title" style={ { margin: 0 } }>
-						{ /* translators: 1: series name, 2: number of days */ }
-						{ sprintf( __( '%1$s per day — last %2$d days', 'tbsh-compliance-audit-logger' ), current.label, data.days || days ) }
+												{ sprintf( /* translators: 1: series name, 2: number of days */ __( '%1$s per day — last %2$d days', 'tbsh-compliance-audit-logger' ), current.label, data.days || days ) }
 					</h3>
 					<span className="tbsh-muted">
-						{ /* translators: %d: highest daily value */ }
-						{ sprintf( __( 'Max: %d', 'tbsh-compliance-audit-logger' ), max ) }
+												{ sprintf( /* translators: %d: highest daily value */ __( 'Max: %d', 'tbsh-compliance-audit-logger' ), max ) }
 					</span>
 				</div>
 				{ labels.length === 0 ? (
@@ -201,7 +198,7 @@ export default function AdvancedAnalytics() {
 													<div className="tbsh-progress" style={ { flex: 1 } }>
 														<div className="tbsh-progress-bar" style={ { width: `${ share }%` } } />
 													</div>
-													<span style={ { minWidth: '40px', textAlign: 'right' } }>{ share }%</span>
+													<span style={ { minWidth: '40px', textAlign: 'end' } }>{ share }%</span>
 												</div>
 											</td>
 										</tr>

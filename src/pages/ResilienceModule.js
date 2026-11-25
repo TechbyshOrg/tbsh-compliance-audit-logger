@@ -307,6 +307,14 @@ export default function ResilienceModule() {
 		}
 
 		const rate = metrics.drill_pass_rate;
+		let rateStatus = 'danger';
+		if ( null === rate || undefined === rate ) {
+			rateStatus = '';
+		} else if ( rate >= 80 ) {
+			rateStatus = 'success';
+		} else if ( rate >= 50 ) {
+			rateStatus = 'warning';
+		}
 		const months = Object.entries( metrics.incidents_by_month || {} );
 		const max = months.reduce( ( m, [ , c ] ) => Math.max( m, c ), 0 );
 		const totalIncidents = months.reduce( ( s, [ , c ] ) => s + c, 0 );
@@ -343,7 +351,7 @@ export default function ResilienceModule() {
 								)
 						}
 						icon="check"
-						status={ null === rate || undefined === rate ? '' : rate >= 80 ? 'success' : rate >= 50 ? 'warning' : 'danger' }
+						status={ rateStatus }
 						desc={ sprintf(
 							/* translators: 1: passed drills, 2: completed drills */
 							__( '%1$d of %2$d completed drills passed', 'tbsh-compliance-audit-logger' ),
@@ -434,6 +442,159 @@ export default function ResilienceModule() {
 
 	const completed = 'completed' === form.status;
 
+	const renderDrills = () => {
+		if ( loading ) {
+			return (
+				<SkeletonLoader rows={ 5 } cols={ 6 } />
+			);
+		}
+		if ( error ) {
+			return (
+				<div style={ { padding: '0 0 20px', textAlign: 'center' } }>
+					<EmptyState title={ __( 'Could not load drills', 'tbsh-compliance-audit-logger' ) } description={ error } icon="alert" />
+					<button type="button" className="tbsh-btn tbsh-btn-secondary" onClick={ () => setReloadKey( ( k ) => k + 1 ) }>
+						{ __( 'Retry', 'tbsh-compliance-audit-logger' ) }
+					</button>
+				</div>
+			);
+		}
+		if ( items.length === 0 ) {
+			return (
+				<EmptyState
+					title={ __( 'No drills recorded yet', 'tbsh-compliance-audit-logger' ) }
+					description={ __( 'Record backup restores, failovers, incident-response and tabletop exercises with their RTO/RPO targets and results to build your testing evidence.', 'tbsh-compliance-audit-logger' ) }
+					icon="resilience"
+				/>
+			);
+		}
+		return (
+			<>
+				<table className="tbsh-table">
+					<thead>
+						<tr>
+							<th>{ __( 'Drill', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Status', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Scheduled / completed', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'RTO', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'RPO', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Outcome', 'tbsh-compliance-audit-logger' ) }</th>
+							{ canManage && <th style={ { textAlign: 'end' } }>{ __( 'Actions', 'tbsh-compliance-audit-logger' ) }</th> }
+						</tr>
+					</thead>
+					<tbody>
+						{ items.map( ( d ) => (
+							<tr key={ d.id }>
+								<td>
+									<strong>{ d.title }</strong>
+									<div className="tbsh-muted">{ scenarioLabel( d.scenario ) }</div>
+								</td>
+								<td>
+									<span className={ `tbsh-badge tbsh-badge-${ statusBadge( d.status ) }` }>{ statusLabel( d.status ) }</span>
+								</td>
+								<td>
+									<div>
+										{ sprintf(
+											/* translators: %s: date and time */
+											__( 'Scheduled: %s', 'tbsh-compliance-audit-logger' ),
+											d.scheduled_at || '—'
+										) }
+									</div>
+									{ d.completed_at && (
+										<div className="tbsh-muted">
+											{ sprintf(
+												/* translators: %s: date and time */
+												__( 'Completed: %s', 'tbsh-compliance-audit-logger' ),
+												d.completed_at
+											) }
+										</div>
+									) }
+								</td>
+								<td>
+									<TargetActual target={ d.rto_target_min } actual={ d.rto_actual_min } met={ d.rto_met } />
+								</td>
+								<td>
+									<TargetActual target={ d.rpo_target_min } actual={ d.rpo_actual_min } met={ d.rpo_met } />
+								</td>
+								<td>
+									{ d.outcome ? (
+										<span className={ `tbsh-badge tbsh-badge-${ outcomeBadge( d.outcome ) }` }>{ outcomeLabel( d.outcome ) }</span>
+									) : (
+										<span className="tbsh-muted">—</span>
+									) }
+								</td>
+								{ canManage && (
+									<td style={ { textAlign: 'end', whiteSpace: 'nowrap' } }>
+										<button
+											type="button"
+											className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
+											onClick={ () => openEdit( d ) }
+											aria-label={ sprintf(
+												/* translators: %s: drill title */
+												__( 'Edit drill %s', 'tbsh-compliance-audit-logger' ),
+												d.title
+											) }
+										>
+											<Icon name="edit" />
+										</button>{ ' ' }
+										<button
+											type="button"
+											className="tbsh-btn tbsh-btn-danger tbsh-btn-sm"
+											onClick={ () => setToDelete( d ) }
+											aria-label={ sprintf(
+												/* translators: %s: drill title */
+												__( 'Delete drill %s', 'tbsh-compliance-audit-logger' ),
+												d.title
+											) }
+										>
+											<Icon name="trash" />
+										</button>
+									</td>
+								) }
+							</tr>
+						) ) }
+					</tbody>
+				</table>
+				{ totalPages > 1 && (
+					<div className="tbsh-pagination">
+						<span className="tbsh-muted">
+							{ sprintf(
+								/* translators: %d: number of drills */
+								_n( '%d drill', '%d drills', total, 'tbsh-compliance-audit-logger' ),
+								total
+							) }
+						</span>
+						<div className="tbsh-row">
+							<button
+								type="button"
+								className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
+								disabled={ page <= 1 }
+								onClick={ () => setPage( ( p ) => Math.max( 1, p - 1 ) ) }
+							>
+								{ __( 'Previous', 'tbsh-compliance-audit-logger' ) }
+							</button>
+							<span className="tbsh-muted">
+								{ sprintf(
+									/* translators: 1: current page, 2: total pages */
+									__( 'Page %1$d of %2$d', 'tbsh-compliance-audit-logger' ),
+									page,
+									totalPages
+								) }
+							</span>
+							<button
+								type="button"
+								className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
+								disabled={ page >= totalPages }
+								onClick={ () => setPage( ( p ) => Math.min( totalPages, p + 1 ) ) }
+							>
+								{ __( 'Next', 'tbsh-compliance-audit-logger' ) }
+							</button>
+						</div>
+					</div>
+				) }
+			</>
+		);
+	};
+
 	return (
 		<div className="tbsh-resilience-page">
 			<Notice type={ notice.type } message={ notice.message } />
@@ -459,147 +620,7 @@ export default function ResilienceModule() {
 
 			<h4 className="tbsh-section-title">{ __( 'Resilience drills', 'tbsh-compliance-audit-logger' ) }</h4>
 			<div className="tbsh-table-container">
-				{ loading ? (
-					<SkeletonLoader rows={ 5 } cols={ 6 } />
-				) : error ? (
-					<div style={ { padding: '0 0 20px', textAlign: 'center' } }>
-						<EmptyState title={ __( 'Could not load drills', 'tbsh-compliance-audit-logger' ) } description={ error } icon="alert" />
-						<button type="button" className="tbsh-btn tbsh-btn-secondary" onClick={ () => setReloadKey( ( k ) => k + 1 ) }>
-							{ __( 'Retry', 'tbsh-compliance-audit-logger' ) }
-						</button>
-					</div>
-				) : items.length === 0 ? (
-					<EmptyState
-						title={ __( 'No drills recorded yet', 'tbsh-compliance-audit-logger' ) }
-						description={ __( 'Record backup restores, failovers, incident-response and tabletop exercises with their RTO/RPO targets and results to build your testing evidence.', 'tbsh-compliance-audit-logger' ) }
-						icon="resilience"
-					/>
-				) : (
-					<>
-						<table className="tbsh-table">
-							<thead>
-								<tr>
-									<th>{ __( 'Drill', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Status', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Scheduled / completed', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'RTO', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'RPO', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Outcome', 'tbsh-compliance-audit-logger' ) }</th>
-									{ canManage && <th style={ { textAlign: 'right' } }>{ __( 'Actions', 'tbsh-compliance-audit-logger' ) }</th> }
-								</tr>
-							</thead>
-							<tbody>
-								{ items.map( ( d ) => (
-									<tr key={ d.id }>
-										<td>
-											<strong>{ d.title }</strong>
-											<div className="tbsh-muted">{ scenarioLabel( d.scenario ) }</div>
-										</td>
-										<td>
-											<span className={ `tbsh-badge tbsh-badge-${ statusBadge( d.status ) }` }>{ statusLabel( d.status ) }</span>
-										</td>
-										<td>
-											<div>
-												{ sprintf(
-													/* translators: %s: date and time */
-													__( 'Scheduled: %s', 'tbsh-compliance-audit-logger' ),
-													d.scheduled_at || '—'
-												) }
-											</div>
-											{ d.completed_at && (
-												<div className="tbsh-muted">
-													{ sprintf(
-														/* translators: %s: date and time */
-														__( 'Completed: %s', 'tbsh-compliance-audit-logger' ),
-														d.completed_at
-													) }
-												</div>
-											) }
-										</td>
-										<td>
-											<TargetActual target={ d.rto_target_min } actual={ d.rto_actual_min } met={ d.rto_met } />
-										</td>
-										<td>
-											<TargetActual target={ d.rpo_target_min } actual={ d.rpo_actual_min } met={ d.rpo_met } />
-										</td>
-										<td>
-											{ d.outcome ? (
-												<span className={ `tbsh-badge tbsh-badge-${ outcomeBadge( d.outcome ) }` }>{ outcomeLabel( d.outcome ) }</span>
-											) : (
-												<span className="tbsh-muted">—</span>
-											) }
-										</td>
-										{ canManage && (
-											<td style={ { textAlign: 'right', whiteSpace: 'nowrap' } }>
-												<button
-													type="button"
-													className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
-													onClick={ () => openEdit( d ) }
-													aria-label={ sprintf(
-														/* translators: %s: drill title */
-														__( 'Edit drill %s', 'tbsh-compliance-audit-logger' ),
-														d.title
-													) }
-												>
-													<Icon name="edit" />
-												</button>{ ' ' }
-												<button
-													type="button"
-													className="tbsh-btn tbsh-btn-danger tbsh-btn-sm"
-													onClick={ () => setToDelete( d ) }
-													aria-label={ sprintf(
-														/* translators: %s: drill title */
-														__( 'Delete drill %s', 'tbsh-compliance-audit-logger' ),
-														d.title
-													) }
-												>
-													<Icon name="trash" />
-												</button>
-											</td>
-										) }
-									</tr>
-								) ) }
-							</tbody>
-						</table>
-						{ totalPages > 1 && (
-							<div className="tbsh-pagination">
-								<span className="tbsh-muted">
-									{ sprintf(
-										/* translators: %d: number of drills */
-										_n( '%d drill', '%d drills', total, 'tbsh-compliance-audit-logger' ),
-										total
-									) }
-								</span>
-								<div className="tbsh-row">
-									<button
-										type="button"
-										className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
-										disabled={ page <= 1 }
-										onClick={ () => setPage( ( p ) => Math.max( 1, p - 1 ) ) }
-									>
-										{ __( 'Previous', 'tbsh-compliance-audit-logger' ) }
-									</button>
-									<span className="tbsh-muted">
-										{ sprintf(
-											/* translators: 1: current page, 2: total pages */
-											__( 'Page %1$d of %2$d', 'tbsh-compliance-audit-logger' ),
-											page,
-											totalPages
-										) }
-									</span>
-									<button
-										type="button"
-										className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
-										disabled={ page >= totalPages }
-										onClick={ () => setPage( ( p ) => Math.min( totalPages, p + 1 ) ) }
-									>
-										{ __( 'Next', 'tbsh-compliance-audit-logger' ) }
-									</button>
-								</div>
-							</div>
-						) }
-					</>
-				) }
+				{ renderDrills() }
 			</div>
 
 			<Modal title={ editing && editing.id ? __( 'Edit drill', 'tbsh-compliance-audit-logger' ) : __( 'Record drill', 'tbsh-compliance-audit-logger' ) } isOpen={ !! editing } onClose={ closeForm }>

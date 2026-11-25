@@ -5,7 +5,7 @@ import SkeletonLoader from '../components/SkeletonLoader';
 import EmptyState from '../components/EmptyState';
 import Icon from '../components/Icon';
 import LogDetailModal from '../components/LogDetailModal';
-import { SeverityBadge } from '../components/labels';
+import { SeverityBadge, ERRORS_AND_CRITICAL } from '../components/labels';
 import { SiteTime, parseSiteTime } from '../components/time';
 import { setPendingState } from '../components/navState';
 import { get, can } from '../api';
@@ -246,10 +246,10 @@ export default function Dashboard( { navigate } ) {
 					title={ __( 'Errors and critical', 'tbsh-compliance-audit-logger' ) }
 					value={ number( stats.critical_events ) }
 					icon="alert"
-					desc={ __( 'All time · opens critical events', 'tbsh-compliance-audit-logger' ) }
+					desc={ __( 'All time', 'tbsh-compliance-audit-logger' ) }
 					status={ stats.critical_events > 0 ? 'warning' : '' }
 					cta={ __( 'Review', 'tbsh-compliance-audit-logger' ) }
-					onClick={ () => openLogs( { severity: 'critical' } ) }
+					onClick={ () => openLogs( { severity: ERRORS_AND_CRITICAL } ) }
 				/>
 				<MetricCard
 					title={ __( 'Failed sign-ins', 'tbsh-compliance-audit-logger' ) }

@@ -18,6 +18,7 @@ const daysAgo = ( n ) => {
 
 const formatLabels = () => ( {
 	html: __( 'HTML (print-ready)', 'tbsh-compliance-audit-logger' ),
+	pdf: __( 'PDF', 'tbsh-compliance-audit-logger' ),
 	csv: __( 'CSV', 'tbsh-compliance-audit-logger' ),
 	json: __( 'JSON', 'tbsh-compliance-audit-logger' ),
 } );
@@ -238,6 +239,134 @@ export default function ComplianceReporting() {
 		return sprintf( __( '%1$s to %2$s', 'tbsh-compliance-audit-logger' ), period[ 0 ], period[ 1 ] );
 	};
 
+	const renderReports = () => {
+		if ( loading ) {
+			return (
+				<SkeletonLoader rows={ 5 } cols={ 6 } />
+			);
+		}
+		if ( error ) {
+			return (
+				<EmptyState
+					title={ __( 'Error loading reports', 'tbsh-compliance-audit-logger' ) }
+					description={ (
+						<>
+							{ error }
+							<br />
+							<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" style={ { marginTop: '12px' } } onClick={ fetchReports }>
+								{ __( 'Retry', 'tbsh-compliance-audit-logger' ) }
+							</button>
+						</>
+					) }
+					icon="alert"
+				/>
+			);
+		}
+		if ( reports.length ) {
+			return (
+				<>
+					<table className="tbsh-table">
+						<thead>
+							<tr>
+								<th>{ __( 'Report', 'tbsh-compliance-audit-logger' ) }</th>
+								<th>{ __( 'Format', 'tbsh-compliance-audit-logger' ) }</th>
+								<th>{ __( 'Period', 'tbsh-compliance-audit-logger' ) }</th>
+								<th>{ __( 'Created by', 'tbsh-compliance-audit-logger' ) }</th>
+								<th>{ __( 'Created', 'tbsh-compliance-audit-logger' ) }</th>
+								<th>{ __( 'Seal', 'tbsh-compliance-audit-logger' ) }</th>
+								<th style={ { textAlign: 'end' } }>{ __( 'Actions', 'tbsh-compliance-audit-logger' ) }</th>
+							</tr>
+						</thead>
+						<tbody>
+							{ reports.map( ( r ) => (
+								<tr key={ r.id }>
+									<td>
+										<strong>{ r.title }</strong>
+										{ r.size ? <div className="tbsh-muted" style={ { fontSize: '12px' } }>{ formatSize( r.size ) }</div> : null }
+									</td>
+									<td>{ formats[ r.format ] || r.format }</td>
+									<td>{ renderPeriod( r.period ) }</td>
+									<td>{ r.created_by || '—' }</td>
+									<td>{ r.created_at }</td>
+									<td>
+										<div className="tbsh-row">
+											{ r.signed ? (
+												<span className="tbsh-badge tbsh-badge-success">{ __( 'Signed', 'tbsh-compliance-audit-logger' ) }</span>
+											) : (
+												<span className="tbsh-badge tbsh-badge-warning">{ __( 'Unsigned', 'tbsh-compliance-audit-logger' ) }</span>
+											) }
+											{ ! r.available && (
+												<span className="tbsh-badge tbsh-badge-danger">{ __( 'File missing', 'tbsh-compliance-audit-logger' ) }</span>
+											) }
+										</div>
+									</td>
+									<td style={ { textAlign: 'end' } }>
+										<div className="tbsh-row" style={ { justifyContent: 'flex-end' } }>
+											{ r.available ? (
+												<a
+													className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
+													href={ downloadUrl( `/reports/${ r.id }/download` ) }
+													download
+												>
+													<Icon name="download" />
+													{ __( 'Download', 'tbsh-compliance-audit-logger' ) }
+												</a>
+											) : (
+												<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" disabled>
+													<Icon name="download" />
+													{ __( 'Download', 'tbsh-compliance-audit-logger' ) }
+												</button>
+											) }
+											<button
+												type="button"
+												className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
+												disabled={ verifying === r.id }
+												onClick={ () => verify( r ) }
+											>
+												<Icon name="integrity" />
+												{ verifying === r.id ? __( 'Verifying…', 'tbsh-compliance-audit-logger' ) : __( 'Verify', 'tbsh-compliance-audit-logger' ) }
+											</button>
+											{ canManage && (
+												<button
+													type="button"
+													className="tbsh-btn tbsh-btn-danger tbsh-btn-sm"
+													onClick={ () => setToDelete( r ) }
+												>
+													<Icon name="trash" />
+													{ __( 'Delete', 'tbsh-compliance-audit-logger' ) }
+												</button>
+											) }
+										</div>
+									</td>
+								</tr>
+							) ) }
+						</tbody>
+					</table>
+					{ totalPages > 1 && (
+						<div className="tbsh-pagination" style={ { marginTop: '16px' } }>
+							<button type="button" className="tbsh-btn tbsh-btn-secondary" disabled={ page === 1 } onClick={ () => setPage( ( p ) => Math.max( 1, p - 1 ) ) }>
+								{ __( 'Previous', 'tbsh-compliance-audit-logger' ) }
+							</button>
+							<span style={ { fontSize: '13px', padding: '0 12px' } }>{ page } / { totalPages }</span>
+							<button type="button" className="tbsh-btn tbsh-btn-secondary" disabled={ page >= totalPages } onClick={ () => setPage( ( p ) => p + 1 ) }>
+								{ __( 'Next', 'tbsh-compliance-audit-logger' ) }
+							</button>
+						</div>
+					) }
+				</>
+			);
+		}
+		return (
+			<EmptyState
+				title={ __( 'No reports yet', 'tbsh-compliance-audit-logger' ) }
+				description={ canManage
+					? __( 'Generate your first compliance report using the form above.', 'tbsh-compliance-audit-logger' )
+					: __( 'No compliance reports have been generated yet.', 'tbsh-compliance-audit-logger' ) }
+				icon="reports"
+			/>
+		);
+	};
+
 	return (
 		<div className="tbsh-reports-page">
 			<Notice type={ notice.type } message={ notice.message } />
@@ -283,7 +412,7 @@ export default function ComplianceReporting() {
 									) ) }
 								</select>
 								<span className="tbsh-muted" style={ { display: 'block', fontSize: '12px', marginTop: '4px' } }>
-									{ __( 'HTML reports are print-ready: open the download and use your browser\'s Print dialog → "Save as PDF" to produce a PDF.', 'tbsh-compliance-audit-logger' ) }
+									{ __( 'PDF files open anywhere and are signed like every other format. PDF supports Western European characters; for other scripts choose HTML and print it to PDF from your browser.', 'tbsh-compliance-audit-logger' ) }
 								</span>
 							</div>
 							<div className="tbsh-form-group">
@@ -392,122 +521,7 @@ export default function ComplianceReporting() {
 			<div className="tbsh-card" style={ { padding: '20px' } }>
 				<h3 className="tbsh-section-title">{ __( 'Report history', 'tbsh-compliance-audit-logger' ) }</h3>
 				<div className="tbsh-table-container">
-					{ loading ? (
-						<SkeletonLoader rows={ 5 } cols={ 6 } />
-					) : error ? (
-						<EmptyState
-							title={ __( 'Error loading reports', 'tbsh-compliance-audit-logger' ) }
-							description={ (
-								<>
-									{ error }
-									<br />
-									<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" style={ { marginTop: '12px' } } onClick={ fetchReports }>
-										{ __( 'Retry', 'tbsh-compliance-audit-logger' ) }
-									</button>
-								</>
-							) }
-							icon="alert"
-						/>
-					) : reports.length ? (
-						<>
-							<table className="tbsh-table">
-								<thead>
-									<tr>
-										<th>{ __( 'Report', 'tbsh-compliance-audit-logger' ) }</th>
-										<th>{ __( 'Format', 'tbsh-compliance-audit-logger' ) }</th>
-										<th>{ __( 'Period', 'tbsh-compliance-audit-logger' ) }</th>
-										<th>{ __( 'Created by', 'tbsh-compliance-audit-logger' ) }</th>
-										<th>{ __( 'Created', 'tbsh-compliance-audit-logger' ) }</th>
-										<th>{ __( 'Seal', 'tbsh-compliance-audit-logger' ) }</th>
-										<th style={ { textAlign: 'right' } }>{ __( 'Actions', 'tbsh-compliance-audit-logger' ) }</th>
-									</tr>
-								</thead>
-								<tbody>
-									{ reports.map( ( r ) => (
-										<tr key={ r.id }>
-											<td>
-												<strong>{ r.title }</strong>
-												{ r.size ? <div className="tbsh-muted" style={ { fontSize: '12px' } }>{ formatSize( r.size ) }</div> : null }
-											</td>
-											<td>{ formats[ r.format ] || r.format }</td>
-											<td>{ renderPeriod( r.period ) }</td>
-											<td>{ r.created_by || '—' }</td>
-											<td>{ r.created_at }</td>
-											<td>
-												<div className="tbsh-row">
-													{ r.signed ? (
-														<span className="tbsh-badge tbsh-badge-success">{ __( 'Signed', 'tbsh-compliance-audit-logger' ) }</span>
-													) : (
-														<span className="tbsh-badge tbsh-badge-warning">{ __( 'Unsigned', 'tbsh-compliance-audit-logger' ) }</span>
-													) }
-													{ ! r.available && (
-														<span className="tbsh-badge tbsh-badge-danger">{ __( 'File missing', 'tbsh-compliance-audit-logger' ) }</span>
-													) }
-												</div>
-											</td>
-											<td style={ { textAlign: 'right' } }>
-												<div className="tbsh-row" style={ { justifyContent: 'flex-end' } }>
-													{ r.available ? (
-														<a
-															className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
-															href={ downloadUrl( `/reports/${ r.id }/download` ) }
-															download
-														>
-															<Icon name="download" />
-															{ __( 'Download', 'tbsh-compliance-audit-logger' ) }
-														</a>
-													) : (
-														<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" disabled>
-															<Icon name="download" />
-															{ __( 'Download', 'tbsh-compliance-audit-logger' ) }
-														</button>
-													) }
-													<button
-														type="button"
-														className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
-														disabled={ verifying === r.id }
-														onClick={ () => verify( r ) }
-													>
-														<Icon name="integrity" />
-														{ verifying === r.id ? __( 'Verifying…', 'tbsh-compliance-audit-logger' ) : __( 'Verify', 'tbsh-compliance-audit-logger' ) }
-													</button>
-													{ canManage && (
-														<button
-															type="button"
-															className="tbsh-btn tbsh-btn-danger tbsh-btn-sm"
-															onClick={ () => setToDelete( r ) }
-														>
-															<Icon name="trash" />
-															{ __( 'Delete', 'tbsh-compliance-audit-logger' ) }
-														</button>
-													) }
-												</div>
-											</td>
-										</tr>
-									) ) }
-								</tbody>
-							</table>
-							{ totalPages > 1 && (
-								<div className="tbsh-pagination" style={ { marginTop: '16px' } }>
-									<button type="button" className="tbsh-btn tbsh-btn-secondary" disabled={ page === 1 } onClick={ () => setPage( ( p ) => Math.max( 1, p - 1 ) ) }>
-										{ __( 'Previous', 'tbsh-compliance-audit-logger' ) }
-									</button>
-									<span style={ { fontSize: '13px', padding: '0 12px' } }>{ page } / { totalPages }</span>
-									<button type="button" className="tbsh-btn tbsh-btn-secondary" disabled={ page >= totalPages } onClick={ () => setPage( ( p ) => p + 1 ) }>
-										{ __( 'Next', 'tbsh-compliance-audit-logger' ) }
-									</button>
-								</div>
-							) }
-						</>
-					) : (
-						<EmptyState
-							title={ __( 'No reports yet', 'tbsh-compliance-audit-logger' ) }
-							description={ canManage
-								? __( 'Generate your first compliance report using the form above.', 'tbsh-compliance-audit-logger' )
-								: __( 'No compliance reports have been generated yet.', 'tbsh-compliance-audit-logger' ) }
-							icon="reports"
-						/>
-					) }
+					{ renderReports() }
 				</div>
 			</div>
 

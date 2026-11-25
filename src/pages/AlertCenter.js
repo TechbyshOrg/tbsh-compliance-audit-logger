@@ -140,6 +140,115 @@ export default function AlertCenter( { navigate } ) {
 	const configured = CHANNELS.filter( ( ch ) => !! channels[ ch ] );
 	const typeLabel = ( type ) => tLabels[ type ] || ( type || '' ).replace( /_/g, ' ' );
 
+	const renderLog = () => {
+		if ( loading ) {
+			return (
+				<SkeletonLoader rows={ 5 } cols={ 6 } />
+			);
+		}
+		if ( error ) {
+			return (
+				<div style={ { textAlign: 'center', paddingBottom: '24px' } }>
+					<EmptyState
+						title={ __( 'Could not load the alert log', 'tbsh-compliance-audit-logger' ) }
+						description={ error }
+						icon="alert"
+					/>
+					<button type="button" className="tbsh-btn tbsh-btn-secondary" onClick={ load }>
+						{ __( 'Try again', 'tbsh-compliance-audit-logger' ) }
+					</button>
+				</div>
+			);
+		}
+		if ( rows.length === 0 ) {
+			return (
+				<EmptyState
+					title={ __( 'No alerts recorded', 'tbsh-compliance-audit-logger' ) }
+					description={
+						status || channel
+							? __( 'No alert deliveries match these filters.', 'tbsh-compliance-audit-logger' )
+							: __( 'Alert deliveries will appear here once an alert has been queued.', 'tbsh-compliance-audit-logger' )
+					}
+					icon="alerts"
+				/>
+			);
+		}
+		return (
+			<>
+				<table className="tbsh-table">
+					<thead>
+						<tr>
+							<th>{ __( 'Created', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Type', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Channel', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Recipient', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Severity', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Subject', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Status', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Attempts', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Response', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Next attempt', 'tbsh-compliance-audit-logger' ) }</th>
+						</tr>
+					</thead>
+					<tbody>
+						{ rows.map( ( row ) => (
+							<tr key={ row.id }>
+								<td>{ row.created_at }</td>
+								<td>{ typeLabel( row.alert_type ) }</td>
+								<td>{ cLabels[ row.channel ] || row.channel }</td>
+								<td>{ row.recipient_masked || '—' }</td>
+								<td>
+									<span className={ `tbsh-badge tbsh-badge-${ severityBadge( row.severity ) }` }>
+										{ sevLabels[ row.severity ] || row.severity }
+									</span>
+								</td>
+								<td>{ row.subject }</td>
+								<td>
+									<span className={ `tbsh-badge tbsh-badge-${ statusBadge( row.status ) }` }>
+										{ sLabels[ row.status ] || row.status }
+									</span>
+								</td>
+								<td>{ row.attempts }</td>
+								<td title={ row.response_message || '' }>
+									{ row.response_message ? truncate( row.response_message ) : '—' }
+								</td>
+								<td>{ row.next_attempt_at || '—' }</td>
+							</tr>
+						) ) }
+					</tbody>
+				</table>
+				{ totalPages > 1 && (
+					<div className="tbsh-pagination" style={ { marginTop: '16px' } }>
+						<button
+							type="button"
+							className="tbsh-btn tbsh-btn-secondary"
+							disabled={ page <= 1 }
+							onClick={ () => setPage( ( p ) => Math.max( 1, p - 1 ) ) }
+						>
+							{ __( 'Previous', 'tbsh-compliance-audit-logger' ) }
+						</button>
+						<span style={ { fontSize: '13px', padding: '0 12px' } }>
+							{ sprintf(
+								/* translators: 1: current page, 2: total pages */
+								__( 'Page %1$d of %2$d', 'tbsh-compliance-audit-logger' ),
+								page,
+								totalPages
+							) }
+						</span>
+						<button
+							type="button"
+							className="tbsh-btn tbsh-btn-secondary"
+							disabled={ page >= totalPages }
+							onClick={ () => setPage( ( p ) => p + 1 ) }
+						>
+							{ __( 'Next', 'tbsh-compliance-audit-logger' ) }
+						</button>
+					</div>
+				) }
+			</>
+		);
+	};
+
 	return (
 		<div className="tbsh-alert-center">
 			<Notice type={ notice.type } message={ notice.message } />
@@ -189,7 +298,7 @@ export default function AlertCenter( { navigate } ) {
 					<div className="tbsh-stack">
 						<div className="tbsh-row">
 							{ CHANNELS.map( ( ch ) => (
-								<div key={ ch } className="tbsh-row" style={ { marginRight: '16px' } }>
+								<div key={ ch } className="tbsh-row" style={ { marginInlineEnd: '16px' } }>
 									<strong>{ cLabels[ ch ] }</strong>
 									<span className={ `tbsh-badge tbsh-badge-${ channels[ ch ] ? 'success' : 'info' }` }>
 										{ channels[ ch ]
@@ -273,103 +382,7 @@ export default function AlertCenter( { navigate } ) {
 			</div>
 
 			<div className="tbsh-table-container">
-				{ loading ? (
-					<SkeletonLoader rows={ 5 } cols={ 6 } />
-				) : error ? (
-					<div style={ { textAlign: 'center', paddingBottom: '24px' } }>
-						<EmptyState
-							title={ __( 'Could not load the alert log', 'tbsh-compliance-audit-logger' ) }
-							description={ error }
-							icon="alert"
-						/>
-						<button type="button" className="tbsh-btn tbsh-btn-secondary" onClick={ load }>
-							{ __( 'Try again', 'tbsh-compliance-audit-logger' ) }
-						</button>
-					</div>
-				) : rows.length === 0 ? (
-					<EmptyState
-						title={ __( 'No alerts recorded', 'tbsh-compliance-audit-logger' ) }
-						description={
-							status || channel
-								? __( 'No alert deliveries match these filters.', 'tbsh-compliance-audit-logger' )
-								: __( 'Alert deliveries will appear here once an alert has been queued.', 'tbsh-compliance-audit-logger' )
-						}
-						icon="alerts"
-					/>
-				) : (
-					<>
-						<table className="tbsh-table">
-							<thead>
-								<tr>
-									<th>{ __( 'Created', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Type', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Channel', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Recipient', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Severity', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Subject', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Status', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Attempts', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Response', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Next attempt', 'tbsh-compliance-audit-logger' ) }</th>
-								</tr>
-							</thead>
-							<tbody>
-								{ rows.map( ( row ) => (
-									<tr key={ row.id }>
-										<td>{ row.created_at }</td>
-										<td>{ typeLabel( row.alert_type ) }</td>
-										<td>{ cLabels[ row.channel ] || row.channel }</td>
-										<td>{ row.recipient_masked || '—' }</td>
-										<td>
-											<span className={ `tbsh-badge tbsh-badge-${ severityBadge( row.severity ) }` }>
-												{ sevLabels[ row.severity ] || row.severity }
-											</span>
-										</td>
-										<td>{ row.subject }</td>
-										<td>
-											<span className={ `tbsh-badge tbsh-badge-${ statusBadge( row.status ) }` }>
-												{ sLabels[ row.status ] || row.status }
-											</span>
-										</td>
-										<td>{ row.attempts }</td>
-										<td title={ row.response_message || '' }>
-											{ row.response_message ? truncate( row.response_message ) : '—' }
-										</td>
-										<td>{ row.next_attempt_at || '—' }</td>
-									</tr>
-								) ) }
-							</tbody>
-						</table>
-						{ totalPages > 1 && (
-							<div className="tbsh-pagination" style={ { marginTop: '16px' } }>
-								<button
-									type="button"
-									className="tbsh-btn tbsh-btn-secondary"
-									disabled={ page <= 1 }
-									onClick={ () => setPage( ( p ) => Math.max( 1, p - 1 ) ) }
-								>
-									{ __( 'Previous', 'tbsh-compliance-audit-logger' ) }
-								</button>
-								<span style={ { fontSize: '13px', padding: '0 12px' } }>
-									{ sprintf(
-										/* translators: 1: current page, 2: total pages */
-										__( 'Page %1$d of %2$d', 'tbsh-compliance-audit-logger' ),
-										page,
-										totalPages
-									) }
-								</span>
-								<button
-									type="button"
-									className="tbsh-btn tbsh-btn-secondary"
-									disabled={ page >= totalPages }
-									onClick={ () => setPage( ( p ) => p + 1 ) }
-								>
-									{ __( 'Next', 'tbsh-compliance-audit-logger' ) }
-								</button>
-							</div>
-						) }
-					</>
-				) }
+				{ renderLog() }
 			</div>
 		</div>
 	);

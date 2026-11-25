@@ -287,7 +287,7 @@ export default function VendorGovernance() {
 		<>
 			<span className={ `tbsh-badge tbsh-badge-${ levelBadge( c.risk ) }` }>{ levelLabel( c.risk ) }</span>
 			{ c.risk_reasons && c.risk_reasons.length > 0 && (
-				<ul className="tbsh-muted" style={ { margin: '6px 0 0', paddingLeft: '18px' } }>
+				<ul className="tbsh-muted" style={ { margin: '6px 0 0', paddingInlineStart: '18px' } }>
 					{ c.risk_reasons.map( ( reason, idx ) => (
 						<li key={ idx }>{ reason }</li>
 					) ) }
@@ -295,6 +295,51 @@ export default function VendorGovernance() {
 			) }
 		</>
 	);
+
+	const renderComponentVendor = ( c ) => {
+		if ( c.vendor ) {
+			return (
+				<strong>{ c.vendor.name }</strong>
+			);
+		}
+		if ( c.active && canManage ) {
+			return (
+				<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" onClick={ () => registerComponent( c ) }>
+					<Icon name="plus" />
+					{ __( 'Register as vendor', 'tbsh-compliance-audit-logger' ) }
+				</button>
+			);
+		}
+		return (
+			<span className="tbsh-muted">{ __( 'Not mapped', 'tbsh-compliance-audit-logger' ) }</span>
+		);
+	};
+
+	const renderComponentState = ( c, kind ) => {
+		if ( c.network_active ) {
+			return (
+				<span className="tbsh-badge tbsh-badge-success">{ __( 'Network active', 'tbsh-compliance-audit-logger' ) }</span>
+			);
+		}
+		if ( c.active ) {
+			let activeLabel;
+			if ( 'theme' === kind && 'parent' === c.role ) {
+				activeLabel = __( 'Parent theme', 'tbsh-compliance-audit-logger' );
+			} else if ( 'theme' === kind && 'child' === c.role ) {
+				activeLabel = __( 'Active (child)', 'tbsh-compliance-audit-logger' );
+			} else {
+				activeLabel = __( 'Active', 'tbsh-compliance-audit-logger' );
+			}
+			return (
+				<span className="tbsh-badge tbsh-badge-success">
+					{ activeLabel }
+				</span>
+			);
+		}
+		return (
+			<span className="tbsh-badge tbsh-badge-info">{ __( 'Inactive', 'tbsh-compliance-audit-logger' ) }</span>
+		);
+	};
 
 	const componentTable = ( list, kind ) => (
 		<div className="tbsh-table-container">
@@ -335,19 +380,7 @@ export default function VendorGovernance() {
 									<code>{ c.version || '—' }</code>
 								</td>
 								<td>
-									{ c.network_active ? (
-										<span className="tbsh-badge tbsh-badge-success">{ __( 'Network active', 'tbsh-compliance-audit-logger' ) }</span>
-									) : c.active ? (
-										<span className="tbsh-badge tbsh-badge-success">
-											{ 'theme' === kind && 'parent' === c.role
-												? __( 'Parent theme', 'tbsh-compliance-audit-logger' )
-												: 'theme' === kind && 'child' === c.role
-													? __( 'Active (child)', 'tbsh-compliance-audit-logger' )
-													: __( 'Active', 'tbsh-compliance-audit-logger' ) }
-										</span>
-									) : (
-										<span className="tbsh-badge tbsh-badge-info">{ __( 'Inactive', 'tbsh-compliance-audit-logger' ) }</span>
-									) }
+									{ renderComponentState( c, kind ) }
 								</td>
 								<td>
 									{ c.update_available ? (
@@ -363,16 +396,7 @@ export default function VendorGovernance() {
 									) }
 								</td>
 								<td>
-									{ c.vendor ? (
-										<strong>{ c.vendor.name }</strong>
-									) : c.active && canManage ? (
-										<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" onClick={ () => registerComponent( c ) }>
-											<Icon name="plus" />
-											{ __( 'Register as vendor', 'tbsh-compliance-audit-logger' ) }
-										</button>
-									) : (
-										<span className="tbsh-muted">{ __( 'Not mapped', 'tbsh-compliance-audit-logger' ) }</span>
-									) }
+									{ renderComponentVendor( c ) }
 								</td>
 								<td>{ riskCell( c ) }</td>
 							</tr>
@@ -382,6 +406,122 @@ export default function VendorGovernance() {
 			) }
 		</div>
 	);
+
+	const renderVendorList = () => {
+		if ( loading ) {
+			return (
+				<SkeletonLoader rows={ 5 } cols={ 6 } />
+			);
+		}
+		if ( error ) {
+			return (
+				<div style={ { padding: '0 0 20px', textAlign: 'center' } }>
+					<EmptyState title={ __( 'Could not load vendors', 'tbsh-compliance-audit-logger' ) } description={ error } icon="alert" />
+					<button type="button" className="tbsh-btn tbsh-btn-secondary" onClick={ reload }>
+						{ __( 'Retry', 'tbsh-compliance-audit-logger' ) }
+					</button>
+				</div>
+			);
+		}
+		if ( items.length === 0 ) {
+			return (
+				<EmptyState
+					title={ hasFilters ? __( 'No matching vendors', 'tbsh-compliance-audit-logger' ) : __( 'No vendors registered yet', 'tbsh-compliance-audit-logger' ) }
+					description={
+						hasFilters
+							? __( 'No vendors match the current filters.', 'tbsh-compliance-audit-logger' )
+							: __( 'Record the ICT third parties this site depends on (DORA Art. 28). The Software supply chain tab lists active plugins and themes you can register in one click.', 'tbsh-compliance-audit-logger' )
+					}
+					icon="vendors"
+				/>
+			);
+		}
+		return (
+			<>
+				<table className="tbsh-table">
+					<thead>
+						<tr>
+							<th>{ __( 'Vendor', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Criticality', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Risk rating', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Data access', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Contract renewal', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Review date', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Status', 'tbsh-compliance-audit-logger' ) }</th>
+							{ canManage && <th style={ { textAlign: 'end' } }>{ __( 'Actions', 'tbsh-compliance-audit-logger' ) }</th> }
+						</tr>
+					</thead>
+					<tbody>
+						{ items.map( ( v ) => (
+							<tr key={ v.id }>
+								<td>
+									<strong>{ v.name }</strong>
+									<div className="tbsh-muted">
+										{ v.service_type }
+										{ v.linked_slug &&
+											` · ${ sprintf(
+												/* translators: %s: plugin or theme name */
+												__( 'linked to %s', 'tbsh-compliance-audit-logger' ),
+												componentName( v.linked_slug )
+											) }` }
+									</div>
+								</td>
+								<td>
+									<span className={ `tbsh-badge tbsh-badge-${ levelBadge( v.criticality ) }` }>{ levelLabel( v.criticality ) }</span>
+								</td>
+								<td>
+									<span className={ `tbsh-badge tbsh-badge-${ levelBadge( v.risk_rating ) }` }>{ levelLabel( v.risk_rating ) }</span>
+								</td>
+								<td>{ accessLabel( v.data_access_level ) }</td>
+								<td>{ v.contract_renewal_date || '—' }</td>
+								<td>
+									{ v.review_date || '—' }
+									{ v.review_overdue && (
+										<>
+											{ ' ' }
+											<span className="tbsh-badge tbsh-badge-danger">{ __( 'Overdue', 'tbsh-compliance-audit-logger' ) }</span>
+										</>
+									) }
+								</td>
+								<td>
+									<span className={ `tbsh-badge tbsh-badge-${ 'active' === v.status ? 'success' : 'info' }` }>{ statusLabel( v.status ) }</span>
+								</td>
+								{ canManage && (
+									<td style={ { textAlign: 'end', whiteSpace: 'nowrap' } }>
+										<button
+											type="button"
+											className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
+											onClick={ () => openEdit( v ) }
+											aria-label={ sprintf(
+												/* translators: %s: vendor name */
+												__( 'Edit vendor %s', 'tbsh-compliance-audit-logger' ),
+												v.name
+											) }
+										>
+											<Icon name="edit" />
+										</button>{ ' ' }
+										<button
+											type="button"
+											className="tbsh-btn tbsh-btn-danger tbsh-btn-sm"
+											onClick={ () => setToDelete( v ) }
+											aria-label={ sprintf(
+												/* translators: %s: vendor name */
+												__( 'Delete vendor %s', 'tbsh-compliance-audit-logger' ),
+												v.name
+											) }
+										>
+											<Icon name="trash" />
+										</button>
+									</td>
+								) }
+							</tr>
+						) ) }
+					</tbody>
+				</table>
+				<Pagination page={ page } totalPages={ totalPages } total={ total } setPage={ setPage } />
+			</>
+		);
+	};
 
 	const renderRegister = () => (
 		<>
@@ -512,110 +652,7 @@ export default function VendorGovernance() {
 			</div>
 
 			<div className="tbsh-table-container">
-				{ loading ? (
-					<SkeletonLoader rows={ 5 } cols={ 6 } />
-				) : error ? (
-					<div style={ { padding: '0 0 20px', textAlign: 'center' } }>
-						<EmptyState title={ __( 'Could not load vendors', 'tbsh-compliance-audit-logger' ) } description={ error } icon="alert" />
-						<button type="button" className="tbsh-btn tbsh-btn-secondary" onClick={ reload }>
-							{ __( 'Retry', 'tbsh-compliance-audit-logger' ) }
-						</button>
-					</div>
-				) : items.length === 0 ? (
-					<EmptyState
-						title={ hasFilters ? __( 'No matching vendors', 'tbsh-compliance-audit-logger' ) : __( 'No vendors registered yet', 'tbsh-compliance-audit-logger' ) }
-						description={
-							hasFilters
-								? __( 'No vendors match the current filters.', 'tbsh-compliance-audit-logger' )
-								: __( 'Record the ICT third parties this site depends on (DORA Art. 28). The Software supply chain tab lists active plugins and themes you can register in one click.', 'tbsh-compliance-audit-logger' )
-						}
-						icon="vendors"
-					/>
-				) : (
-					<>
-						<table className="tbsh-table">
-							<thead>
-								<tr>
-									<th>{ __( 'Vendor', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Criticality', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Risk rating', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Data access', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Contract renewal', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Review date', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Status', 'tbsh-compliance-audit-logger' ) }</th>
-									{ canManage && <th style={ { textAlign: 'right' } }>{ __( 'Actions', 'tbsh-compliance-audit-logger' ) }</th> }
-								</tr>
-							</thead>
-							<tbody>
-								{ items.map( ( v ) => (
-									<tr key={ v.id }>
-										<td>
-											<strong>{ v.name }</strong>
-											<div className="tbsh-muted">
-												{ v.service_type }
-												{ v.linked_slug &&
-													` · ${ sprintf(
-														/* translators: %s: plugin or theme name */
-														__( 'linked to %s', 'tbsh-compliance-audit-logger' ),
-														componentName( v.linked_slug )
-													) }` }
-											</div>
-										</td>
-										<td>
-											<span className={ `tbsh-badge tbsh-badge-${ levelBadge( v.criticality ) }` }>{ levelLabel( v.criticality ) }</span>
-										</td>
-										<td>
-											<span className={ `tbsh-badge tbsh-badge-${ levelBadge( v.risk_rating ) }` }>{ levelLabel( v.risk_rating ) }</span>
-										</td>
-										<td>{ accessLabel( v.data_access_level ) }</td>
-										<td>{ v.contract_renewal_date || '—' }</td>
-										<td>
-											{ v.review_date || '—' }
-											{ v.review_overdue && (
-												<>
-													{ ' ' }
-													<span className="tbsh-badge tbsh-badge-danger">{ __( 'Overdue', 'tbsh-compliance-audit-logger' ) }</span>
-												</>
-											) }
-										</td>
-										<td>
-											<span className={ `tbsh-badge tbsh-badge-${ 'active' === v.status ? 'success' : 'info' }` }>{ statusLabel( v.status ) }</span>
-										</td>
-										{ canManage && (
-											<td style={ { textAlign: 'right', whiteSpace: 'nowrap' } }>
-												<button
-													type="button"
-													className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
-													onClick={ () => openEdit( v ) }
-													aria-label={ sprintf(
-														/* translators: %s: vendor name */
-														__( 'Edit vendor %s', 'tbsh-compliance-audit-logger' ),
-														v.name
-													) }
-												>
-													<Icon name="edit" />
-												</button>{ ' ' }
-												<button
-													type="button"
-													className="tbsh-btn tbsh-btn-danger tbsh-btn-sm"
-													onClick={ () => setToDelete( v ) }
-													aria-label={ sprintf(
-														/* translators: %s: vendor name */
-														__( 'Delete vendor %s', 'tbsh-compliance-audit-logger' ),
-														v.name
-													) }
-												>
-													<Icon name="trash" />
-												</button>
-											</td>
-										) }
-									</tr>
-								) ) }
-							</tbody>
-						</table>
-						<Pagination page={ page } totalPages={ totalPages } total={ total } setPage={ setPage } />
-					</>
-				) }
+				{ renderVendorList() }
 			</div>
 		</>
 	);

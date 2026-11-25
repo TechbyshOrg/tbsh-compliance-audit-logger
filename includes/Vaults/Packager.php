@@ -27,6 +27,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 class Packager {
 
 	const MAGIC      = 'TBSHVLT1';
+
+	/**
+	 * libsodium secretstream values (fixed by the format). Defined here because the sodium_compat
+	 * polyfill that WordPress uses when ext/sodium is missing does not define every SODIUM_* constant.
+	 */
+	const TAG_MESSAGE = 0;
+	const TAG_FINAL   = 3;
+	const HEADERBYTES = 24;
 	const ITERATIONS = 210000;
 	const CHUNK      = 65536;
 	const LOG_PAGE   = 5000;
@@ -157,7 +165,7 @@ class Packager {
 				$chunk = (string) fread( $src, self::CHUNK ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread
 				$read += strlen( $chunk );
 				$final = $read >= $size || feof( $src );
-				$tag   = $final ? SODIUM_CRYPTO_SECRETSTREAM_XCHACHA20POLY1305_TAG_FINAL : SODIUM_CRYPTO_SECRETSTREAM_XCHACHA20POLY1305_TAG_MESSAGE;
+				$tag   = $final ? self::TAG_FINAL : self::TAG_MESSAGE;
 				$ct    = sodium_crypto_secretstream_xchacha20poly1305_push( $state, $chunk, '', $tag );
 				fwrite( $dst, pack( 'N', strlen( $ct ) ) . $ct ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite
 			} while ( ! $final );
@@ -190,7 +198,7 @@ class Packager {
 		if ( ! $src ) {
 			return new \WP_Error( 'tbsh_cal_vault_io', 'Cannot open input file.' );
 		}
-		$head = (string) fread( $src, 8 + 4 + 16 + SODIUM_CRYPTO_SECRETSTREAM_XCHACHA20POLY1305_HEADERBYTES ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread
+		$head = (string) fread( $src, 8 + 4 + 16 + self::HEADERBYTES ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread
 		if ( 0 !== strpos( $head, self::MAGIC ) ) {
 			fclose( $src ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose
 			return new \WP_Error( 'tbsh_cal_vault_format', 'Not a vault package (bad header).' );
@@ -216,7 +224,7 @@ class Packager {
 				}
 				list( $plain, $tag ) = $res;
 				fwrite( $dst, $plain ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite
-				$final = SODIUM_CRYPTO_SECRETSTREAM_XCHACHA20POLY1305_TAG_FINAL === $tag;
+				$final = self::TAG_FINAL === (int) $tag;
 			}
 		} catch ( \Throwable $e ) {
 			fclose( $src ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose

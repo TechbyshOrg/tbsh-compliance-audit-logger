@@ -805,6 +805,11 @@
               <td>Forwards entries after the last delivered ID in batches of 200; on failure retries with backoff (5 minutes to 1 hour) and alerts after an hour.</td>
             </tr>
             <tr>
+              <td><code>tbsh_cal_network_refresh</code></td>
+              <td>Hourly, while at least one site is connected in Site Network</td>
+              <td>Refreshes the cached summary of connected sites, stalest first, for up to 25 seconds per run.</td>
+            </tr>
+            <tr>
               <td><code>tbsh_cal_maintenance_run</code> (action)</td>
               <td>Inside the daily maintenance run</td>
               <td>Also sends the compliance digest when a weekly or monthly period has ended, and retries SIEM forwarding.</td>
@@ -891,7 +896,7 @@ do_action( 'tbsh_cal_log', 'invoice_approved', array( 'title' => 'Invoice approv
             <tr><td>Comments</td><td><code>comment_status_changed</code>, <code>comment_edited</code>, <code>comment_deleted</code> (signed-in users only; no commenter names)</td><td><code>log_comment_events</code></td></tr>
             <tr><td>Categories, tags and taxonomies</td><td><code>term_created</code>, <code>term_updated</code>, <code>term_deleted</code></td><td><code>log_taxonomy_events</code></td></tr>
             <tr><td>WooCommerce (when active)</td><td><code>wc_order_status_changed</code> and <code>wc_order_edited</code> (by staff only), <code>wc_order_refunded</code>, <code>wc_order_trashed</code>, <code>wc_order_deleted</code>, <code>wc_product_updated</code> (price, sale dates, stock, SKU, tax, downloads, product type), <code>wc_coupon_created</code>, <code>wc_coupon_updated</code>, <code>wc_coupon_trashed</code>, <code>wc_coupon_deleted</code>, <code>wc_settings_updated</code> (option names only). No customer data is logged.</td><td><code>log_woocommerce_events</code></td></tr>
-            <tr><td>Sessions, integrity and operations</td><td><code>session_terminated</code>, <code>sessions_terminated_all</code>, <code>file_integrity_check</code>, <code>file_baseline_accepted</code>, <code>compliance_digest_sent</code>, <code>siem_forward_failed</code>, <code>setup_completed</code></td><td>Always</td></tr>
+            <tr><td>Sessions, integrity and operations</td><td><code>session_terminated</code>, <code>sessions_terminated_all</code>, <code>file_integrity_check</code>, <code>file_baseline_accepted</code>, <code>compliance_digest_sent</code>, <code>siem_forward_failed</code>, <code>setup_completed</code>, <code>network_site_added</code>, <code>network_site_removed</code>, <code>network_link_replaced</code></td><td>Always</td></tr>
             <tr><td>WordPress abilities (AI agents, MCP servers, editor)</td><td><code>ability_executed</code> (abilities that can change the site; warning when marked destructive), <code>ability_failed</code> and <code>ability_denied</code> (WordPress 7.1+; refusals only when a run was attempted, at most 5 per request). Read-only abilities are skipped; only input field names are kept.</td><td><code>log_ability_events</code></td></tr>
           </tbody>
         </table>
@@ -914,6 +919,7 @@ do_action( 'tbsh_cal_log', 'invoice_approved', array( 'title' => 'Invoice approv
             <tr><td><code>tbsh_cal_request_origin</code></td><td>Adjust who or what made the changes in this request (<code>$origin, $env</code>). <code>$origin['actor']</code> is <code>person</code>, <code>agent</code>, <code>integration</code>, <code>automation</code> or <code>visitor</code>; <code>via</code> is <code>web</code>, <code>ajax</code>, <code>rest</code>, <code>mcp</code>, <code>xmlrpc</code>, <code>cron</code> or <code>cli</code>. Stored in each entry's metadata as <code>_actor</code>, <code>_via</code>, <code>_app_password</code>, <code>_ability</code> and <code>_abilities</code>, covered by the hash chain.</td></tr>
             <tr><td><code>tbsh_cal_mcp_namespaces</code></td><td>REST namespaces served by MCP servers (default <code>mcp</code>, <code>mcp-adapter</code>, <code>wp-mcp</code>); requests to them are attributed to AI agents.</td></tr>
             <tr><td><code>tbsh_cal_log_readonly_abilities</code></td><td>Return <code>true</code> to also log runs of read-only abilities (<code>$log, $ability</code>).</td></tr>
+            <tr><td><code>tbsh_cal_allow_private_network_sites</code></td><td>Return <code>true</code> to connect Site Network sites on private or loopback addresses, or over plain http (internal networks). Off by default.</td></tr>
             <tr><td><code>tbsh_cal_allow_private_siem_endpoints</code></td><td>Return <code>true</code> to allow SIEM forwarding to private, loopback or reserved addresses (internal collectors). Off by default to prevent request forgery against internal services.</td></tr>
             <tr><td><code>tbsh_cal_log</code> (action)</td><td>Add an event through the public API (see above).</td></tr>
           </tbody>
@@ -1222,7 +1228,7 @@ $integrity_hash = hash('sha256', $canonical_string);</code></pre>
           </tbody>
         </table>
       </div>
-      <p>Formats are <strong>HTML</strong> (print-ready; use the browser's <em>Print → Save as PDF</em> to obtain a PDF), <strong>CSV</strong> and <strong>JSON</strong>. The plugin does not generate PDF files itself.</p>
+      <p>Formats are <strong>PDF</strong> (A4, generated on the server without extra libraries, with repeated table headers and page numbers), <strong>HTML</strong> (print-ready), <strong>CSV</strong> and <strong>JSON</strong>. Every format is signed. PDF uses the standard PDF fonts, which cover Western European characters; other characters are replaced and the report says so, so for other scripts use HTML and the browser's <em>Print → Save as PDF</em>.</p>
       <div class="alert alert-info">
         <h4>Signing & Verification</h4>
         Every stored report gets a SHA-256 content hash and an HMAC-SHA256 signature over that hash, keyed with a site secret derived from the plugin's encryption key. Verification recomputes both from the stored file, so any change to the file, or a signature produced without this site's key, fails verification.
@@ -1476,7 +1482,7 @@ gunzip -c restore.jsonl.gz | head</code></pre>
           </thead>
           <tbody>
             <tr><td><code>/dashboard</code></td><td>GET</td><td><code>tbsh_cal_view_logs</code></td><td>KPIs, active users, common events, recent logs and table sizes.</td></tr>
-            <tr><td><code>/logs</code></td><td>GET</td><td><code>tbsh_cal_view_logs</code></td><td>Paginated, filtered and sorted logs. <code>actor</code> (<code>person</code>, <code>agent</code>, <code>integration</code>, <code>automation</code>, <code>visitor</code>) filters by who made the change.</td></tr>
+            <tr><td><code>/logs</code></td><td>GET</td><td><code>tbsh_cal_view_logs</code></td><td>Paginated, filtered and sorted logs. <code>severity</code> takes one value or a comma-separated list (<code>error,critical</code>); <code>/exports</code> accepts the same. <code>actor</code> (<code>person</code>, <code>agent</code>, <code>integration</code>, <code>automation</code>, <code>visitor</code>) filters by who made the change.</td></tr>
             <tr><td><code>/logs/{id}</code></td><td>GET</td><td><code>tbsh_cal_view_logs</code></td><td>One log record with metadata and hashes.</td></tr>
             <tr><td><code>/timeline</code></td><td>GET</td><td><code>tbsh_cal_view_logs</code></td><td>Chronological forensic feed.</td></tr>
             <tr><td><code>/evidence</code></td><td>GET</td><td><code>tbsh_cal_view_evidence</code></td><td>List evidence snapshots.</td></tr>
@@ -1559,7 +1565,7 @@ gunzip -c restore.jsonl.gz | head</code></pre>
           </thead>
           <tbody>
             <tr><td><code>/reports</code></td><td>GET</td><td><code>tbsh_cal_view_reports</code></td><td>List reports and available types.</td></tr>
-            <tr><td><code>/reports</code></td><td>POST</td><td><code>tbsh_cal_manage_reports</code></td><td>Generate a report (<code>type</code>, <code>format</code> = <code>html</code>|<code>csv</code>|<code>json</code>, <code>start_date</code>, <code>end_date</code>, <code>company_name</code>, and for NIS2 <code>incident_id</code> and <code>stage</code>).</td></tr>
+            <tr><td><code>/reports</code></td><td>POST</td><td><code>tbsh_cal_manage_reports</code></td><td>Generate a report (<code>type</code>, <code>format</code> = <code>html</code>|<code>pdf</code>|<code>csv</code>|<code>json</code>, <code>start_date</code>, <code>end_date</code>, <code>company_name</code>, and for NIS2 <code>incident_id</code> and <code>stage</code>).</td></tr>
             <tr><td><code>/reports/{id}</code></td><td>DELETE</td><td><code>tbsh_cal_manage_reports</code></td><td>Delete a report and its file.</td></tr>
             <tr><td><code>/reports/{id}/download</code></td><td>GET</td><td><code>tbsh_cal_view_reports</code></td><td>Download the report file.</td></tr>
             <tr><td><code>/reports/{id}/verify</code></td><td>GET</td><td><code>tbsh_cal_view_reports</code></td><td>Verify hash and signature.</td></tr>
@@ -1593,6 +1599,9 @@ gunzip -c restore.jsonl.gz | head</code></pre>
             <tr><td><code>/siem</code></td><td>GET</td><td><code>tbsh_cal_manage_settings</code></td><td>Forwarding status (sent, waiting, last error).</td></tr>
             <tr><td><code>/siem/test</code></td><td>POST</td><td><code>tbsh_cal_manage_settings</code></td><td>Send a test event to the configured destination.</td></tr>
             <tr><td><code>/setup</code></td><td>GET / POST</td><td><code>tbsh_cal_manage_settings</code></td><td>Setup assistant state (<code>pending</code>, <code>complete</code>, <code>dismissed</code>).</td></tr>
+            <tr><td><code>/network</code></td><td>GET / POST</td><td><code>tbsh_cal_view_analytics</code> / <code>tbsh_cal_manage_settings</code></td><td>Connected sites with cached summaries (tokens are never returned) / connect a site (<code>label</code>, <code>link</code> = that site's auditor link).</td></tr>
+            <tr><td><code>/network/{id}</code></td><td>POST / DELETE</td><td><code>tbsh_cal_manage_settings</code></td><td>Refresh one site, or replace its link (<code>link</code>) / disconnect it.</td></tr>
+            <tr><td><code>/network/refresh</code></td><td>POST</td><td><code>tbsh_cal_manage_settings</code></td><td>Refresh all sites (stalest first, about 25 seconds per call).</td></tr>
           </tbody>
         </table>
       </div>

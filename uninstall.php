@@ -74,6 +74,7 @@ function tbsh_cal_uninstall_site() {
 		'tbsh_cal_digest_state',
 		'tbsh_cal_siem_state',
 		'tbsh_cal_setup_state',
+		'tbsh_cal_network_sites',
 	);
 	foreach ( $options as $option ) {
 		delete_option( $option );

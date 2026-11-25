@@ -116,6 +116,20 @@ function Toggle( { id, label, checked, onChange, disabled, description } ) {
 
 /**
  * Write-only secret input. The stored value is never shown; its masked hint is the placeholder.
+ *
+ * @param {Object}   props
+ * @param {string}   props.secretKey        Secret key in the settings store.
+ * @param {string}   props.label            Field label.
+ * @param {Object}   props.secrets          Stored-secret status keyed by secret key.
+ * @param {string}   props.value            Newly typed value.
+ * @param {Function} props.onChange         Called with the typed value.
+ * @param {Function} props.onRemove         Removes the stored secret.
+ * @param {boolean}  props.disabled         Disables the field.
+ * @param {string}   props.help             Help text.
+ * @param {boolean}  props.reveal           Shows the typed value in plain text.
+ * @param {string}   props.emptyPlaceholder Placeholder when no secret is stored.
+ * @param {boolean}  props.optional         Marks the field as optional.
+ * @param {Function} props.onGenerate       Generates a new value.
  */
 function SecretField( { secretKey, label, secrets, value, onChange, onRemove, disabled, help, reveal, emptyPlaceholder, optional, onGenerate } ) {
 	const id = `tbsh-secret-${ secretKey }`;

@@ -267,6 +267,9 @@ class TBSH_Compliance_Audit_Logger {
 		// Near-real-time forwarding of audit entries to a SIEM (off by default).
 		\TBSHComplianceAuditLogger\Alerts\SiemForwarder::init();
 
+		// Overview of other sites running this plugin (read-only, through their auditor links).
+		\TBSHComplianceAuditLogger\Network\SiteNetwork::init();
+
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			\WP_CLI::add_command( 'tbsh-cal', \TBSHComplianceAuditLogger\CLI\Command::class );
 		}
@@ -321,6 +324,7 @@ class TBSH_Compliance_Audit_Logger {
 			new \TBSHComplianceAuditLogger\API\SessionsController(),
 			new \TBSHComplianceAuditLogger\API\FileIntegrityController(),
 			new \TBSHComplianceAuditLogger\API\AutomationController(),
+			new \TBSHComplianceAuditLogger\API\NetworkController(),
 		);
 
 		foreach ( $controllers as $controller ) {

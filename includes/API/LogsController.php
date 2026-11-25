@@ -85,9 +85,10 @@ class LogsController extends BaseController {
 			$args[]  = $like;
 		}
 
-		if ( ! empty( $severity ) ) {
-			$where[] = 'severity = %s';
-			$args[]  = $severity;
+		$severity_filter = \TBSHComplianceAuditLogger\Logging\Logger::severity_filter( $severity );
+		if ( $severity_filter ) {
+			$where[] = $severity_filter[0];
+			$args    = array_merge( $args, $severity_filter[1] );
 		}
 
 		if ( ! empty( $category ) ) {

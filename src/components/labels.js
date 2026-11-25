@@ -6,6 +6,11 @@ import { __ } from '@wordpress/i18n';
 export const SEVERITIES = [ 'info', 'notice', 'warning', 'error', 'critical' ];
 
 /**
+ * Filter value matching both error and critical entries (the logs and export APIs accept lists).
+ */
+export const ERRORS_AND_CRITICAL = 'error,critical';
+
+/**
  * Translated severity names.
  *
  * @return {Object} Severity => label.
@@ -24,7 +29,12 @@ export const severityLabels = () => ( {
  * @param {string} severity Severity.
  * @return {string} Label.
  */
-export const severityLabel = ( severity ) => severityLabels()[ severity ] || severity || '';
+export const severityLabel = ( severity ) => {
+	if ( ERRORS_AND_CRITICAL === severity ) {
+		return __( 'Errors and critical', 'tbsh-compliance-audit-logger' );
+	}
+	return severityLabels()[ severity ] || severity || '';
+};
 
 /**
  * Badge colour for a severity.
@@ -56,14 +66,16 @@ export function SeverityBadge( { severity } ) {
 /**
  * Severity <option> elements, preceded by an "all" option.
  *
- * @param {Object} props
- * @param {string} props.allLabel Label of the empty option.
+ * @param {Object}  props
+ * @param {string}  props.allLabel Label of the empty option.
+ * @param {boolean} props.combined Also offer "Errors and critical" (APIs that accept lists).
  * @return {Element} Options.
  */
-export function SeverityOptions( { allLabel } ) {
+export function SeverityOptions( { allLabel, combined = false } ) {
 	return (
 		<>
 			<option value="">{ allLabel }</option>
+			{ combined && <option value={ ERRORS_AND_CRITICAL }>{ severityLabel( ERRORS_AND_CRITICAL ) }</option> }
 			{ SEVERITIES.map( ( value ) => (
 				<option key={ value } value={ value }>
 					{ severityLabel( value ) }

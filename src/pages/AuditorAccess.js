@@ -69,11 +69,11 @@ export default function AuditorAccess() {
 	const submitCreate = ( e ) => {
 		e.preventDefault();
 		const trimmed = label.trim();
-		const d = parseInt( days, 10 );
 		if ( ! trimmed ) {
 			setCreateError( __( 'Enter a label so you can recognise this link later.', 'tbsh-compliance-audit-logger' ) );
 			return;
 		}
+		const d = parseInt( days, 10 );
 		if ( ! d || d < 1 || d > 90 ) {
 			setCreateError( __( 'Validity must be between 1 and 90 days.', 'tbsh-compliance-audit-logger' ) );
 			return;
@@ -153,6 +153,81 @@ export default function AuditorAccess() {
 	const statuses = statusMeta();
 	const activeCount = links.filter( ( l ) => 'active' === l.status ).length;
 
+	const renderLinks = () => {
+		if ( loading ) {
+			return (
+				<SkeletonLoader rows={ 4 } cols={ 6 } />
+			);
+		}
+		if ( error ) {
+			return (
+				<EmptyState
+					title={ __( 'Error loading auditor links', 'tbsh-compliance-audit-logger' ) }
+					description={ (
+						<>
+							{ error }
+							<br />
+							<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" style={ { marginTop: '12px' } } onClick={ fetchLinks }>
+								{ __( 'Retry', 'tbsh-compliance-audit-logger' ) }
+							</button>
+						</>
+					) }
+					icon="alert"
+				/>
+			);
+		}
+		if ( links.length ) {
+			return (
+				<table className="tbsh-table">
+					<thead>
+						<tr>
+							<th>{ __( 'Label', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Token', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Status', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Expires', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Last used', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Created by', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Created', 'tbsh-compliance-audit-logger' ) }</th>
+							<th style={ { textAlign: 'end' } }>{ __( 'Actions', 'tbsh-compliance-audit-logger' ) }</th>
+						</tr>
+					</thead>
+					<tbody>
+						{ links.map( ( l ) => {
+							const s = statuses[ l.status ] || { label: l.status, badge: 'info' };
+							return (
+								<tr key={ l.id }>
+									<td><strong>{ l.label }</strong></td>
+									<td><code>{ l.token_hint }</code></td>
+									<td><span className={ `tbsh-badge tbsh-badge-${ s.badge }` }>{ s.label }</span></td>
+									<td>{ l.expires_at }</td>
+									<td>{ l.last_used_at || __( 'Never', 'tbsh-compliance-audit-logger' ) }</td>
+									<td>{ l.created_by || '—' }</td>
+									<td>{ l.created_at }</td>
+									<td style={ { textAlign: 'end' } }>
+										{ 'active' === l.status ? (
+											<button type="button" className="tbsh-btn tbsh-btn-danger tbsh-btn-sm" onClick={ () => setToRevoke( l ) }>
+												{ __( 'Revoke', 'tbsh-compliance-audit-logger' ) }
+											</button>
+										) : (
+											<span className="tbsh-muted">—</span>
+										) }
+									</td>
+								</tr>
+							);
+						} ) }
+					</tbody>
+				</table>
+			);
+		}
+		return (
+			<EmptyState
+				title={ __( 'No auditor links', 'tbsh-compliance-audit-logger' ) }
+				description={ __( 'Create a time-limited, read-only link when an external auditor needs to review your compliance evidence.', 'tbsh-compliance-audit-logger' ) }
+				icon="auditor"
+			/>
+		);
+	};
+
 	return (
 		<div className="tbsh-auditor-page">
 			<Notice type={ notice.type } message={ notice.message } />
@@ -196,69 +271,7 @@ export default function AuditorAccess() {
 					</button>
 				</div>
 				<div className="tbsh-table-container">
-					{ loading ? (
-						<SkeletonLoader rows={ 4 } cols={ 6 } />
-					) : error ? (
-						<EmptyState
-							title={ __( 'Error loading auditor links', 'tbsh-compliance-audit-logger' ) }
-							description={ (
-								<>
-									{ error }
-									<br />
-									<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" style={ { marginTop: '12px' } } onClick={ fetchLinks }>
-										{ __( 'Retry', 'tbsh-compliance-audit-logger' ) }
-									</button>
-								</>
-							) }
-							icon="alert"
-						/>
-					) : links.length ? (
-						<table className="tbsh-table">
-							<thead>
-								<tr>
-									<th>{ __( 'Label', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Token', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Status', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Expires', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Last used', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Created by', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Created', 'tbsh-compliance-audit-logger' ) }</th>
-									<th style={ { textAlign: 'right' } }>{ __( 'Actions', 'tbsh-compliance-audit-logger' ) }</th>
-								</tr>
-							</thead>
-							<tbody>
-								{ links.map( ( l ) => {
-									const s = statuses[ l.status ] || { label: l.status, badge: 'info' };
-									return (
-										<tr key={ l.id }>
-											<td><strong>{ l.label }</strong></td>
-											<td><code>{ l.token_hint }</code></td>
-											<td><span className={ `tbsh-badge tbsh-badge-${ s.badge }` }>{ s.label }</span></td>
-											<td>{ l.expires_at }</td>
-											<td>{ l.last_used_at || __( 'Never', 'tbsh-compliance-audit-logger' ) }</td>
-											<td>{ l.created_by || '—' }</td>
-											<td>{ l.created_at }</td>
-											<td style={ { textAlign: 'right' } }>
-												{ 'active' === l.status ? (
-													<button type="button" className="tbsh-btn tbsh-btn-danger tbsh-btn-sm" onClick={ () => setToRevoke( l ) }>
-														{ __( 'Revoke', 'tbsh-compliance-audit-logger' ) }
-													</button>
-												) : (
-													<span className="tbsh-muted">—</span>
-												) }
-											</td>
-										</tr>
-									);
-								} ) }
-							</tbody>
-						</table>
-					) : (
-						<EmptyState
-							title={ __( 'No auditor links', 'tbsh-compliance-audit-logger' ) }
-							description={ __( 'Create a time-limited, read-only link when an external auditor needs to review your compliance evidence.', 'tbsh-compliance-audit-logger' ) }
-							icon="auditor"
-						/>
-					) }
+					{ renderLinks() }
 				</div>
 			</div>
 

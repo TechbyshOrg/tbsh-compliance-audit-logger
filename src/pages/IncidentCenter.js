@@ -386,6 +386,61 @@ function IncidentDetail( { id, canManage, onChanged, onRequestDelete } ) {
 	const tLabels = timelineLabels();
 	const stLabels = stageStatusLabels();
 
+	const renderPicker = () => {
+		if ( pickerLoading ) {
+			return (
+				<SkeletonLoader rows={ 1 } cols={ 2 } />
+			);
+		}
+		if ( pickable.length === 0 ) {
+			return (
+				<div className="tbsh-row-between">
+					<span className="tbsh-muted">
+						{ __( 'There are no other evidence snapshots to link. Capture one in the Evidence Vault first.', 'tbsh-compliance-audit-logger' ) }
+					</span>
+					<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" onClick={ () => setPickerOpen( false ) }>
+						{ __( 'Close', 'tbsh-compliance-audit-logger' ) }
+					</button>
+				</div>
+			);
+		}
+		return (
+			<div>
+				<div className="tbsh-form-group">
+					<label className="tbsh-form-label" htmlFor="tbsh-inc-evidence-pick">
+						{ __( 'Evidence snapshot (latest 50)', 'tbsh-compliance-audit-logger' ) }
+					</label>
+					<select
+						id="tbsh-inc-evidence-pick"
+						className="tbsh-form-control"
+						value={ pickerValue }
+						onChange={ ( e ) => setPickerValue( e.target.value ) }
+					>
+						<option value="">{ __( 'Select a snapshot…', 'tbsh-compliance-audit-logger' ) }</option>
+						{ pickable.map( ( ev ) => (
+							<option key={ ev.evidence_uuid } value={ ev.evidence_uuid }>
+								{ `${ ev.evidence_title } — ${ ev.created_at } (${ humanize( ev.evidence_type ) })` }
+							</option>
+						) ) }
+					</select>
+				</div>
+				<div className="tbsh-row">
+					<button
+						type="button"
+						className="tbsh-btn tbsh-btn-primary tbsh-btn-sm"
+						disabled={ ! pickerValue || !! busy }
+						onClick={ attachEvidence }
+					>
+						{ 'attach' === busy ? __( 'Linking…', 'tbsh-compliance-audit-logger' ) : __( 'Link snapshot', 'tbsh-compliance-audit-logger' ) }
+					</button>
+					<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" onClick={ () => setPickerOpen( false ) }>
+						{ __( 'Cancel', 'tbsh-compliance-audit-logger' ) }
+					</button>
+				</div>
+			</div>
+		);
+	};
+
 	return (
 		<div className="tbsh-stack">
 			<Notice type={ notice.type } message={ notice.message } />
@@ -665,7 +720,7 @@ function IncidentDetail( { id, canManage, onChanged, onRequestDelete } ) {
 										<th>{ __( 'Snapshot', 'tbsh-compliance-audit-logger' ) }</th>
 										<th>{ __( 'Captured', 'tbsh-compliance-audit-logger' ) }</th>
 										<th>{ __( 'Linked', 'tbsh-compliance-audit-logger' ) }</th>
-										{ canManage && <th style={ { textAlign: 'right' } }>{ __( 'Actions', 'tbsh-compliance-audit-logger' ) }</th> }
+										{ canManage && <th style={ { textAlign: 'end' } }>{ __( 'Actions', 'tbsh-compliance-audit-logger' ) }</th> }
 									</tr>
 								</thead>
 								<tbody>
@@ -678,7 +733,7 @@ function IncidentDetail( { id, canManage, onChanged, onRequestDelete } ) {
 											<td>{ ev.created_at }</td>
 											<td>{ ev.linked_at }</td>
 											{ canManage && (
-												<td style={ { textAlign: 'right' } }>
+												<td style={ { textAlign: 'end' } }>
 													{ confirmDetach === ev.link_id ? (
 														<span className="tbsh-row" style={ { justifyContent: 'flex-end' } }>
 															<button
@@ -719,52 +774,7 @@ function IncidentDetail( { id, canManage, onChanged, onRequestDelete } ) {
 					) }
 					{ canManage && pickerOpen && (
 						<div className="tbsh-card">
-							{ pickerLoading ? (
-								<SkeletonLoader rows={ 1 } cols={ 2 } />
-							) : pickable.length === 0 ? (
-								<div className="tbsh-row-between">
-									<span className="tbsh-muted">
-										{ __( 'There are no other evidence snapshots to link. Capture one in the Evidence Vault first.', 'tbsh-compliance-audit-logger' ) }
-									</span>
-									<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" onClick={ () => setPickerOpen( false ) }>
-										{ __( 'Close', 'tbsh-compliance-audit-logger' ) }
-									</button>
-								</div>
-							) : (
-								<div>
-									<div className="tbsh-form-group">
-										<label className="tbsh-form-label" htmlFor="tbsh-inc-evidence-pick">
-											{ __( 'Evidence snapshot (latest 50)', 'tbsh-compliance-audit-logger' ) }
-										</label>
-										<select
-											id="tbsh-inc-evidence-pick"
-											className="tbsh-form-control"
-											value={ pickerValue }
-											onChange={ ( e ) => setPickerValue( e.target.value ) }
-										>
-											<option value="">{ __( 'Select a snapshot…', 'tbsh-compliance-audit-logger' ) }</option>
-											{ pickable.map( ( ev ) => (
-												<option key={ ev.evidence_uuid } value={ ev.evidence_uuid }>
-													{ `${ ev.evidence_title } — ${ ev.created_at } (${ humanize( ev.evidence_type ) })` }
-												</option>
-											) ) }
-										</select>
-									</div>
-									<div className="tbsh-row">
-										<button
-											type="button"
-											className="tbsh-btn tbsh-btn-primary tbsh-btn-sm"
-											disabled={ ! pickerValue || !! busy }
-											onClick={ attachEvidence }
-										>
-											{ 'attach' === busy ? __( 'Linking…', 'tbsh-compliance-audit-logger' ) : __( 'Link snapshot', 'tbsh-compliance-audit-logger' ) }
-										</button>
-										<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" onClick={ () => setPickerOpen( false ) }>
-											{ __( 'Cancel', 'tbsh-compliance-audit-logger' ) }
-										</button>
-									</div>
-								</div>
-							) }
+							{ renderPicker() }
 						</div>
 					) }
 				</div>
@@ -778,7 +788,7 @@ function IncidentDetail( { id, canManage, onChanged, onRequestDelete } ) {
 
 					{ canManage ? (
 						<div className="tbsh-row">
-							<label htmlFor="tbsh-nis2-significant" className="tbsh-row" style={ { marginRight: '16px' } }>
+							<label htmlFor="tbsh-nis2-significant" className="tbsh-row" style={ { marginInlineEnd: '16px' } }>
 								<input
 									id="tbsh-nis2-significant"
 									type="checkbox"
@@ -865,7 +875,7 @@ function IncidentDetail( { id, canManage, onChanged, onRequestDelete } ) {
 												) }
 											</td>
 											<td>
-												<span style={ info.overdue ? { color: 'var(--tbsh-danger)', fontWeight: 600 } : undefined }>
+												<span style={ info.overdue ? { color: 'var(--tbsh-danger-text)', fontWeight: 600 } : undefined }>
 													{ info.due_at || '—' }
 												</span>
 												{ info.overdue && (
@@ -1004,7 +1014,7 @@ function IncidentDetail( { id, canManage, onChanged, onRequestDelete } ) {
 							{ Array.isArray( analysis.result.likely_causes ) && analysis.result.likely_causes.length > 0 && (
 								<div>
 									<h5 className="tbsh-section-title">{ __( 'Likely causes', 'tbsh-compliance-audit-logger' ) }</h5>
-									<ul style={ { margin: 0, paddingLeft: '20px', listStyle: 'disc' } }>
+									<ul style={ { margin: 0, paddingInlineStart: '20px', listStyle: 'disc' } }>
 										{ analysis.result.likely_causes.map( ( c, i ) => <li key={ i }>{ c }</li> ) }
 									</ul>
 								</div>
@@ -1012,7 +1022,7 @@ function IncidentDetail( { id, canManage, onChanged, onRequestDelete } ) {
 							{ Array.isArray( analysis.result.recommended_actions ) && analysis.result.recommended_actions.length > 0 && (
 								<div>
 									<h5 className="tbsh-section-title">{ __( 'Recommended actions', 'tbsh-compliance-audit-logger' ) }</h5>
-									<ol style={ { margin: 0, paddingLeft: '20px' } }>
+									<ol style={ { margin: 0, paddingInlineStart: '20px' } }>
 										{ analysis.result.recommended_actions.map( ( a, i ) => <li key={ i }>{ a }</li> ) }
 									</ol>
 								</div>
@@ -1161,6 +1171,131 @@ export default function IncidentCenter() {
 	const metricStatus = { open: 'danger', investigating: 'warning', contained: '', resolved: 'success', closed: '' };
 	const filtered = !! ( status || severity || search );
 
+	const renderIncidents = () => {
+		if ( loading ) {
+			return (
+				<SkeletonLoader rows={ 5 } cols={ 5 } />
+			);
+		}
+		if ( error ) {
+			return (
+				<div style={ { textAlign: 'center', paddingBottom: '24px' } }>
+					<EmptyState title={ __( 'Could not load incidents', 'tbsh-compliance-audit-logger' ) } description={ error } icon="alert" />
+					<button type="button" className="tbsh-btn tbsh-btn-secondary" onClick={ load }>
+						{ __( 'Try again', 'tbsh-compliance-audit-logger' ) }
+					</button>
+				</div>
+			);
+		}
+		if ( incidents.length === 0 ) {
+			return (
+				<EmptyState
+					title={ filtered ? __( 'No matching incidents', 'tbsh-compliance-audit-logger' ) : __( 'No incidents recorded', 'tbsh-compliance-audit-logger' ) }
+					description={
+						filtered
+							? __( 'Try different filters or search terms.', 'tbsh-compliance-audit-logger' )
+							: __( 'Incidents opened manually or by automatic detection will appear here.', 'tbsh-compliance-audit-logger' )
+					}
+					icon="incidents"
+				/>
+			);
+		}
+		return (
+			<>
+				<table className="tbsh-table">
+					<thead>
+						<tr>
+							<th>{ __( 'Title', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Severity', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Status', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Type', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Detected', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'NIS2', 'tbsh-compliance-audit-logger' ) }</th>
+							<th style={ { textAlign: 'end' } }>{ __( 'Actions', 'tbsh-compliance-audit-logger' ) }</th>
+						</tr>
+					</thead>
+					<tbody>
+						{ incidents.map( ( inc ) => {
+							const n = inc.nis2 || {};
+							return (
+								<tr key={ inc.id }>
+									<td><strong>{ inc.event_title }</strong></td>
+									<td>
+										<span className={ `tbsh-badge tbsh-badge-${ severityBadge( inc.severity ) }` }>
+											{ sevLabels[ inc.severity ] || inc.severity }
+										</span>
+									</td>
+									<td>
+										<span className={ `tbsh-badge tbsh-badge-${ statusBadge( inc.status ) }` }>
+											{ sLabels[ inc.status ] || inc.status }
+										</span>
+									</td>
+									<td>{ humanize( inc.incident_type ) }</td>
+									<td>{ inc.detected_at }</td>
+									<td>
+										<span className="tbsh-row">
+											{ n.significant ? (
+												<span className="tbsh-badge tbsh-badge-warning">{ __( 'Significant', 'tbsh-compliance-audit-logger' ) }</span>
+											) : (
+												<span className="tbsh-muted">—</span>
+											) }
+											{ n.overdue > 0 && (
+												<span className="tbsh-badge tbsh-badge-danger">
+													{ sprintf(
+														/* translators: %d: number of overdue NIS2 reporting stages */
+														_n( '%d overdue', '%d overdue', n.overdue, 'tbsh-compliance-audit-logger' ),
+														n.overdue
+													) }
+												</span>
+											) }
+										</span>
+									</td>
+									<td style={ { textAlign: 'end' } }>
+										<button
+											type="button"
+											className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
+											onClick={ () => setSelectedId( inc.id ) }
+										>
+											{ canManage ? __( 'Manage', 'tbsh-compliance-audit-logger' ) : __( 'View', 'tbsh-compliance-audit-logger' ) }
+										</button>
+									</td>
+								</tr>
+							);
+						} ) }
+					</tbody>
+				</table>
+				{ totalPages > 1 && (
+					<div className="tbsh-pagination" style={ { marginTop: '16px' } }>
+						<button
+							type="button"
+							className="tbsh-btn tbsh-btn-secondary"
+							disabled={ page <= 1 }
+							onClick={ () => setPage( ( p ) => Math.max( 1, p - 1 ) ) }
+						>
+							{ __( 'Previous', 'tbsh-compliance-audit-logger' ) }
+						</button>
+						<span style={ { fontSize: '13px', padding: '0 12px' } }>
+							{ sprintf(
+								/* translators: 1: current page, 2: total pages */
+								__( 'Page %1$d of %2$d', 'tbsh-compliance-audit-logger' ),
+								page,
+								totalPages
+							) }
+						</span>
+						<button
+							type="button"
+							className="tbsh-btn tbsh-btn-secondary"
+							disabled={ page >= totalPages }
+							onClick={ () => setPage( ( p ) => p + 1 ) }
+						>
+							{ __( 'Next', 'tbsh-compliance-audit-logger' ) }
+						</button>
+					</div>
+				) }
+			</>
+		);
+	};
+
 	return (
 		<div className="tbsh-incident-center">
 			<Notice type={ notice.type } message={ notice.message } />
@@ -1248,119 +1383,7 @@ export default function IncidentCenter() {
 			</div>
 
 			<div className="tbsh-table-container">
-				{ loading ? (
-					<SkeletonLoader rows={ 5 } cols={ 5 } />
-				) : error ? (
-					<div style={ { textAlign: 'center', paddingBottom: '24px' } }>
-						<EmptyState title={ __( 'Could not load incidents', 'tbsh-compliance-audit-logger' ) } description={ error } icon="alert" />
-						<button type="button" className="tbsh-btn tbsh-btn-secondary" onClick={ load }>
-							{ __( 'Try again', 'tbsh-compliance-audit-logger' ) }
-						</button>
-					</div>
-				) : incidents.length === 0 ? (
-					<EmptyState
-						title={ filtered ? __( 'No matching incidents', 'tbsh-compliance-audit-logger' ) : __( 'No incidents recorded', 'tbsh-compliance-audit-logger' ) }
-						description={
-							filtered
-								? __( 'Try different filters or search terms.', 'tbsh-compliance-audit-logger' )
-								: __( 'Incidents opened manually or by automatic detection will appear here.', 'tbsh-compliance-audit-logger' )
-						}
-						icon="incidents"
-					/>
-				) : (
-					<>
-						<table className="tbsh-table">
-							<thead>
-								<tr>
-									<th>{ __( 'Title', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Severity', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Status', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Type', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Detected', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'NIS2', 'tbsh-compliance-audit-logger' ) }</th>
-									<th style={ { textAlign: 'right' } }>{ __( 'Actions', 'tbsh-compliance-audit-logger' ) }</th>
-								</tr>
-							</thead>
-							<tbody>
-								{ incidents.map( ( inc ) => {
-									const n = inc.nis2 || {};
-									return (
-										<tr key={ inc.id }>
-											<td><strong>{ inc.event_title }</strong></td>
-											<td>
-												<span className={ `tbsh-badge tbsh-badge-${ severityBadge( inc.severity ) }` }>
-													{ sevLabels[ inc.severity ] || inc.severity }
-												</span>
-											</td>
-											<td>
-												<span className={ `tbsh-badge tbsh-badge-${ statusBadge( inc.status ) }` }>
-													{ sLabels[ inc.status ] || inc.status }
-												</span>
-											</td>
-											<td>{ humanize( inc.incident_type ) }</td>
-											<td>{ inc.detected_at }</td>
-											<td>
-												<span className="tbsh-row">
-													{ n.significant ? (
-														<span className="tbsh-badge tbsh-badge-warning">{ __( 'Significant', 'tbsh-compliance-audit-logger' ) }</span>
-													) : (
-														<span className="tbsh-muted">—</span>
-													) }
-													{ n.overdue > 0 && (
-														<span className="tbsh-badge tbsh-badge-danger">
-															{ sprintf(
-																/* translators: %d: number of overdue NIS2 reporting stages */
-																_n( '%d overdue', '%d overdue', n.overdue, 'tbsh-compliance-audit-logger' ),
-																n.overdue
-															) }
-														</span>
-													) }
-												</span>
-											</td>
-											<td style={ { textAlign: 'right' } }>
-												<button
-													type="button"
-													className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
-													onClick={ () => setSelectedId( inc.id ) }
-												>
-													{ canManage ? __( 'Manage', 'tbsh-compliance-audit-logger' ) : __( 'View', 'tbsh-compliance-audit-logger' ) }
-												</button>
-											</td>
-										</tr>
-									);
-								} ) }
-							</tbody>
-						</table>
-						{ totalPages > 1 && (
-							<div className="tbsh-pagination" style={ { marginTop: '16px' } }>
-								<button
-									type="button"
-									className="tbsh-btn tbsh-btn-secondary"
-									disabled={ page <= 1 }
-									onClick={ () => setPage( ( p ) => Math.max( 1, p - 1 ) ) }
-								>
-									{ __( 'Previous', 'tbsh-compliance-audit-logger' ) }
-								</button>
-								<span style={ { fontSize: '13px', padding: '0 12px' } }>
-									{ sprintf(
-										/* translators: 1: current page, 2: total pages */
-										__( 'Page %1$d of %2$d', 'tbsh-compliance-audit-logger' ),
-										page,
-										totalPages
-									) }
-								</span>
-								<button
-									type="button"
-									className="tbsh-btn tbsh-btn-secondary"
-									disabled={ page >= totalPages }
-									onClick={ () => setPage( ( p ) => p + 1 ) }
-								>
-									{ __( 'Next', 'tbsh-compliance-audit-logger' ) }
-								</button>
-							</div>
-						) }
-					</>
-				) }
+				{ renderIncidents() }
 			</div>
 
 			<Modal

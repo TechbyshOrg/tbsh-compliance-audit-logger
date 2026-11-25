@@ -45,7 +45,7 @@ function SnapshotsPanel() {
 	}, [page]); // eslint-disable-line react-hooks/exhaustive-deps
 
 	const triggerSnapshot = () => {
-		if ( ! canCapture ) return;
+		if ( ! canCapture ) {return;}
 		setBtnLoading(true);
 		setNotice({ type: '', message: '' });
 
@@ -75,15 +75,14 @@ function SnapshotsPanel() {
 				setSelectedDetails(data);
 				setDetailsLoading(false);
 			})
-			.catch((err) => {
-				console.error(err);
+			.catch(() => {
 				setDetailsLoading(false);
 			});
 	};
 
 	// Client-side export helper
 	const exportSnapshot = (format) => {
-		if ( ! selectedDetails ) return;
+		if ( ! selectedDetails ) {return;}
 
 		const data = selectedDetails.snapshot_data;
 		if ( 'json' === format ) {
@@ -111,6 +110,165 @@ function SnapshotsPanel() {
 		}
 	};
 
+	const renderDetails = () => {
+		if (detailsLoading) {
+			return (
+				<SkeletonLoader rows={6} cols={3} />
+			);
+		}
+		if (selectedDetails) {
+			return (
+				<div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+					<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+						<div>
+							<strong>{__('Snapshot Name:', 'tbsh-compliance-audit-logger')}</strong> {selectedDetails.evidence_title}
+						</div>
+						<div style={{ display: 'flex', gap: '8px' }}>
+							<button className="tbsh-btn tbsh-btn-secondary" onClick={() => exportSnapshot('json')} style={{ padding: '6px 10px', fontSize: '12px' }}>
+								<Icon name="download" />
+								JSON
+							</button>
+							<button className="tbsh-btn tbsh-btn-secondary" onClick={() => exportSnapshot('csv')} style={{ padding: '6px 10px', fontSize: '12px' }}>
+								<Icon name="download" />
+								CSV (Plugins)
+							</button>
+						</div>
+					</div>
+
+					<div className="tbsh-grid-fields" style={{ padding: '12px', backgroundColor: 'var(--tbsh-bg-secondary)', borderRadius: '6px' }}>
+						<div><strong>{__('WordPress Version:', 'tbsh-compliance-audit-logger')}</strong> {selectedDetails.snapshot_data.wp_version}</div>
+						<div><strong>{__('PHP Version:', 'tbsh-compliance-audit-logger')}</strong> {selectedDetails.snapshot_data.php_version}</div>
+						<div><strong>{__('Multisite Network:', 'tbsh-compliance-audit-logger')}</strong> {selectedDetails.snapshot_data.site_config.is_multisite ? __('Yes', 'tbsh-compliance-audit-logger') : __('No', 'tbsh-compliance-audit-logger')}</div>
+						<div><strong>{__('DB Tables Checked:', 'tbsh-compliance-audit-logger')}</strong> {Object.keys(selectedDetails.snapshot_data.database.tables).length}</div>
+					</div>
+
+					{/* Plugins Snapshot Tabulation */}
+					<div>
+						<h5 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
+							{__('Active Plugins Catalog', 'tbsh-compliance-audit-logger')} ({selectedDetails.snapshot_data.plugins.length})
+						</h5>
+						<div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--tbsh-border-color)', borderRadius: '6px' }}>
+							<table className="tbsh-table" style={{ fontSize: '12px' }}>
+								<thead>
+									<tr>
+										<th>{__('Plugin Name', 'tbsh-compliance-audit-logger')}</th>
+										<th>{__('Version', 'tbsh-compliance-audit-logger')}</th>
+										<th>{__('Status', 'tbsh-compliance-audit-logger')}</th>
+									</tr>
+								</thead>
+								<tbody>
+									{selectedDetails.snapshot_data.plugins.map((plug, idx) => (
+										<tr key={idx}>
+											<td>{plug.name}</td>
+											<td><code>{plug.version}</code></td>
+											<td>
+												<span className={`tbsh-badge tbsh-badge-${plug.is_active ? 'success' : 'info'}`}>
+													{plug.is_active ? 'Active' : 'Inactive'}
+												</span>
+											</td>
+										</tr>
+									))}
+								</tbody>
+							</table>
+						</div>
+					</div>
+
+					{/* Security Settings Snapshot */}
+					<div>
+						<h5 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
+							{__('Security Config Snapshot', 'tbsh-compliance-audit-logger')}
+						</h5>
+						<div className="tbsh-grid-fields" style={{ gap: '8px', fontSize: '13px' }}>
+							<div>
+								<span>{__('WP Debug Active:', 'tbsh-compliance-audit-logger')} </span>
+								<strong>{selectedDetails.snapshot_data.security.wp_debug ? 'TRUE' : 'FALSE'}</strong>
+							</div>
+							<div>
+								<span>{__('Forced SSL Login:', 'tbsh-compliance-audit-logger')} </span>
+								<strong>{selectedDetails.snapshot_data.security.force_ssl_admin ? 'TRUE' : 'FALSE'}</strong>
+							</div>
+							<div>
+								<span>{__('Database Version:', 'tbsh-compliance-audit-logger')} </span>
+								<strong>{selectedDetails.snapshot_data.security.db_version}</strong>
+							</div>
+							<div>
+								<span>{__('SSL Active Connection:', 'tbsh-compliance-audit-logger')} </span>
+								<strong>{selectedDetails.snapshot_data.security.is_ssl ? 'TRUE' : 'FALSE'}</strong>
+							</div>
+						</div>
+					</div>
+				</div>
+			);
+		}
+		return null;
+	};
+
+	const renderSnapshots = () => {
+		if (loading) {
+			return (
+				<SkeletonLoader rows={5} cols={4} />
+			);
+		}
+		if (error) {
+			return (
+				<EmptyState title={__('Error Loading Data', 'tbsh-compliance-audit-logger')} description={error} icon="alert" />
+			);
+		}
+		if (snapshots.length > 0) {
+			return (
+				<>
+				<table className="tbsh-table">
+					<thead>
+						<tr>
+							<th>{__('Snapshot ID', 'tbsh-compliance-audit-logger')}</th>
+							<th>{__('Title', 'tbsh-compliance-audit-logger')}</th>
+							<th>{__('Trigger Type', 'tbsh-compliance-audit-logger')}</th>
+							<th>{__('Date Logged', 'tbsh-compliance-audit-logger')}</th>
+							<th style={{ textAlign: 'end' }}>{__('Actions', 'tbsh-compliance-audit-logger')}</th>
+						</tr>
+					</thead>
+					<tbody>
+						{snapshots.map((snap) => (
+							<tr key={snap.id}>
+								<td><code>{snap.evidence_uuid}</code></td>
+								<td><strong>{snap.evidence_title}</strong></td>
+								<td>
+									<span className={`tbsh-badge tbsh-badge-${snap.evidence_type === 'manual' ? 'warning' : 'info'}`}>
+										{snap.evidence_type}
+									</span>
+								</td>
+								<td>{snap.created_at}</td>
+								<td style={{ textAlign: 'end' }}>
+									<button 
+										type="button"
+										className="tbsh-btn tbsh-btn-secondary"
+										onClick={() => inspectSnapshot(snap.id)}
+										style={{ padding: '4px 8px', fontSize: '12px' }}
+									>
+										{__('Inspect', 'tbsh-compliance-audit-logger')}
+									</button>
+								</td>
+							</tr>
+						))}
+					</tbody>
+				</table>
+				<div className="tbsh-pagination" style={{ marginTop: '16px' }}>
+					<button type="button" className="tbsh-btn tbsh-btn-secondary" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+						{__('Previous', 'tbsh-compliance-audit-logger')}
+					</button>
+					<span style={{ fontSize: '13px', padding: '0 12px' }}>{page} / {totalPages}</span>
+					<button type="button" className="tbsh-btn tbsh-btn-secondary" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+						{__('Next', 'tbsh-compliance-audit-logger')}
+					</button>
+				</div>
+				</>
+			);
+		}
+		return (
+			<EmptyState title={__('Evidence Vault is Empty', 'tbsh-compliance-audit-logger')} description={__('No state snapshots have been saved yet.', 'tbsh-compliance-audit-logger')} icon="evidence" />
+		);
+	};
+
 	return (
 		<div className="tbsh-evidence-page">
 			{notice.message && <Notice type={notice.type} message={notice.message} />}
@@ -133,60 +291,7 @@ function SnapshotsPanel() {
 			</div>
 
 			<div className="tbsh-table-container">
-				{loading ? (
-					<SkeletonLoader rows={5} cols={4} />
-				) : error ? (
-					<EmptyState title={__('Error Loading Data', 'tbsh-compliance-audit-logger')} description={error} icon="alert" />
-				) : snapshots.length > 0 ? (
-					<>
-					<table className="tbsh-table">
-						<thead>
-							<tr>
-								<th>{__('Snapshot ID', 'tbsh-compliance-audit-logger')}</th>
-								<th>{__('Title', 'tbsh-compliance-audit-logger')}</th>
-								<th>{__('Trigger Type', 'tbsh-compliance-audit-logger')}</th>
-								<th>{__('Date Logged', 'tbsh-compliance-audit-logger')}</th>
-								<th style={{ textAlign: 'end' }}>{__('Actions', 'tbsh-compliance-audit-logger')}</th>
-							</tr>
-						</thead>
-						<tbody>
-							{snapshots.map((snap) => (
-								<tr key={snap.id}>
-									<td><code>{snap.evidence_uuid}</code></td>
-									<td><strong>{snap.evidence_title}</strong></td>
-									<td>
-										<span className={`tbsh-badge tbsh-badge-${snap.evidence_type === 'manual' ? 'warning' : 'info'}`}>
-											{snap.evidence_type}
-										</span>
-									</td>
-									<td>{snap.created_at}</td>
-									<td style={{ textAlign: 'end' }}>
-										<button 
-											type="button"
-											className="tbsh-btn tbsh-btn-secondary"
-											onClick={() => inspectSnapshot(snap.id)}
-											style={{ padding: '4px 8px', fontSize: '12px' }}
-										>
-											{__('Inspect', 'tbsh-compliance-audit-logger')}
-										</button>
-									</td>
-								</tr>
-							))}
-						</tbody>
-					</table>
-					<div className="tbsh-pagination" style={{ marginTop: '16px' }}>
-						<button type="button" className="tbsh-btn tbsh-btn-secondary" disabled={page === 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
-							{__('Previous', 'tbsh-compliance-audit-logger')}
-						</button>
-						<span style={{ fontSize: '13px', padding: '0 12px' }}>{page} / {totalPages}</span>
-						<button type="button" className="tbsh-btn tbsh-btn-secondary" disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
-							{__('Next', 'tbsh-compliance-audit-logger')}
-						</button>
-					</div>
-					</>
-				) : (
-					<EmptyState title={__('Evidence Vault is Empty', 'tbsh-compliance-audit-logger')} description={__('No state snapshots have been saved yet.', 'tbsh-compliance-audit-logger')} icon="evidence" />
-				)}
+				{renderSnapshots()}
 			</div>
 
 			{/* Detail Inspector Modal */}
@@ -195,90 +300,7 @@ function SnapshotsPanel() {
 				isOpen={!!selectedSnapshot}
 				onClose={() => setSelectedSnapshot(null)}
 			>
-				{detailsLoading ? (
-					<SkeletonLoader rows={6} cols={3} />
-				) : selectedDetails ? (
-					<div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-						<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-							<div>
-								<strong>{__('Snapshot Name:', 'tbsh-compliance-audit-logger')}</strong> {selectedDetails.evidence_title}
-							</div>
-							<div style={{ display: 'flex', gap: '8px' }}>
-								<button className="tbsh-btn tbsh-btn-secondary" onClick={() => exportSnapshot('json')} style={{ padding: '6px 10px', fontSize: '12px' }}>
-									<Icon name="download" />
-									JSON
-								</button>
-								<button className="tbsh-btn tbsh-btn-secondary" onClick={() => exportSnapshot('csv')} style={{ padding: '6px 10px', fontSize: '12px' }}>
-									<Icon name="download" />
-									CSV (Plugins)
-								</button>
-							</div>
-						</div>
-
-						<div className="tbsh-grid-fields" style={{ padding: '12px', backgroundColor: 'var(--tbsh-bg-secondary)', borderRadius: '6px' }}>
-							<div><strong>{__('WordPress Version:', 'tbsh-compliance-audit-logger')}</strong> {selectedDetails.snapshot_data.wp_version}</div>
-							<div><strong>{__('PHP Version:', 'tbsh-compliance-audit-logger')}</strong> {selectedDetails.snapshot_data.php_version}</div>
-							<div><strong>{__('Multisite Network:', 'tbsh-compliance-audit-logger')}</strong> {selectedDetails.snapshot_data.site_config.is_multisite ? __('Yes', 'tbsh-compliance-audit-logger') : __('No', 'tbsh-compliance-audit-logger')}</div>
-							<div><strong>{__('DB Tables Checked:', 'tbsh-compliance-audit-logger')}</strong> {Object.keys(selectedDetails.snapshot_data.database.tables).length}</div>
-						</div>
-
-						{/* Plugins Snapshot Tabulation */}
-						<div>
-							<h5 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
-								{__('Active Plugins Catalog', 'tbsh-compliance-audit-logger')} ({selectedDetails.snapshot_data.plugins.length})
-							</h5>
-							<div style={{ maxHeight: '200px', overflowY: 'auto', border: '1px solid var(--tbsh-border-color)', borderRadius: '6px' }}>
-								<table className="tbsh-table" style={{ fontSize: '12px' }}>
-									<thead>
-										<tr>
-											<th>{__('Plugin Name', 'tbsh-compliance-audit-logger')}</th>
-											<th>{__('Version', 'tbsh-compliance-audit-logger')}</th>
-											<th>{__('Status', 'tbsh-compliance-audit-logger')}</th>
-										</tr>
-									</thead>
-									<tbody>
-										{selectedDetails.snapshot_data.plugins.map((plug, idx) => (
-											<tr key={idx}>
-												<td>{plug.name}</td>
-												<td><code>{plug.version}</code></td>
-												<td>
-													<span className={`tbsh-badge tbsh-badge-${plug.is_active ? 'success' : 'info'}`}>
-														{plug.is_active ? 'Active' : 'Inactive'}
-													</span>
-												</td>
-											</tr>
-										))}
-									</tbody>
-								</table>
-							</div>
-						</div>
-
-						{/* Security Settings Snapshot */}
-						<div>
-							<h5 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
-								{__('Security Config Snapshot', 'tbsh-compliance-audit-logger')}
-							</h5>
-							<div className="tbsh-grid-fields" style={{ gap: '8px', fontSize: '13px' }}>
-								<div>
-									<span>{__('WP Debug Active:', 'tbsh-compliance-audit-logger')} </span>
-									<strong>{selectedDetails.snapshot_data.security.wp_debug ? 'TRUE' : 'FALSE'}</strong>
-								</div>
-								<div>
-									<span>{__('Forced SSL Login:', 'tbsh-compliance-audit-logger')} </span>
-									<strong>{selectedDetails.snapshot_data.security.force_ssl_admin ? 'TRUE' : 'FALSE'}</strong>
-								</div>
-								<div>
-									<span>{__('Database Version:', 'tbsh-compliance-audit-logger')} </span>
-									<strong>{selectedDetails.snapshot_data.security.db_version}</strong>
-								</div>
-								<div>
-									<span>{__('SSL Active Connection:', 'tbsh-compliance-audit-logger')} </span>
-									<strong>{selectedDetails.snapshot_data.security.is_ssl ? 'TRUE' : 'FALSE'}</strong>
-								</div>
-							</div>
-						</div>
-					</div>
-				) : null}
+				{renderDetails()}
 			</Modal>
 		</div>
 	);
@@ -383,7 +405,11 @@ function VaultForm( { vault, types, onSaved, onCancel } ) {
 		const out = { ...base };
 		Object.keys( vault.config || {} ).forEach( ( k ) => {
 			const v = vault.config[ k ];
-			out[ k ] = ( 'path_style' === k || 'passive' === k ) ? ( '1' === v || true === v ) : ( v === null ? '' : String( v ) );
+			if ( 'path_style' === k || 'passive' === k ) {
+				out[ k ] = '1' === v || true === v;
+			} else {
+				out[ k ] = v === null ? '' : String( v );
+			}
 		} );
 		return out;
 	};
@@ -551,6 +577,12 @@ function VaultForm( { vault, types, onSaved, onCancel } ) {
 				</div>
 			);
 		}
+		let inputType = 'text';
+		if ( 'number' === f.kind ) {
+			inputType = 'number';
+		} else if ( 'url' === f.key || 'endpoint' === f.key ) {
+			inputType = 'url';
+		}
 		return (
 			<div className="tbsh-form-group" key={ f.key }>
 				<label className="tbsh-form-label" htmlFor={ id }>
@@ -559,7 +591,7 @@ function VaultForm( { vault, types, onSaved, onCancel } ) {
 				</label>
 				<input
 					id={ id }
-					type={ 'number' === f.kind ? 'number' : ( 'url' === f.key || 'endpoint' === f.key ? 'url' : 'text' ) }
+					type={ inputType }
 					className="tbsh-form-control"
 					value={ config[ f.key ] === undefined ? '' : config[ f.key ] }
 					placeholder={ f.placeholder || '' }
@@ -813,6 +845,174 @@ function VaultsPanel() {
 	};
 	const typeLabel = ( t ) => ( types[ t ] && types[ t ].label ) || t;
 
+	const renderHistory = () => {
+		if ( historyLoading ) {
+			return (
+				<SkeletonLoader rows={ 4 } cols={ 6 } />
+			);
+		}
+		if ( historyError ) {
+			return (
+				<EmptyState
+					title={ __( 'Error loading sync history', 'tbsh-compliance-audit-logger' ) }
+					description={ (
+						<>
+							{ historyError }
+							<br />
+							<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" style={ { marginTop: '12px' } } onClick={ fetchHistory }>
+								{ __( 'Retry', 'tbsh-compliance-audit-logger' ) }
+							</button>
+						</>
+					) }
+					icon="alert"
+				/>
+			);
+		}
+		if ( history.length ) {
+			return (
+				<>
+					<table className="tbsh-table">
+						<thead>
+							<tr>
+								<th>{ __( 'Date', 'tbsh-compliance-audit-logger' ) }</th>
+								<th>{ __( 'Vault', 'tbsh-compliance-audit-logger' ) }</th>
+								<th>{ __( 'Status', 'tbsh-compliance-audit-logger' ) }</th>
+								<th>{ __( 'Size', 'tbsh-compliance-audit-logger' ) }</th>
+								<th>{ __( 'Remote file', 'tbsh-compliance-audit-logger' ) }</th>
+								<th>{ __( 'Details', 'tbsh-compliance-audit-logger' ) }</th>
+							</tr>
+						</thead>
+						<tbody>
+							{ history.map( ( h ) => {
+								const hs = histStatuses[ h.status ] || { label: h.status, badge: 'info' };
+								return (
+									<tr key={ h.id }>
+										<td>{ h.created_at }</td>
+										<td>{ vaultLabel( h.vault_id ) }</td>
+										<td><span className={ `tbsh-badge tbsh-badge-${ hs.badge }` }>{ hs.label }</span></td>
+										<td>{ humanSize( h.file_size ) }</td>
+										<td>{ h.remote_path ? <code style={ { wordBreak: 'break-all' } }>{ h.remote_path }</code> : '—' }</td>
+										<td style={ { fontSize: '12px', wordBreak: 'break-word' } }>{ h.details || '—' }</td>
+									</tr>
+								);
+							} ) }
+						</tbody>
+					</table>
+					{ historyPages > 1 && (
+						<div className="tbsh-pagination" style={ { marginTop: '16px' } }>
+							<button type="button" className="tbsh-btn tbsh-btn-secondary" disabled={ historyPage === 1 } onClick={ () => setHistoryPage( ( p ) => Math.max( 1, p - 1 ) ) }>
+								{ __( 'Previous', 'tbsh-compliance-audit-logger' ) }
+							</button>
+							<span style={ { fontSize: '13px', padding: '0 12px' } }>{ historyPage } / { historyPages }</span>
+							<button type="button" className="tbsh-btn tbsh-btn-secondary" disabled={ historyPage >= historyPages } onClick={ () => setHistoryPage( ( p ) => p + 1 ) }>
+								{ __( 'Next', 'tbsh-compliance-audit-logger' ) }
+							</button>
+						</div>
+					) }
+				</>
+			);
+		}
+		return (
+			<EmptyState
+				title={ __( 'No syncs yet', 'tbsh-compliance-audit-logger' ) }
+				description={ __( 'Sync runs appear here after a scheduled or manual backup.', 'tbsh-compliance-audit-logger' ) }
+				icon="timeline"
+			/>
+		);
+	};
+
+	const renderVaults = () => {
+		if ( loading ) {
+			return (
+				<SkeletonLoader rows={ 3 } cols={ 3 } />
+			);
+		}
+		if ( error ) {
+			return (
+				<EmptyState
+					title={ __( 'Error loading vaults', 'tbsh-compliance-audit-logger' ) }
+					description={ (
+						<>
+							{ error }
+							<br />
+							<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" style={ { marginTop: '12px' } } onClick={ fetchVaults }>
+								{ __( 'Retry', 'tbsh-compliance-audit-logger' ) }
+							</button>
+						</>
+					) }
+					icon="alert"
+				/>
+			);
+		}
+		if ( vaults.length ) {
+			return (
+				<div className="tbsh-grid-2">
+					{ vaults.map( ( v ) => {
+						const s = statuses[ v.status ] || { label: v.status, badge: 'info' };
+						const action = busy[ v.id ] || '';
+						return (
+							<div key={ v.id } className="tbsh-card" style={ { padding: '16px' } }>
+								<div className="tbsh-row-between" style={ { marginBottom: '8px' } }>
+									<strong>{ v.label || sprintf( /* translators: %d: vault id */ __( 'Vault #%d', 'tbsh-compliance-audit-logger' ), v.id ) }</strong>
+									<div className="tbsh-row">
+										<span className={ `tbsh-badge tbsh-badge-${ s.badge }` }>{ s.label }</span>
+										{ ! v.is_active && <span className="tbsh-badge tbsh-badge-warning">{ __( 'Inactive', 'tbsh-compliance-audit-logger' ) }</span> }
+									</div>
+								</div>
+								<dl className="tbsh-kv">
+									<dt>{ __( 'Provider', 'tbsh-compliance-audit-logger' ) }</dt>
+									<dd>{ typeLabel( v.vault_type ) }</dd>
+									<dt>{ __( 'Destination', 'tbsh-compliance-audit-logger' ) }</dt>
+									<dd><code>{ v.endpoint || '—' }</code></dd>
+									<dt>{ __( 'Schedule', 'tbsh-compliance-audit-logger' ) }</dt>
+									<dd>{ schedules[ v.schedule ] || v.schedule }</dd>
+									<dt>{ __( 'Last successful sync', 'tbsh-compliance-audit-logger' ) }</dt>
+									<dd>{ v.last_sync_at || __( 'Never', 'tbsh-compliance-audit-logger' ) }</dd>
+								</dl>
+								{ v.last_error && (
+									<div style={ { marginTop: '12px' } }>
+										<Notice type="error" message={ v.last_error } />
+									</div>
+								) }
+								{ ! v.credentials_ok && (
+									<Notice type="warning" message={ __( 'The stored credentials could not be decrypted (for example after the site\'s security keys changed). Edit this vault and re-enter the credentials and passphrase.', 'tbsh-compliance-audit-logger' ) } />
+								) }
+								{ ! v.supported && (
+									<Notice type="warning" message={ __( 'This vault uses a storage provider that is not supported by this version of the plugin.', 'tbsh-compliance-audit-logger' ) } />
+								) }
+								<div className="tbsh-row" style={ { marginTop: '12px' } }>
+									<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" disabled={ !! action || ! v.supported } onClick={ () => testVault( v ) }>
+										<Icon name="health" />
+										{ 'test' === action ? __( 'Testing…', 'tbsh-compliance-audit-logger' ) : __( 'Test connection', 'tbsh-compliance-audit-logger' ) }
+									</button>
+									<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" disabled={ !! action || ! v.supported } onClick={ () => syncVault( v ) }>
+										<Icon name="database" />
+										{ 'sync' === action ? __( 'Syncing…', 'tbsh-compliance-audit-logger' ) : __( 'Sync now', 'tbsh-compliance-audit-logger' ) }
+									</button>
+									<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" disabled={ !! action || ! v.supported } onClick={ () => openEdit( v ) }>
+										<Icon name="edit" />
+										{ __( 'Edit', 'tbsh-compliance-audit-logger' ) }
+									</button>
+									<button type="button" className="tbsh-btn tbsh-btn-danger tbsh-btn-sm" disabled={ !! action } onClick={ () => setToDelete( v ) }>
+										<Icon name="trash" />
+										{ __( 'Delete', 'tbsh-compliance-audit-logger' ) }
+									</button>
+								</div>
+							</div>
+						);
+					} ) }
+				</div>
+			);
+		}
+		return (
+			<EmptyState
+				title={ __( 'No off-site vaults', 'tbsh-compliance-audit-logger' ) }
+				description={ __( 'Add an S3-compatible bucket, an FTP/FTPS server or another WordPress site to keep encrypted copies of your audit trail off this server.', 'tbsh-compliance-audit-logger' ) }
+				icon="database"
+			/>
+		);
+	};
+
 	return (
 		<div className="tbsh-vaults-panel">
 			<Notice type={ notice.type } message={ notice.message } />
@@ -829,155 +1029,13 @@ function VaultsPanel() {
 					{ __( 'Vaults copy encrypted packages of your audit logs and evidence to storage outside this site, so a compromised or lost server does not take your audit trail with it.', 'tbsh-compliance-audit-logger' ) }
 				</p>
 
-				{ loading ? (
-					<SkeletonLoader rows={ 3 } cols={ 3 } />
-				) : error ? (
-					<EmptyState
-						title={ __( 'Error loading vaults', 'tbsh-compliance-audit-logger' ) }
-						description={ (
-							<>
-								{ error }
-								<br />
-								<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" style={ { marginTop: '12px' } } onClick={ fetchVaults }>
-									{ __( 'Retry', 'tbsh-compliance-audit-logger' ) }
-								</button>
-							</>
-						) }
-						icon="alert"
-					/>
-				) : vaults.length ? (
-					<div className="tbsh-grid-2">
-						{ vaults.map( ( v ) => {
-							const s = statuses[ v.status ] || { label: v.status, badge: 'info' };
-							const action = busy[ v.id ] || '';
-							return (
-								<div key={ v.id } className="tbsh-card" style={ { padding: '16px' } }>
-									<div className="tbsh-row-between" style={ { marginBottom: '8px' } }>
-										<strong>{ v.label || sprintf( /* translators: %d: vault id */ __( 'Vault #%d', 'tbsh-compliance-audit-logger' ), v.id ) }</strong>
-										<div className="tbsh-row">
-											<span className={ `tbsh-badge tbsh-badge-${ s.badge }` }>{ s.label }</span>
-											{ ! v.is_active && <span className="tbsh-badge tbsh-badge-warning">{ __( 'Inactive', 'tbsh-compliance-audit-logger' ) }</span> }
-										</div>
-									</div>
-									<dl className="tbsh-kv">
-										<dt>{ __( 'Provider', 'tbsh-compliance-audit-logger' ) }</dt>
-										<dd>{ typeLabel( v.vault_type ) }</dd>
-										<dt>{ __( 'Destination', 'tbsh-compliance-audit-logger' ) }</dt>
-										<dd><code>{ v.endpoint || '—' }</code></dd>
-										<dt>{ __( 'Schedule', 'tbsh-compliance-audit-logger' ) }</dt>
-										<dd>{ schedules[ v.schedule ] || v.schedule }</dd>
-										<dt>{ __( 'Last successful sync', 'tbsh-compliance-audit-logger' ) }</dt>
-										<dd>{ v.last_sync_at || __( 'Never', 'tbsh-compliance-audit-logger' ) }</dd>
-									</dl>
-									{ v.last_error && (
-										<div style={ { marginTop: '12px' } }>
-											<Notice type="error" message={ v.last_error } />
-										</div>
-									) }
-									{ ! v.credentials_ok && (
-										<Notice type="warning" message={ __( 'The stored credentials could not be decrypted (for example after the site\'s security keys changed). Edit this vault and re-enter the credentials and passphrase.', 'tbsh-compliance-audit-logger' ) } />
-									) }
-									{ ! v.supported && (
-										<Notice type="warning" message={ __( 'This vault uses a storage provider that is not supported by this version of the plugin.', 'tbsh-compliance-audit-logger' ) } />
-									) }
-									<div className="tbsh-row" style={ { marginTop: '12px' } }>
-										<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" disabled={ !! action || ! v.supported } onClick={ () => testVault( v ) }>
-											<Icon name="health" />
-											{ 'test' === action ? __( 'Testing…', 'tbsh-compliance-audit-logger' ) : __( 'Test connection', 'tbsh-compliance-audit-logger' ) }
-										</button>
-										<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" disabled={ !! action || ! v.supported } onClick={ () => syncVault( v ) }>
-											<Icon name="database" />
-											{ 'sync' === action ? __( 'Syncing…', 'tbsh-compliance-audit-logger' ) : __( 'Sync now', 'tbsh-compliance-audit-logger' ) }
-										</button>
-										<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" disabled={ !! action || ! v.supported } onClick={ () => openEdit( v ) }>
-											<Icon name="edit" />
-											{ __( 'Edit', 'tbsh-compliance-audit-logger' ) }
-										</button>
-										<button type="button" className="tbsh-btn tbsh-btn-danger tbsh-btn-sm" disabled={ !! action } onClick={ () => setToDelete( v ) }>
-											<Icon name="trash" />
-											{ __( 'Delete', 'tbsh-compliance-audit-logger' ) }
-										</button>
-									</div>
-								</div>
-							);
-						} ) }
-					</div>
-				) : (
-					<EmptyState
-						title={ __( 'No off-site vaults', 'tbsh-compliance-audit-logger' ) }
-						description={ __( 'Add an S3-compatible bucket, an FTP/FTPS server or another WordPress site to keep encrypted copies of your audit trail off this server.', 'tbsh-compliance-audit-logger' ) }
-						icon="database"
-					/>
-				) }
+				{ renderVaults() }
 			</div>
 
 			<div className="tbsh-card" style={ { padding: '20px', marginBottom: '20px' } }>
 				<h3 className="tbsh-section-title">{ __( 'Sync history', 'tbsh-compliance-audit-logger' ) }</h3>
 				<div className="tbsh-table-container">
-					{ historyLoading ? (
-						<SkeletonLoader rows={ 4 } cols={ 6 } />
-					) : historyError ? (
-						<EmptyState
-							title={ __( 'Error loading sync history', 'tbsh-compliance-audit-logger' ) }
-							description={ (
-								<>
-									{ historyError }
-									<br />
-									<button type="button" className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm" style={ { marginTop: '12px' } } onClick={ fetchHistory }>
-										{ __( 'Retry', 'tbsh-compliance-audit-logger' ) }
-									</button>
-								</>
-							) }
-							icon="alert"
-						/>
-					) : history.length ? (
-						<>
-							<table className="tbsh-table">
-								<thead>
-									<tr>
-										<th>{ __( 'Date', 'tbsh-compliance-audit-logger' ) }</th>
-										<th>{ __( 'Vault', 'tbsh-compliance-audit-logger' ) }</th>
-										<th>{ __( 'Status', 'tbsh-compliance-audit-logger' ) }</th>
-										<th>{ __( 'Size', 'tbsh-compliance-audit-logger' ) }</th>
-										<th>{ __( 'Remote file', 'tbsh-compliance-audit-logger' ) }</th>
-										<th>{ __( 'Details', 'tbsh-compliance-audit-logger' ) }</th>
-									</tr>
-								</thead>
-								<tbody>
-									{ history.map( ( h ) => {
-										const hs = histStatuses[ h.status ] || { label: h.status, badge: 'info' };
-										return (
-											<tr key={ h.id }>
-												<td>{ h.created_at }</td>
-												<td>{ vaultLabel( h.vault_id ) }</td>
-												<td><span className={ `tbsh-badge tbsh-badge-${ hs.badge }` }>{ hs.label }</span></td>
-												<td>{ humanSize( h.file_size ) }</td>
-												<td>{ h.remote_path ? <code style={ { wordBreak: 'break-all' } }>{ h.remote_path }</code> : '—' }</td>
-												<td style={ { fontSize: '12px', wordBreak: 'break-word' } }>{ h.details || '—' }</td>
-											</tr>
-										);
-									} ) }
-								</tbody>
-							</table>
-							{ historyPages > 1 && (
-								<div className="tbsh-pagination" style={ { marginTop: '16px' } }>
-									<button type="button" className="tbsh-btn tbsh-btn-secondary" disabled={ historyPage === 1 } onClick={ () => setHistoryPage( ( p ) => Math.max( 1, p - 1 ) ) }>
-										{ __( 'Previous', 'tbsh-compliance-audit-logger' ) }
-									</button>
-									<span style={ { fontSize: '13px', padding: '0 12px' } }>{ historyPage } / { historyPages }</span>
-									<button type="button" className="tbsh-btn tbsh-btn-secondary" disabled={ historyPage >= historyPages } onClick={ () => setHistoryPage( ( p ) => p + 1 ) }>
-										{ __( 'Next', 'tbsh-compliance-audit-logger' ) }
-									</button>
-								</div>
-							) }
-						</>
-					) : (
-						<EmptyState
-							title={ __( 'No syncs yet', 'tbsh-compliance-audit-logger' ) }
-							description={ __( 'Sync runs appear here after a scheduled or manual backup.', 'tbsh-compliance-audit-logger' ) }
-							icon="timeline"
-						/>
-					) }
+					{ renderHistory() }
 				</div>
 			</div>
 

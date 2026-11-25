@@ -25,12 +25,12 @@ const scoreClass = ( score ) => {
 
 const scoreColor = ( score ) => {
 	if ( score >= 85 ) {
-		return 'var(--tbsh-success)';
+		return 'var(--tbsh-success-text)';
 	}
 	if ( score >= 60 ) {
-		return 'var(--tbsh-warning)';
+		return 'var(--tbsh-warning-text)';
 	}
-	return 'var(--tbsh-danger)';
+	return 'var(--tbsh-danger-text)';
 };
 
 // Where each scorecard component is managed.
@@ -163,8 +163,7 @@ export default function ExecutiveDashboard( { navigate } ) {
 					</div>
 					{ data.generated_at && (
 						<span className="tbsh-muted">
-							{ /* translators: %s: date and time */ }
-							{ sprintf( __( 'Calculated %s', 'tbsh-compliance-audit-logger' ), data.generated_at ) }
+														{ sprintf( /* translators: %s: date and time */ __( 'Calculated %s', 'tbsh-compliance-audit-logger' ), data.generated_at ) }
 						</span>
 					) }
 				</div>
@@ -272,7 +271,7 @@ export default function ExecutiveDashboard( { navigate } ) {
 										<li key={ idx } className="tbsh-row" style={ { alignItems: 'flex-start', flexWrap: 'nowrap', marginBottom: '6px', fontSize: '13px' } }>
 											<Icon
 												name={ input.ok ? 'check' : 'alert' }
-												style={ { width: '16px', height: '16px', flexShrink: 0, marginTop: '1px', color: input.ok ? 'var(--tbsh-success)' : 'var(--tbsh-danger)' } }
+												style={ { width: '16px', height: '16px', flexShrink: 0, marginTop: '1px', color: input.ok ? 'var(--tbsh-success-text)' : 'var(--tbsh-danger-text)' } }
 											/>
 											<span>
 												<span className="screen-reader-text">{ input.ok ? __( 'Passing:', 'tbsh-compliance-audit-logger' ) : __( 'Needs attention:', 'tbsh-compliance-audit-logger' ) } </span>

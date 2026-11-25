@@ -110,6 +110,90 @@ export default function ExportCenter() {
 		'Audit Trail',
 	];
 
+	const renderExportList = () => {
+		if (loading) {
+			return (
+				<SkeletonLoader rows={4} cols={3} />
+			);
+		}
+		if (error) {
+			return (
+				<EmptyState title={ __( 'Could not load exports', 'tbsh-compliance-audit-logger' ) } description={ error } icon="alert" />
+			);
+		}
+		if (exportsList.length > 0) {
+			return (
+				<table className="tbsh-table">
+					<thead>
+						<tr>
+<th>{ __( 'Created', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{__('Format', 'tbsh-compliance-audit-logger')}</th>
+							<th>{__('File Size', 'tbsh-compliance-audit-logger')}</th>
+<th style={ { textAlign: 'end' } }>{ __( 'Actions', 'tbsh-compliance-audit-logger' ) }</th>
+						</tr>
+					</thead>
+					<tbody>
+						{exportsList.map((item, idx) => {
+							let sizeStr = '0 B';
+							if (item.size > 1024 * 1024) {
+								sizeStr = `${(item.size / (1024 * 1024)).toFixed(2)} MB`;
+							} else if (item.size > 1024) {
+								sizeStr = `${(item.size / 1024).toFixed(1)} KB`;
+							} else {
+								sizeStr = `${item.size} B`;
+							}
+
+							return (
+								<tr key={idx}>
+<td>{ formatSiteTime( item.created_at ) }</td>
+									<td>
+										<span className={`tbsh-badge tbsh-badge-${item.format === 'csv' ? 'success' : 'info'}`}>
+											{item.format}
+										</span>
+									</td>
+									<td><code>{sizeStr}</code></td>
+									<td style={ { textAlign: 'end' } }>
+										<div className="tbsh-row" style={ { justifyContent: 'flex-end', flexWrap: 'nowrap' } }>
+										<a
+											href={ getDownloadUrl( item.filename ) }
+											className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
+											aria-label={ sprintf(
+												/* translators: 1: file format, 2: creation date */
+												__( 'Download %1$s export from %2$s', 'tbsh-compliance-audit-logger' ),
+												String( item.format ).toUpperCase(),
+												formatSiteTime( item.created_at )
+											) }
+										>
+											<Icon name="download" />
+											{__('Download', 'tbsh-compliance-audit-logger')}
+										</a>
+										<button
+											type="button"
+											className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
+											onClick={ () => createShareLink( item.filename ) }
+											aria-label={ sprintf(
+												/* translators: 1: file format, 2: creation date */
+												__( 'Create share link for %1$s export from %2$s', 'tbsh-compliance-audit-logger' ),
+												String( item.format ).toUpperCase(),
+												formatSiteTime( item.created_at )
+											) }
+										>
+											{ __( 'Share link', 'tbsh-compliance-audit-logger' ) }
+										</button>
+										</div>
+									</td>
+								</tr>
+							);
+						})}
+					</tbody>
+				</table>
+			);
+		}
+		return (
+<EmptyState title={ __( 'No exports yet', 'tbsh-compliance-audit-logger' ) } description={ __( 'Choose filters and select "Create export". Files are kept for 2 hours.', 'tbsh-compliance-audit-logger' ) } icon="info" />
+		);
+	};
+
 	return (
 		<div className="tbsh-exports-page">
 			{notice.message && <Notice type={notice.type} message={notice.message} />}
@@ -124,12 +208,12 @@ export default function ExportCenter() {
 						<fieldset className="tbsh-form-group" style={ { border: 0, padding: 0, margin: '0 0 16px' } }>
 							<legend className="tbsh-form-label">{ __( 'Format', 'tbsh-compliance-audit-logger' ) }</legend>
 							<div className="tbsh-row" style={ { gap: '16px', marginTop: '6px' } }>
-								<label className="tbsh-row" style={ { cursor: 'pointer', fontSize: '14px', gap: '6px' } }>
-									<input type="radio" name="format" value="csv" checked={ format === 'csv' } onChange={ () => setFormat( 'csv' ) } />
+								<label htmlFor="tbsh-export-format-csv" className="tbsh-row" style={ { cursor: 'pointer', fontSize: '14px', gap: '6px' } }>
+									<input id="tbsh-export-format-csv" type="radio" name="format" value="csv" checked={ format === 'csv' } onChange={ () => setFormat( 'csv' ) } />
 									{ __( 'CSV (spreadsheets)', 'tbsh-compliance-audit-logger' ) }
 								</label>
-								<label className="tbsh-row" style={ { cursor: 'pointer', fontSize: '14px', gap: '6px' } }>
-									<input type="radio" name="format" value="json" checked={ format === 'json' } onChange={ () => setFormat( 'json' ) } />
+								<label htmlFor="tbsh-export-format-json" className="tbsh-row" style={ { cursor: 'pointer', fontSize: '14px', gap: '6px' } }>
+									<input id="tbsh-export-format-json" type="radio" name="format" value="json" checked={ format === 'json' } onChange={ () => setFormat( 'json' ) } />
 									{ __( 'JSON (all fields)', 'tbsh-compliance-audit-logger' ) }
 								</label>
 							</div>
@@ -140,7 +224,7 @@ export default function ExportCenter() {
 								{ __( 'Severity', 'tbsh-compliance-audit-logger' ) }
 							</label>
 							<select id="tbsh-export-severity" className="tbsh-form-control" value={ severity } onChange={ ( e ) => setSeverity( e.target.value ) }>
-								<SeverityOptions allLabel={ __( 'All severities', 'tbsh-compliance-audit-logger' ) } />
+								<SeverityOptions allLabel={ __( 'All severities', 'tbsh-compliance-audit-logger' ) } combined />
 							</select>
 						</div>
 
@@ -228,78 +312,7 @@ export default function ExportCenter() {
 					)}
 
 					<div className="tbsh-table-container" style={{ margin: 0 }}>
-						{loading ? (
-							<SkeletonLoader rows={4} cols={3} />
-						) : error ? (
-							<EmptyState title={ __( 'Could not load exports', 'tbsh-compliance-audit-logger' ) } description={ error } icon="alert" />
-						) : exportsList.length > 0 ? (
-							<table className="tbsh-table">
-								<thead>
-									<tr>
-<th>{ __( 'Created', 'tbsh-compliance-audit-logger' ) }</th>
-										<th>{__('Format', 'tbsh-compliance-audit-logger')}</th>
-										<th>{__('File Size', 'tbsh-compliance-audit-logger')}</th>
-<th style={ { textAlign: 'end' } }>{ __( 'Actions', 'tbsh-compliance-audit-logger' ) }</th>
-									</tr>
-								</thead>
-								<tbody>
-									{exportsList.map((item, idx) => {
-										let sizeStr = '0 B';
-										if (item.size > 1024 * 1024) {
-											sizeStr = `${(item.size / (1024 * 1024)).toFixed(2)} MB`;
-										} else if (item.size > 1024) {
-											sizeStr = `${(item.size / 1024).toFixed(1)} KB`;
-										} else {
-											sizeStr = `${item.size} B`;
-										}
-
-										return (
-											<tr key={idx}>
-<td>{ formatSiteTime( item.created_at ) }</td>
-												<td>
-													<span className={`tbsh-badge tbsh-badge-${item.format === 'csv' ? 'success' : 'info'}`}>
-														{item.format}
-													</span>
-												</td>
-												<td><code>{sizeStr}</code></td>
-												<td style={ { textAlign: 'end' } }>
-													<div className="tbsh-row" style={ { justifyContent: 'flex-end', flexWrap: 'nowrap' } }>
-													<a
-														href={ getDownloadUrl( item.filename ) }
-														className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
-														aria-label={ sprintf(
-															/* translators: 1: file format, 2: creation date */
-															__( 'Download %1$s export from %2$s', 'tbsh-compliance-audit-logger' ),
-															String( item.format ).toUpperCase(),
-															formatSiteTime( item.created_at )
-														) }
-													>
-														<Icon name="download" />
-														{__('Download', 'tbsh-compliance-audit-logger')}
-													</a>
-													<button
-														type="button"
-														className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
-														onClick={ () => createShareLink( item.filename ) }
-														aria-label={ sprintf(
-															/* translators: 1: file format, 2: creation date */
-															__( 'Create share link for %1$s export from %2$s', 'tbsh-compliance-audit-logger' ),
-															String( item.format ).toUpperCase(),
-															formatSiteTime( item.created_at )
-														) }
-													>
-														{ __( 'Share link', 'tbsh-compliance-audit-logger' ) }
-													</button>
-													</div>
-												</td>
-											</tr>
-										);
-									})}
-								</tbody>
-							</table>
-						) : (
-<EmptyState title={ __( 'No exports yet', 'tbsh-compliance-audit-logger' ) } description={ __( 'Choose filters and select "Create export". Files are kept for 2 hours.', 'tbsh-compliance-audit-logger' ) } icon="info" />
-						)}
+						{renderExportList()}
 					</div>
 				</div>
 			</div>

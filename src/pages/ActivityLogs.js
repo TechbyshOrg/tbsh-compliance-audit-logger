@@ -386,7 +386,7 @@ export default function ActivityLogs() {
 						{ __( 'Severity', 'tbsh-compliance-audit-logger' ) }
 					</label>
 					<select id="tbsh-logs-severity" className="tbsh-filter-input" value={ filters.severity } onChange={ ( e ) => updateFilter( 'severity', e.target.value ) }>
-						<SeverityOptions allLabel={ __( 'All severities', 'tbsh-compliance-audit-logger' ) } />
+						<SeverityOptions allLabel={ __( 'All severities', 'tbsh-compliance-audit-logger' ) } combined />
 					</select>
 				</div>
 

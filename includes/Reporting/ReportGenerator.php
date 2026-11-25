@@ -23,11 +23,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 class ReportGenerator {
 
 	const TYPES   = array( 'executive', 'nis2', 'dora', 'iso27001', 'soc2', 'incidents', 'risk', 'vendors' );
-	const FORMATS = array( 'html', 'csv', 'json' );
+	const FORMATS = array( 'html', 'pdf', 'csv', 'json' );
 	const MIME    = array(
 		'html' => 'text/html; charset=utf-8',
 		'csv'  => 'text/csv; charset=utf-8',
 		'json' => 'application/json; charset=utf-8',
+		'pdf'  => 'application/pdf',
 	);
 
 	/**

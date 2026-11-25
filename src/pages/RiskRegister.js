@@ -337,6 +337,121 @@ export default function RiskRegister() {
 
 	const hasFilters = !! ( status || category || search || cell );
 
+	const renderRisks = () => {
+		if ( loading ) {
+			return (
+				<SkeletonLoader rows={ 5 } cols={ 6 } />
+			);
+		}
+		if ( error ) {
+			return (
+				<div style={ { padding: '0 0 20px', textAlign: 'center' } }>
+					<EmptyState title={ __( 'Could not load risks', 'tbsh-compliance-audit-logger' ) } description={ error } icon="alert" />
+					<button type="button" className="tbsh-btn tbsh-btn-secondary" onClick={ reload }>
+						{ __( 'Retry', 'tbsh-compliance-audit-logger' ) }
+					</button>
+				</div>
+			);
+		}
+		if ( items.length === 0 ) {
+			return (
+				<EmptyState
+					title={ hasFilters ? __( 'No matching risks', 'tbsh-compliance-audit-logger' ) : __( 'No risks registered yet', 'tbsh-compliance-audit-logger' ) }
+					description={
+						hasFilters
+							? __( 'No risks match the current filters.', 'tbsh-compliance-audit-logger' )
+							: __( 'Add your first risk to start building an auditable risk register.', 'tbsh-compliance-audit-logger' )
+					}
+					icon="risk"
+				/>
+			);
+		}
+		return (
+			<>
+				<table className="tbsh-table">
+					<thead>
+						<tr>
+							<th>{ __( 'Risk', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Category', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Score', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Owner', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Review date', 'tbsh-compliance-audit-logger' ) }</th>
+							<th>{ __( 'Status', 'tbsh-compliance-audit-logger' ) }</th>
+							{ canManage && <th style={ { textAlign: 'end' } }>{ __( 'Actions', 'tbsh-compliance-audit-logger' ) }</th> }
+						</tr>
+					</thead>
+					<tbody>
+						{ items.map( ( r ) => (
+							<tr key={ r.id }>
+								<td>
+									<strong>{ r.title }</strong>
+									{ r.compliance_mappings && <div className="tbsh-muted">{ r.compliance_mappings }</div> }
+								</td>
+								<td>{ categoryLabel( r.category ) }</td>
+								<td>
+									<span className="tbsh-row">
+										<strong>{ r.score }</strong>
+										<span className={ `tbsh-badge tbsh-badge-${ bandBadge( r.band ) }` }>{ bandLabel( r.band ) }</span>
+									</span>
+									<div className="tbsh-muted">
+										{ sprintf(
+											/* translators: 1: likelihood, 2: impact */
+											__( 'L%1$d × I%2$d', 'tbsh-compliance-audit-logger' ),
+											r.likelihood,
+											r.impact
+										) }
+									</div>
+								</td>
+								<td>{ r.owner_name || '—' }</td>
+								<td>
+									{ r.review_date || '—' }
+									{ r.review_overdue && (
+										<>
+											{ ' ' }
+											<span className="tbsh-badge tbsh-badge-danger">{ __( 'Overdue', 'tbsh-compliance-audit-logger' ) }</span>
+										</>
+									) }
+								</td>
+								<td>
+									<span className={ `tbsh-badge tbsh-badge-${ statusBadge( r.status ) }` }>{ statusLabel( r.status ) }</span>
+								</td>
+								{ canManage && (
+									<td style={ { textAlign: 'end', whiteSpace: 'nowrap' } }>
+										<button
+											type="button"
+											className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
+											onClick={ () => openEdit( r ) }
+											aria-label={ sprintf(
+												/* translators: %s: risk title */
+												__( 'Edit risk %s', 'tbsh-compliance-audit-logger' ),
+												r.title
+											) }
+										>
+											<Icon name="edit" />
+										</button>{ ' ' }
+										<button
+											type="button"
+											className="tbsh-btn tbsh-btn-danger tbsh-btn-sm"
+											onClick={ () => setToDelete( r ) }
+											aria-label={ sprintf(
+												/* translators: %s: risk title */
+												__( 'Delete risk %s', 'tbsh-compliance-audit-logger' ),
+												r.title
+											) }
+										>
+											<Icon name="trash" />
+										</button>
+									</td>
+								) }
+							</tr>
+						) ) }
+					</tbody>
+				</table>
+				{ renderPagination() }
+			</>
+		);
+	};
+
 	return (
 		<div className="tbsh-risk-page">
 			<Notice type={ notice.type } message={ notice.message } />
@@ -511,109 +626,7 @@ export default function RiskRegister() {
 			) }
 
 			<div className="tbsh-table-container">
-				{ loading ? (
-					<SkeletonLoader rows={ 5 } cols={ 6 } />
-				) : error ? (
-					<div style={ { padding: '0 0 20px', textAlign: 'center' } }>
-						<EmptyState title={ __( 'Could not load risks', 'tbsh-compliance-audit-logger' ) } description={ error } icon="alert" />
-						<button type="button" className="tbsh-btn tbsh-btn-secondary" onClick={ reload }>
-							{ __( 'Retry', 'tbsh-compliance-audit-logger' ) }
-						</button>
-					</div>
-				) : items.length === 0 ? (
-					<EmptyState
-						title={ hasFilters ? __( 'No matching risks', 'tbsh-compliance-audit-logger' ) : __( 'No risks registered yet', 'tbsh-compliance-audit-logger' ) }
-						description={
-							hasFilters
-								? __( 'No risks match the current filters.', 'tbsh-compliance-audit-logger' )
-								: __( 'Add your first risk to start building an auditable risk register.', 'tbsh-compliance-audit-logger' )
-						}
-						icon="risk"
-					/>
-				) : (
-					<>
-						<table className="tbsh-table">
-							<thead>
-								<tr>
-									<th>{ __( 'Risk', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Category', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Score', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Owner', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Review date', 'tbsh-compliance-audit-logger' ) }</th>
-									<th>{ __( 'Status', 'tbsh-compliance-audit-logger' ) }</th>
-									{ canManage && <th style={ { textAlign: 'right' } }>{ __( 'Actions', 'tbsh-compliance-audit-logger' ) }</th> }
-								</tr>
-							</thead>
-							<tbody>
-								{ items.map( ( r ) => (
-									<tr key={ r.id }>
-										<td>
-											<strong>{ r.title }</strong>
-											{ r.compliance_mappings && <div className="tbsh-muted">{ r.compliance_mappings }</div> }
-										</td>
-										<td>{ categoryLabel( r.category ) }</td>
-										<td>
-											<span className="tbsh-row">
-												<strong>{ r.score }</strong>
-												<span className={ `tbsh-badge tbsh-badge-${ bandBadge( r.band ) }` }>{ bandLabel( r.band ) }</span>
-											</span>
-											<div className="tbsh-muted">
-												{ sprintf(
-													/* translators: 1: likelihood, 2: impact */
-													__( 'L%1$d × I%2$d', 'tbsh-compliance-audit-logger' ),
-													r.likelihood,
-													r.impact
-												) }
-											</div>
-										</td>
-										<td>{ r.owner_name || '—' }</td>
-										<td>
-											{ r.review_date || '—' }
-											{ r.review_overdue && (
-												<>
-													{ ' ' }
-													<span className="tbsh-badge tbsh-badge-danger">{ __( 'Overdue', 'tbsh-compliance-audit-logger' ) }</span>
-												</>
-											) }
-										</td>
-										<td>
-											<span className={ `tbsh-badge tbsh-badge-${ statusBadge( r.status ) }` }>{ statusLabel( r.status ) }</span>
-										</td>
-										{ canManage && (
-											<td style={ { textAlign: 'right', whiteSpace: 'nowrap' } }>
-												<button
-													type="button"
-													className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
-													onClick={ () => openEdit( r ) }
-													aria-label={ sprintf(
-														/* translators: %s: risk title */
-														__( 'Edit risk %s', 'tbsh-compliance-audit-logger' ),
-														r.title
-													) }
-												>
-													<Icon name="edit" />
-												</button>{ ' ' }
-												<button
-													type="button"
-													className="tbsh-btn tbsh-btn-danger tbsh-btn-sm"
-													onClick={ () => setToDelete( r ) }
-													aria-label={ sprintf(
-														/* translators: %s: risk title */
-														__( 'Delete risk %s', 'tbsh-compliance-audit-logger' ),
-														r.title
-													) }
-												>
-													<Icon name="trash" />
-												</button>
-											</td>
-										) }
-									</tr>
-								) ) }
-							</tbody>
-						</table>
-						{ renderPagination() }
-					</>
-				) }
+				{ renderRisks() }
 			</div>
 
 			<Modal

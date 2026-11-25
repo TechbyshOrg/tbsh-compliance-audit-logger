@@ -37,6 +37,7 @@ class CronScheduler {
 		self::ALERTS_HOOK,
 		self::FILES_HOOK,
 		self::SIEM_HOOK,
+		\TBSHComplianceAuditLogger\Network\SiteNetwork::HOOK,
 	);
 
 	/**
@@ -62,6 +63,9 @@ class CronScheduler {
 
 		// Vault sync only while at least one vault is active.
 		self::ensure( self::VAULT_HOOK, self::has_active_vault() ? 'hourly' : null, 5 * MINUTE_IN_SECONDS );
+
+		// Site network refresh only while other sites are connected.
+		self::ensure( \TBSHComplianceAuditLogger\Network\SiteNetwork::HOOK, get_option( \TBSHComplianceAuditLogger\Network\SiteNetwork::OPTION ) ? 'hourly' : null, HOUR_IN_SECONDS );
 	}
 
 	/**

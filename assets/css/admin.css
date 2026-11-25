@@ -123,6 +123,8 @@
   color: var(--tbsh-text-primary);
   min-height: calc(100vh - 40px);
   margin-inline-start: -20px;
+  /* Long hashes, URLs and file paths wrap instead of widening the page. */
+  overflow-wrap: break-word;
   padding: 24px;
   box-sizing: border-box;
 }
@@ -331,7 +333,9 @@
   border: 1px solid var(--tbsh-border-color);
   border-radius: 8px;
   box-shadow: var(--tbsh-shadow-sm);
-  /* Wide tables scroll instead of being cut off (WCAG 1.4.10). */
+  /* Wide tables scroll instead of being cut off (WCAG 1.4.10). Positioned so that
+     visually hidden text inside the table is clipped with it. */
+  position: relative;
   overflow-x: auto;
   margin-bottom: 20px;
 }
@@ -522,6 +526,7 @@
 /* Tabs */
 .tbsh-tabs {
   display: flex;
+  flex-wrap: wrap;
   border-bottom: 1px solid var(--tbsh-border-color);
   margin-bottom: 20px;
   gap: 16px;
@@ -898,10 +903,15 @@
 .tbsh-cal-app select:focus-visible,
 .tbsh-cal-app textarea:focus-visible,
 .tbsh-cal-app summary:focus-visible,
-.tbsh-cal-app [tabindex]:focus-visible {
+.tbsh-cal-app [tabindex]:not([tabindex="-1"]):focus-visible {
   outline: 2px solid var(--tbsh-focus-ring);
   outline-offset: 2px;
   box-shadow: none;
+}
+
+/* Long hashes and URLs wrap instead of widening the page. */
+.tbsh-cal-app code {
+  overflow-wrap: anywhere;
 }
 
 /* Text for screen readers only. */
@@ -955,8 +965,14 @@
 }
 
 /* Receives focus after navigation; not interactive, so no focus ring. */
-.tbsh-page-title:focus {
+.tbsh-page-title:focus,
+.tbsh-cal-app [tabindex="-1"]:focus {
   outline: none;
+}
+
+/* The standalone auditor portal has no wp-admin padding to offset. */
+.tbsh-cal-auditor-portal .tbsh-cal-app {
+  margin-inline-start: 0;
 }
 
 .tbsh-page-description {

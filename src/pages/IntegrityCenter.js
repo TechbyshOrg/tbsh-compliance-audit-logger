@@ -48,7 +48,7 @@ export default function IntegrityCenter() {
 				type: res.status === 'verified' ? 'success' : 'error', 
 				message: res.status === 'verified' 
 					? __('Audit trail integrity check passed! All records verified.', 'tbsh-compliance-audit-logger')
-					: sprintf(__('Audit trail compromised! Found %d anomalies.', 'tbsh-compliance-audit-logger'), res.issues_found)
+					: sprintf(/* translators: %d: number of anomalies */ __('Audit trail compromised! Found %d anomalies.', 'tbsh-compliance-audit-logger'), res.issues_found)
 			});
 			fetchIntegrity();
 			setScanLoading(false);
@@ -79,12 +79,12 @@ export default function IntegrityCenter() {
 	if (latest.status === 'warning') {
 		statusClass = 'tbsh-integrity-banner-warning';
 		statusLabel = __('Warning', 'tbsh-compliance-audit-logger');
-		statusDesc = sprintf(__('Some sequence checks failed (%d issues detected).', 'tbsh-compliance-audit-logger'), latest.issues_found);
+		statusDesc = sprintf(/* translators: %d: number of issues */ __('Some sequence checks failed (%d issues detected).', 'tbsh-compliance-audit-logger'), latest.issues_found);
 		statusIcon = 'alert';
 	} else if (latest.status === 'compromised') {
 		statusClass = 'tbsh-integrity-banner-danger';
 		statusLabel = __('Compromised', 'tbsh-compliance-audit-logger');
-		statusDesc = sprintf(__('CRITICAL: Audit trail validation failed! Found %d altered records.', 'tbsh-compliance-audit-logger'), latest.issues_found);
+		statusDesc = sprintf(/* translators: %d: number of altered records */ __('CRITICAL: Audit trail validation failed! Found %d altered records.', 'tbsh-compliance-audit-logger'), latest.issues_found);
 		statusIcon = 'alert';
 	} else if (latest.status === 'unverified') {
 		statusClass = 'tbsh-integrity-banner-info';
@@ -132,8 +132,8 @@ export default function IntegrityCenter() {
 					</div>
 				</div>
 				{latest.verification_date && (
-					<span style={{ fontSize: '12px', opacity: 0.8 }}>
-						{sprintf(__('Checked: %s', 'tbsh-compliance-audit-logger'), latest.verification_date)}
+					<span style={{ fontSize: '12px' }}>
+						{sprintf(/* translators: %s: verification date and time */ __('Checked: %s', 'tbsh-compliance-audit-logger'), latest.verification_date)}
 					</span>
 				)}
 			</div>

@@ -15,6 +15,23 @@ class Logger {
 	/**
 	 * Compliance categories used across logs, filters and reports.
 	 */
+	const SEVERITIES = array( 'info', 'notice', 'warning', 'error', 'critical' );
+
+	/**
+	 * SQL condition for a severity filter: one value or a comma-separated list ("error,critical").
+	 * Unknown values are ignored.
+	 *
+	 * @param string $value Filter value.
+	 * @return array|null array( 'severity IN (%s, ...)', array( values ) ), or null when no valid value.
+	 */
+	public static function severity_filter( $value ) {
+		$values = array_values( array_unique( array_intersect( array_map( 'trim', explode( ',', strtolower( (string) $value ) ) ), self::SEVERITIES ) ) );
+		if ( ! $values ) {
+			return null;
+		}
+		return array( 'severity IN (' . implode( ', ', array_fill( 0, count( $values ), '%s' ) ) . ')', $values );
+	}
+
 	const CATEGORIES = array(
 		'Access Control',
 		'Identity Management',

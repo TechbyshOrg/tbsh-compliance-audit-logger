@@ -6,14 +6,14 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Renders report data (meta + sections) as print-ready HTML, CSV or JSON.
+ * Renders report data (meta + sections) as print-ready HTML, PDF, CSV or JSON.
  */
 class ReportRenderer {
 
 	/**
 	 * Render.
 	 *
-	 * @param string $format html|csv|json.
+	 * @param string $format html|pdf|csv|json.
 	 * @param array  $data   Report data.
 	 * @return string
 	 */
@@ -23,6 +23,8 @@ class ReportRenderer {
 				return (string) wp_json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
 			case 'csv':
 				return self::csv( $data );
+			case 'pdf':
+				return PdfWriter::render( $data );
 			default:
 				return self::html( $data );
 		}

@@ -92,7 +92,7 @@ export default function SystemHealth() {
 					<div className="tbsh-card-value" style={{ fontSize: '20px', textTransform: 'capitalize' }}>{health.integrity_status || '—'}</div>
 					<div className="tbsh-card-desc">
 						{health.last_verification
-							? sprintf(__('Last check: %s', 'tbsh-compliance-audit-logger'), health.last_verification)
+							? sprintf(/* translators: %s: last verification date and time */ __('Last check: %s', 'tbsh-compliance-audit-logger'), health.last_verification)
 							: __('No verification run yet', 'tbsh-compliance-audit-logger')}
 					</div>
 				</div>
@@ -102,7 +102,7 @@ export default function SystemHealth() {
 						<span>{__('Errors / Critical Events', 'tbsh-compliance-audit-logger')}</span>
 						<Icon name="alert" />
 					</div>
-					<div className="tbsh-card-value" style={{ color: health.recent_errors > 0 ? 'var(--tbsh-danger)' : 'inherit' }}>
+					<div className="tbsh-card-value" style={{ color: health.recent_errors > 0 ? 'var(--tbsh-danger-text)' : 'inherit' }}>
 						{health.recent_errors}
 					</div>
 					<div className="tbsh-card-desc">{__('Alarms captured in database', 'tbsh-compliance-audit-logger')}</div>

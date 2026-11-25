@@ -175,7 +175,7 @@ export default function Help() {
 
 				<GuideSection icon="reports" title={__('Compliance reports', 'tbsh-compliance-audit-logger')}>
 					<p style={textStyle}>
-						{__('Generate executive, NIS2 (per incident and stage), DORA, ISO 27001, SOC 2, incident, risk and vendor reports. Formats: HTML (print-ready; use your browser’s "Save as PDF"), CSV and JSON.', 'tbsh-compliance-audit-logger')}
+						{__('Generate executive, NIS2 (per incident and stage), DORA, ISO 27001, SOC 2, incident, risk and vendor reports. Formats: PDF, HTML (print-ready), CSV and JSON. PDF covers Western European characters; for other scripts print the HTML version to PDF.', 'tbsh-compliance-audit-logger')}
 					</p>
 					<p style={nextTextStyle}>
 						{__('Every report file is signed when it is generated: a SHA-256 hash of the file plus an HMAC-SHA256 signature made with a key unique to this site. "Verify" recomputes both from the stored file, so any modification, or a signature not made by this site, fails verification.', 'tbsh-compliance-audit-logger')}
@@ -202,6 +202,12 @@ export default function Help() {
 				<GuideSection icon="auditor" title={__('Auditor access links', 'tbsh-compliance-audit-logger')}>
 					<p style={textStyle}>
 						{__('Give an external auditor a read-only view without a WordPress account. Each link expires after the number of days you choose (up to 90) and can be revoked at any time. The link is shown only once and stored as a hash. Auditors can only read an approved set of pages; every write action is refused, and repeated invalid attempts are rate-limited.', 'tbsh-compliance-audit-logger')}
+					</p>
+				</GuideSection>
+
+				<GuideSection icon="shield" title={__('Site Network', 'tbsh-compliance-audit-logger')}>
+					<p style={textStyle}>
+						{__('See several sites that run this plugin on one page: readiness score, activity today, errors and critical events, failed sign-ins, open incidents, audit-log integrity and the latest errors. To connect a site, create an auditor link on that site and paste it here. The link is read-only and expires after at most 90 days; when it expires or is revoked, the site shows an error until you use "Replace link". Summaries refresh every hour and when you click "Refresh". Links are stored encrypted and only https sites on public addresses are contacted.', 'tbsh-compliance-audit-logger')}
 					</p>
 				</GuideSection>
 
