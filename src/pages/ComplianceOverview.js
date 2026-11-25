@@ -70,7 +70,7 @@ export default function ComplianceOverview() {
 	return (
 		<div className="tbsh-compliance-page">
 			{/* Overview Row */}
-			<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+			<div className="tbsh-grid-2">
 				{/* Audit Readiness Score Card */}
 				<div className="tbsh-card" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px' }}>
 					<h4 style={{ margin: '0 0 16px 0', fontSize: '15px', color: 'var(--tbsh-text-secondary)', textTransform: 'uppercase', fontWeight: 600, letterSpacing: '0.05em' }}>

@@ -170,7 +170,7 @@ export default function Setup( { navigate } ) {
 	];
 
 	const check = ( id, label, checked, onChange, help ) => (
-		<div className="tbsh-form-group" style={ { marginBottom: '14px' } }>
+		<div key={ id } className="tbsh-form-group" style={ { marginBottom: '14px' } }>
 			<label htmlFor={ id } style={ { display: 'flex', gap: '10px', alignItems: 'flex-start', cursor: 'pointer' } }>
 				<input id={ id } type="checkbox" checked={ checked } onChange={ ( e ) => onChange( e.target.checked ) } style={ { marginTop: '3px' } } />
 				<span>
@@ -184,7 +184,7 @@ export default function Setup( { navigate } ) {
 	if ( done ) {
 		return (
 			<div className="tbsh-card" style={ { padding: '24px', maxWidth: '760px' } }>
-				<h2 ref={ headingRef } tabIndex={ -1 } style={ { marginTop: 0 } }>{ __( 'Setup complete', 'tbsh-compliance-audit-logger' ) }</h2>
+				<h3 ref={ headingRef } tabIndex={ -1 } className="tbsh-page-title" style={ { marginTop: 0, fontSize: '18px' } }>{ __( 'Setup complete', 'tbsh-compliance-audit-logger' ) }</h3>
 				<p>{ __( 'Your settings are saved and recorded in the audit log. Next, verify the audit log chain and scan your files so you have a first, clean baseline.', 'tbsh-compliance-audit-logger' ) }</p>
 				<div className="tbsh-row" style={ { gap: '8px', flexWrap: 'wrap' } }>
 					<button type="button" className="tbsh-btn tbsh-btn-primary" onClick={ () => navigate( 'integrity' ) }>
@@ -221,7 +221,7 @@ export default function Setup( { navigate } ) {
 			{ stepIndex === 0 && (
 				<fieldset style={ { border: 0, padding: 0, margin: 0 } }>
 					<legend>
-						<h2 ref={ headingRef } tabIndex={ -1 } style={ { marginTop: 0 } }>{ __( 'Which frameworks apply to this site?', 'tbsh-compliance-audit-logger' ) }</h2>
+						<h3 ref={ headingRef } tabIndex={ -1 } className="tbsh-page-title" style={ { marginTop: 0, fontSize: '18px' } }>{ __( 'Which frameworks apply to this site?', 'tbsh-compliance-audit-logger' ) }</h3>
 					</legend>
 					<p className="tbsh-muted">{ __( 'Pick any that apply. This tunes the recommendations in the next steps; you can change everything later in Settings.', 'tbsh-compliance-audit-logger' ) }</p>
 					{ frameworks().map( ( f ) => check( `tbsh-fw-${ f.id }`, f.label, choice.frameworks.includes( f.id ), () => toggleFramework( f.id ), f.help ) ) }
@@ -230,7 +230,7 @@ export default function Setup( { navigate } ) {
 
 			{ stepIndex === 1 && (
 				<div>
-					<h2 ref={ headingRef } tabIndex={ -1 } style={ { marginTop: 0 } }>{ __( 'Who should be notified?', 'tbsh-compliance-audit-logger' ) }</h2>
+					<h3 ref={ headingRef } tabIndex={ -1 } className="tbsh-page-title" style={ { marginTop: 0, fontSize: '18px' } }>{ __( 'Who should be notified?', 'tbsh-compliance-audit-logger' ) }</h3>
 					{ check( 'tbsh-setup-email-alerts', __( 'Email alerts for errors and critical events', 'tbsh-compliance-audit-logger' ), choice.emailAlerts, ( v ) => set( 'emailAlerts', v ), __( 'Incidents such as brute-force attacks, administrator grants and tampering. Slack, Teams and other channels can be added in Settings.', 'tbsh-compliance-audit-logger' ) ) }
 					<div className="tbsh-form-group">
 						<label className="tbsh-form-label" htmlFor="tbsh-setup-emails">{ __( 'Recipient email addresses', 'tbsh-compliance-audit-logger' ) }</label>
@@ -251,7 +251,7 @@ export default function Setup( { navigate } ) {
 
 			{ stepIndex === 2 && (
 				<div>
-					<h2 ref={ headingRef } tabIndex={ -1 } style={ { marginTop: 0 } }>{ __( 'Automatic protection', 'tbsh-compliance-audit-logger' ) }</h2>
+					<h3 ref={ headingRef } tabIndex={ -1 } className="tbsh-page-title" style={ { marginTop: 0, fontSize: '18px' } }>{ __( 'Automatic protection', 'tbsh-compliance-audit-logger' ) }</h3>
 					{ check( 'tbsh-setup-core', __( 'Verify WordPress core files on a schedule', 'tbsh-compliance-audit-logger' ), choice.coreChecksum, ( v ) => set( 'coreChecksum', v ), __( 'Compares core files with the official checksums from WordPress.org.', 'tbsh-compliance-audit-logger' ) ) }
 					{ check( 'tbsh-setup-files', __( 'Verify plugin, theme and uploads files on a schedule', 'tbsh-compliance-audit-logger' ), choice.fileIntegrity, ( v ) => set( 'fileIntegrity', v ), __( 'Detects modified plugins and themes and PHP files hidden in uploads.', 'tbsh-compliance-audit-logger' ) ) }
 					{ check( 'tbsh-setup-detection', __( 'Open incidents automatically', 'tbsh-compliance-audit-logger' ), choice.detection, ( v ) => set( 'detection', v ), __( 'Brute-force logins, privilege escalation, critical setting and code changes, integrity failures and failing backups.', 'tbsh-compliance-audit-logger' ) ) }
@@ -261,8 +261,8 @@ export default function Setup( { navigate } ) {
 
 			{ stepIndex === 3 && (
 				<div>
-					<h2 ref={ headingRef } tabIndex={ -1 } style={ { marginTop: 0 } }>{ __( 'Review and apply', 'tbsh-compliance-audit-logger' ) }</h2>
-					<ul style={ { paddingLeft: '20px' } }>
+					<h3 ref={ headingRef } tabIndex={ -1 } className="tbsh-page-title" style={ { marginTop: 0, fontSize: '18px' } }>{ __( 'Review and apply', 'tbsh-compliance-audit-logger' ) }</h3>
+					<ul style={ { paddingInlineStart: '20px' } }>
 						<li>
 							{ selected.length
 								? sprintf(

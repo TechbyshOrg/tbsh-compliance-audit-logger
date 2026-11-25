@@ -5,6 +5,8 @@ import EmptyState from '../components/EmptyState';
 import Notice from '../components/Notice';
 import Icon from '../components/Icon';
 import Modal from '../components/Modal';
+import { SEVERITIES, severityLabel } from '../components/labels';
+import { setUnsavedChanges } from '../components/navState';
 import { get, post, can } from '../api';
 
 /** Keys of the payload that are not plain settings and must never be posted back. */
@@ -14,17 +16,32 @@ const NON_SETTING_KEYS = [ 'secrets', 'meta', 'message' ];
 const HTTPS_SECRETS = [ 'slack_webhook', 'discord_webhook', 'teams_webhook', 'webhook_url', 'siem_url' ];
 
 const helpStyle = { display: 'block', fontSize: '12px', color: 'var(--tbsh-text-muted)', marginTop: '4px' };
-const toggleHelpStyle = { ...helpStyle, marginLeft: '24px' };
+const toggleHelpStyle = { ...helpStyle, marginInlineStart: '24px' };
 const toggleLabelStyle = { display: 'flex', alignItems: 'center', gap: '10px', fontSize: '14px', cursor: 'pointer', fontWeight: 600 };
 const cardTitleStyle = { margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' };
 const subBlockStyle = { borderTop: '1px solid var(--tbsh-border-color)', paddingTop: '16px', marginTop: '16px' };
 
-const severityOptions = () => [
-	[ 'info', __( 'Info', 'tbsh-compliance-audit-logger' ) ],
-	[ 'notice', __( 'Notice', 'tbsh-compliance-audit-logger' ) ],
-	[ 'warning', __( 'Warning', 'tbsh-compliance-audit-logger' ) ],
-	[ 'error', __( 'Error', 'tbsh-compliance-audit-logger' ) ],
-	[ 'critical', __( 'Critical', 'tbsh-compliance-audit-logger' ) ],
+const severityOptions = () => SEVERITIES.map( ( value ) => [ value, severityLabel( value ) ] );
+
+/**
+ * Settings sections in page order: anchor id and "Jump to" label.
+ *
+ * @return {Array} [ id, label ] pairs.
+ */
+const sections = () => [
+	[ 'logging', __( 'Logging', 'tbsh-compliance-audit-logger' ) ],
+	[ 'exclusions', __( 'Exclusions', 'tbsh-compliance-audit-logger' ) ],
+	[ 'alerts', __( 'Alerts', 'tbsh-compliance-audit-logger' ) ],
+	[ 'detection', __( 'Incident detection', 'tbsh-compliance-audit-logger' ) ],
+	[ 'anomalies', __( 'Anomalies', 'tbsh-compliance-audit-logger' ) ],
+	[ 'evidence', __( 'Evidence', 'tbsh-compliance-audit-logger' ) ],
+	[ 'retention', __( 'Retention', 'tbsh-compliance-audit-logger' ) ],
+	[ 'digest', __( 'Digest', 'tbsh-compliance-audit-logger' ) ],
+	[ 'siem', __( 'SIEM', 'tbsh-compliance-audit-logger' ) ],
+	[ 'ai', __( 'AI analysis', 'tbsh-compliance-audit-logger' ) ],
+	[ 'receiver', __( 'Vault receiver', 'tbsh-compliance-audit-logger' ) ],
+	[ 'setup', __( 'Setup assistant', 'tbsh-compliance-audit-logger' ) ],
+	[ 'removal', __( 'Plugin removal', 'tbsh-compliance-audit-logger' ) ],
 ];
 
 /**
@@ -83,11 +100,16 @@ function Toggle( { id, label, checked, onChange, disabled, description } ) {
 					type="checkbox"
 					disabled={ disabled }
 					checked={ !! checked }
+					aria-describedby={ description ? `${ id }-help` : undefined }
 					onChange={ ( e ) => onChange( e.target.checked ) }
 				/>
 				{ label }
 			</label>
-			{ description && <span style={ toggleHelpStyle }>{ description }</span> }
+			{ description && (
+				<span id={ `${ id }-help` } style={ toggleHelpStyle }>
+					{ description }
+				</span>
+			) }
 		</div>
 	);
 }
@@ -165,6 +187,8 @@ export default function Settings() {
 	const [ loadError, setLoadError ] = useState( '' );
 	const [ btnLoading, setBtnLoading ] = useState( false );
 	const [ notice, setNotice ] = useState( { type: '', message: '' } );
+	const [ saveStatus, setSaveStatus ] = useState( { type: '', message: '' } );
+	const [ savedSnapshot, setSavedSnapshot ] = useState( '' );
 	const [ testing, setTesting ] = useState( '' );
 	const [ testResults, setTestResults ] = useState( {} );
 	const [ removeTarget, setRemoveTarget ] = useState( null );
@@ -181,7 +205,9 @@ export default function Settings() {
 	const canTestAlerts = can( 'manage_alerts' );
 
 	const applyPayload = ( data ) => {
-		setSettings( plainSettings( data ) );
+		const plain = plainSettings( data );
+		setSettings( plain );
+		setSavedSnapshot( JSON.stringify( plain ) );
 		setSecrets( data.secrets || {} );
 		setMeta( data.meta || {} );
 	};
@@ -304,12 +330,12 @@ export default function Settings() {
 
 		const error = validate( typed );
 		if ( error ) {
-			setNotice( { type: 'error', message: error } );
+			setSaveStatus( { type: 'error', message: error } );
 			return;
 		}
 
 		setBtnLoading( true );
-		setNotice( { type: '', message: '' } );
+		setSaveStatus( { type: '', message: '' } );
 
 		const data = plainSettings( settings );
 		if ( Object.keys( typed ).length ) {
@@ -320,7 +346,7 @@ export default function Settings() {
 			.then( ( res ) => {
 				applyPayload( res );
 				setSecretInputs( {} );
-				setNotice( { type: 'success', message: res.message || __( 'Settings saved successfully.', 'tbsh-compliance-audit-logger' ) } );
+				setSaveStatus( { type: 'success', message: res.message || __( 'Settings saved.', 'tbsh-compliance-audit-logger' ) } );
 				// Update local cached copy of global settings.
 				if ( window.tbshCalApiSettings ) {
 					window.tbshCalApiSettings.settings = plainSettings( res );
@@ -328,9 +354,57 @@ export default function Settings() {
 				setBtnLoading( false );
 			} )
 			.catch( ( err ) => {
-				setNotice( { type: 'error', message: ( err && err.message ) || __( 'Failed to save settings.', 'tbsh-compliance-audit-logger' ) } );
+				setSaveStatus( { type: 'error', message: ( err && err.message ) || __( 'Failed to save settings.', 'tbsh-compliance-audit-logger' ) } );
 				setBtnLoading( false );
 			} );
+	};
+
+	const dirty = !! settings && ( JSON.stringify( settings ) !== savedSnapshot || Object.values( secretInputs ).some( ( v ) => String( v || '' ).trim() ) );
+
+	useEffect( () => {
+		const message = __( 'You have unsaved settings. Leave this page and discard them?', 'tbsh-compliance-audit-logger' );
+		setUnsavedChanges( dirty ? message : '' );
+		if ( ! dirty ) {
+			return undefined;
+		}
+		const onBeforeUnload = ( e ) => {
+			e.preventDefault();
+			e.returnValue = message;
+			return message;
+		};
+		window.addEventListener( 'beforeunload', onBeforeUnload );
+		return () => window.removeEventListener( 'beforeunload', onBeforeUnload );
+	}, [ dirty ] );
+
+	useEffect( () => () => setUnsavedChanges( '' ), [] );
+
+	// Clear "Settings saved" once the user edits again.
+	useEffect( () => {
+		if ( dirty && 'success' === saveStatus.type ) {
+			setSaveStatus( { type: '', message: '' } );
+		}
+	}, [ dirty ] ); // eslint-disable-line react-hooks/exhaustive-deps
+
+	const discardChanges = () => {
+		if ( savedSnapshot ) {
+			setSettings( JSON.parse( savedSnapshot ) );
+		}
+		setSecretInputs( {} );
+		setSaveStatus( { type: '', message: '' } );
+	};
+
+	const jumpTo = ( e, id ) => {
+		e.preventDefault();
+		const target = document.getElementById( `tbsh-settings-${ id }` );
+		if ( ! target ) {
+			return;
+		}
+		target.scrollIntoView( { block: 'start' } );
+		const heading = target.querySelector( 'h3' );
+		if ( heading ) {
+			heading.setAttribute( 'tabindex', '-1' );
+			heading.focus();
+		}
 	};
 
 	const confirmRemove = () => {
@@ -496,11 +570,20 @@ export default function Settings() {
 		<div className="tbsh-settings-page">
 			{ notice.message && <Notice type={ notice.type } message={ notice.message } /> }
 
-			<form onSubmit={ saveSettings } className="tbsh-grid-2" style={ { alignItems: 'start' } }>
+			<nav className="tbsh-jump-links" aria-label={ __( 'Settings sections', 'tbsh-compliance-audit-logger' ) }>
+				<strong>{ __( 'Jump to:', 'tbsh-compliance-audit-logger' ) }</strong>
+				{ sections().map( ( [ id, label ] ) => (
+					<a key={ id } href={ `#tbsh-settings-${ id }` } onClick={ ( e ) => jumpTo( e, id ) }>
+						{ label }
+					</a>
+				) ) }
+			</nav>
+
+			<form id="tbsh-settings-form" onSubmit={ saveSettings } className="tbsh-grid-2" style={ { alignItems: 'start' } }>
 				{ /* Left column */ }
 				<div style={ { display: 'flex', flexDirection: 'column', gap: '24px', minWidth: 0 } }>
 					{ /* Logging & Security Settings */ }
-					<div className="tbsh-card" style={ { padding: '20px' } }>
+					<div className="tbsh-card" id="tbsh-settings-logging" style={ { padding: '20px' } }>
 						<h3 style={ cardTitleStyle }>
 							{ __( 'Audit Logging Policies', 'tbsh-compliance-audit-logger' ) }
 						</h3>
@@ -611,7 +694,7 @@ export default function Settings() {
 					</div>
 
 					{ /* Logging exclusions */ }
-					<div className="tbsh-card" style={ { padding: '20px' } }>
+					<div className="tbsh-card" id="tbsh-settings-exclusions" style={ { padding: '20px' } }>
 						<h3 style={ cardTitleStyle }>
 							{ __( 'Logging Exclusions', 'tbsh-compliance-audit-logger' ) }
 						</h3>
@@ -670,7 +753,7 @@ export default function Settings() {
 					</div>
 
 					{ /* Alert channels */ }
-					<div className="tbsh-card" style={ { padding: '20px' } }>
+					<div className="tbsh-card" id="tbsh-settings-alerts" style={ { padding: '20px' } }>
 						<h3 style={ cardTitleStyle }>
 							{ __( 'Alert Channels', 'tbsh-compliance-audit-logger' ) }
 						</h3>
@@ -813,7 +896,7 @@ export default function Settings() {
 					</div>
 
 					{ /* Incident detection */ }
-					<div className="tbsh-card" style={ { padding: '20px' } }>
+					<div className="tbsh-card" id="tbsh-settings-detection" style={ { padding: '20px' } }>
 						<h3 style={ cardTitleStyle }>
 							{ __( 'Incident Detection', 'tbsh-compliance-audit-logger' ) }
 						</h3>
@@ -863,7 +946,7 @@ export default function Settings() {
 					</div>
 
 					{ /* Behavioural anomaly detection */ }
-					<div className="tbsh-card" style={ { padding: '20px' } }>
+					<div className="tbsh-card" id="tbsh-settings-anomalies" style={ { padding: '20px' } }>
 						<h3 style={ cardTitleStyle }>
 							{ __( 'Behavioural Anomaly Detection', 'tbsh-compliance-audit-logger' ) }
 						</h3>
@@ -881,7 +964,7 @@ export default function Settings() {
 				{ /* Right column */ }
 				<div style={ { display: 'flex', flexDirection: 'column', gap: '24px', minWidth: 0 } }>
 					{ /* Evidence Vault Settings */ }
-					<div className="tbsh-card" style={ { padding: '20px' } }>
+					<div className="tbsh-card" id="tbsh-settings-evidence" style={ { padding: '20px' } }>
 						<h3 style={ cardTitleStyle }>
 							{ __( 'Evidence Vault & Snapshot Options', 'tbsh-compliance-audit-logger' ) }
 						</h3>
@@ -930,7 +1013,7 @@ export default function Settings() {
 					</div>
 
 					{ /* Data retention */ }
-					<div className="tbsh-card" style={ { padding: '20px' } }>
+					<div className="tbsh-card" id="tbsh-settings-retention" style={ { padding: '20px' } }>
 						<h3 style={ cardTitleStyle }>
 							{ __( 'Data Retention', 'tbsh-compliance-audit-logger' ) }
 						</h3>
@@ -1017,7 +1100,7 @@ export default function Settings() {
 					</div>
 
 					{ /* Compliance digest */ }
-					<div className="tbsh-card" style={ { padding: '20px' } }>
+					<div className="tbsh-card" id="tbsh-settings-digest" style={ { padding: '20px' } }>
 						<h3 style={ cardTitleStyle }>
 							{ __( 'Compliance Digest', 'tbsh-compliance-audit-logger' ) }
 						</h3>
@@ -1094,7 +1177,7 @@ export default function Settings() {
 					</div>
 
 					{ /* SIEM forwarding */ }
-					<div className="tbsh-card" style={ { padding: '20px' } }>
+					<div className="tbsh-card" id="tbsh-settings-siem" style={ { padding: '20px' } }>
 						<h3 style={ cardTitleStyle }>
 							{ __( 'SIEM & Log Forwarding', 'tbsh-compliance-audit-logger' ) }
 						</h3>
@@ -1171,7 +1254,7 @@ export default function Settings() {
 						</div>
 
 						{ siemStatus && siemStatus.ready && (
-							<p style={ { ...helpStyle, marginLeft: 0 } } role="status">
+							<p style={ { ...helpStyle, marginInlineStart: 0 } } role="status">
 								{ sprintf(
 									/* translators: 1: number of forwarded entries, 2: number waiting */
 									__( 'Forwarded: %1$d entries. Waiting: %2$d.', 'tbsh-compliance-audit-logger' ),
@@ -1204,7 +1287,7 @@ export default function Settings() {
 					</div>
 
 					{ /* AI incident analysis */ }
-					<div className="tbsh-card" style={ { padding: '20px' } }>
+					<div className="tbsh-card" id="tbsh-settings-ai" style={ { padding: '20px' } }>
 						<h3 style={ cardTitleStyle }>
 							{ __( 'AI Incident Analysis', 'tbsh-compliance-audit-logger' ) }
 						</h3>
@@ -1271,7 +1354,7 @@ export default function Settings() {
 					</div>
 
 					{ /* Vault receiver */ }
-					<div className="tbsh-card" style={ { padding: '20px' } }>
+					<div className="tbsh-card" id="tbsh-settings-receiver" style={ { padding: '20px' } }>
 						<h3 style={ cardTitleStyle }>
 							{ __( 'Off-site Vault Receiver', 'tbsh-compliance-audit-logger' ) }
 						</h3>
@@ -1316,7 +1399,7 @@ export default function Settings() {
 						) }
 					</div>
 
-					<div className="tbsh-card" style={ { padding: '20px' } }>
+					<div className="tbsh-card" id="tbsh-settings-setup" style={ { padding: '20px' } }>
 						<h3 style={ cardTitleStyle }>
 							{ __( 'Setup Assistant', 'tbsh-compliance-audit-logger' ) }
 						</h3>
@@ -1328,7 +1411,7 @@ export default function Settings() {
 						</a>
 					</div>
 
-					<div className="tbsh-card" style={ { padding: '20px' } }>
+					<div className="tbsh-card" id="tbsh-settings-removal" style={ { padding: '20px' } }>
 						<h3 style={ cardTitleStyle }>
 							{ __( 'Plugin Removal Policy', 'tbsh-compliance-audit-logger' ) }
 						</h3>
@@ -1352,12 +1435,48 @@ export default function Settings() {
 						{ hasManageCapability && (
 							<button type="submit" className="tbsh-btn tbsh-btn-primary" style={ { marginTop: '16px' } } disabled={ btnLoading }>
 								<Icon name="check" />
-								{ btnLoading ? __( 'Saving Settings...', 'tbsh-compliance-audit-logger' ) : __( 'Save Config Policies', 'tbsh-compliance-audit-logger' ) }
+								{ btnLoading ? __( 'Saving…', 'tbsh-compliance-audit-logger' ) : __( 'Save settings', 'tbsh-compliance-audit-logger' ) }
 							</button>
 						) }
 					</div>
 				</div>
 			</form>
+
+			{ hasManageCapability && ( dirty || saveStatus.message ) && (
+				<div className="tbsh-save-bar">
+					<div className="tbsh-save-bar-status" role={ 'error' === saveStatus.type ? 'alert' : 'status' }>
+						{ saveStatus.message ? (
+							<>
+								<Icon name={ 'error' === saveStatus.type ? 'alert' : 'check' } style={ { color: 'error' === saveStatus.type ? 'var(--tbsh-danger)' : 'var(--tbsh-success)' } } />
+								<span>{ saveStatus.message }</span>
+							</>
+						) : (
+							<>
+								<span className="tbsh-save-bar-dot" aria-hidden="true" />
+								<span>{ __( 'You have unsaved changes', 'tbsh-compliance-audit-logger' ) }</span>
+							</>
+						) }
+					</div>
+					<div className="tbsh-row">
+						{ dirty && (
+							<button type="button" className="tbsh-btn tbsh-btn-secondary" onClick={ discardChanges } disabled={ btnLoading }>
+								{ __( 'Discard', 'tbsh-compliance-audit-logger' ) }
+							</button>
+						) }
+						{ dirty && (
+							<button type="submit" form="tbsh-settings-form" className="tbsh-btn tbsh-btn-primary" disabled={ btnLoading }>
+								<Icon name="check" />
+								{ btnLoading ? __( 'Saving…', 'tbsh-compliance-audit-logger' ) : __( 'Save settings', 'tbsh-compliance-audit-logger' ) }
+							</button>
+						) }
+						{ ! dirty && (
+							<button type="button" className="tbsh-btn tbsh-btn-secondary" onClick={ () => setSaveStatus( { type: '', message: '' } ) }>
+								{ __( 'Dismiss', 'tbsh-compliance-audit-logger' ) }
+							</button>
+						) }
+					</div>
+				</div>
+			) }
 
 			<Modal
 				title={ __( 'Compliance digest preview', 'tbsh-compliance-audit-logger' ) }

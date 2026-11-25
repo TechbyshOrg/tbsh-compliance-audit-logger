@@ -4,6 +4,7 @@ import { __, sprintf } from '@wordpress/i18n';
 import SkeletonLoader from '../components/SkeletonLoader';
 import EmptyState from '../components/EmptyState';
 import Icon from '../components/Icon';
+import { SeverityOptions, severityLabel } from '../components/labels';
 
 export default function Timeline() {
 	const [timeline, setTimeline] = useState([]);
@@ -84,13 +85,13 @@ export default function Timeline() {
 		<div className="tbsh-timeline-page">
 			<div className="tbsh-filters-bar">
 				<form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '8px', flexGrow: 1, minWidth: '220px' }}>
-					<label className="screen-reader-text" htmlFor="tbsh-timeline-search">{__('Search timeline', 'tbsh-compliance-audit-logger')}</label>
+					<label className="tbsh-sr-only" htmlFor="tbsh-timeline-search">{__('Search timeline', 'tbsh-compliance-audit-logger')}</label>
 					<input
 						id="tbsh-timeline-search"
 						type="text"
 						className="tbsh-filter-input"
 						style={{ flexGrow: 1 }}
-						placeholder={__('Search timeline events...', 'tbsh-compliance-audit-logger')}
+						placeholder={__('Search events', 'tbsh-compliance-audit-logger')}
 						value={search}
 						onChange={(e) => setSearch(e.target.value)}
 					/>
@@ -100,7 +101,7 @@ export default function Timeline() {
 					</button>
 				</form>
 
-				<label className="screen-reader-text" htmlFor="tbsh-timeline-category">{__('Category', 'tbsh-compliance-audit-logger')}</label>
+				<label className="tbsh-sr-only" htmlFor="tbsh-timeline-category">{__('Category', 'tbsh-compliance-audit-logger')}</label>
 				<select
 					id="tbsh-timeline-category"
 					className="tbsh-filter-input"
@@ -113,22 +114,17 @@ export default function Timeline() {
 					))}
 				</select>
 
-				<label className="screen-reader-text" htmlFor="tbsh-timeline-severity">{__('Severity', 'tbsh-compliance-audit-logger')}</label>
+				<label className="tbsh-sr-only" htmlFor="tbsh-timeline-severity">{__('Severity', 'tbsh-compliance-audit-logger')}</label>
 				<select
 					id="tbsh-timeline-severity"
 					className="tbsh-filter-input"
 					value={severity}
 					onChange={(e) => { setSeverity(e.target.value); setPage(1); }}
 				>
-					<option value="">{__('All Severities', 'tbsh-compliance-audit-logger')}</option>
-					<option value="info">Info</option>
-					<option value="notice">Notice</option>
-					<option value="warning">Warning</option>
-					<option value="error">Error</option>
-					<option value="critical">Critical</option>
+					<SeverityOptions allLabel={ __( 'All severities', 'tbsh-compliance-audit-logger' ) } />
 				</select>
 
-				<label className="screen-reader-text" htmlFor="tbsh-timeline-userid">{__('User ID', 'tbsh-compliance-audit-logger')}</label>
+				<label className="tbsh-sr-only" htmlFor="tbsh-timeline-userid">{__('User ID', 'tbsh-compliance-audit-logger')}</label>
 				<input
 					id="tbsh-timeline-userid"
 					type="number"
@@ -169,7 +165,7 @@ export default function Timeline() {
 					<EmptyState title={__('Error Loading Data', 'tbsh-compliance-audit-logger')} description={error} icon="alert" />
 				) : timeline.length > 0 ? (
 					<>
-						<div style={{ display: 'flex', flexDirection: 'column', position: 'relative', paddingLeft: '24px' }}>
+						<div style={{ display: 'flex', flexDirection: 'column', position: 'relative', paddingInlineStart: '24px' }}>
 							<div
 								style={{
 									position: 'absolute',
@@ -240,7 +236,7 @@ export default function Timeline() {
 												<span style={{ display: 'flex', gap: '6px' }}>
 													<span className="tbsh-badge tbsh-badge-info">{event.event_category}</span>
 													<span className={`tbsh-badge tbsh-badge-${event.severity === 'critical' || event.severity === 'error' ? 'danger' : (event.severity === 'warning' ? 'warning' : 'info')}`}>
-														{event.severity}
+														{ severityLabel( event.severity ) }
 													</span>
 												</span>
 											</div>

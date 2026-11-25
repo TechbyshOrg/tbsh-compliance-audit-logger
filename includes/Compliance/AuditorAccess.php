@@ -324,6 +324,7 @@ class AuditorAccess {
 			'siteName'     => wp_specialchars_decode( get_bloginfo( 'name' ), ENT_QUOTES ),
 			'expiresAt'    => $row->expires_at,
 			'label'        => $row->label,
+			'today'        => wp_date( 'Y-m-d' ),
 		) );
 		wp_localize_script( 'tbsh-cal-admin-js', 'tbshCalIcons', SVGHelper::get_icons() );
 		\TBSHComplianceAuditLogger\Admin\Menu::chunk_translations( 'tbsh-cal-admin-js' );

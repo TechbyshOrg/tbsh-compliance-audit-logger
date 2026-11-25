@@ -1,501 +1,555 @@
-import { useState, useEffect } from '@wordpress/element';
+import { useState, useEffect, useRef } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
-import { __, sprintf } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 import SkeletonLoader from '../components/SkeletonLoader';
 import EmptyState from '../components/EmptyState';
-import Modal from '../components/Modal';
 import Icon from '../components/Icon';
+import LogDetailModal from '../components/LogDetailModal';
 import { actorLabels, originText } from '../components/origin';
+import { SeverityBadge, SeverityOptions, severityLabel } from '../components/labels';
+import { SiteTime, formatSiteTime } from '../components/time';
+import { takePendingState } from '../components/navState';
 
+const COLUMNS_KEY = 'tbshCalLogColumns';
+
+const DEFAULT_COLUMNS = {
+	id: true,
+	timestamp: true,
+	actor: true,
+	title: true,
+	category: true,
+	severity: true,
+	site: false,
+	method: false,
+};
+
+const CATEGORIES = [
+	'Access Control',
+	'Identity Management',
+	'Authentication',
+	'Authorization',
+	'Change Management',
+	'Configuration Management',
+	'Security Monitoring',
+	'Incident Detection',
+	'Operational Security',
+	'Audit Trail',
+];
+
+/**
+ * Translated column names.
+ *
+ * @return {Object} Column key => label.
+ */
+const columnLabels = () => ( {
+	id: __( 'ID', 'tbsh-compliance-audit-logger' ),
+	timestamp: __( 'Time', 'tbsh-compliance-audit-logger' ),
+	actor: __( 'User', 'tbsh-compliance-audit-logger' ),
+	title: __( 'Event', 'tbsh-compliance-audit-logger' ),
+	category: __( 'Category', 'tbsh-compliance-audit-logger' ),
+	severity: __( 'Severity', 'tbsh-compliance-audit-logger' ),
+	site: __( 'Site ID', 'tbsh-compliance-audit-logger' ),
+	method: __( 'Method', 'tbsh-compliance-audit-logger' ),
+} );
+
+/**
+ * Column choice saved in this browser (a per-viewer convenience).
+ *
+ * @return {Object} Columns.
+ */
+const loadColumns = () => {
+	try {
+		const saved = JSON.parse( window.localStorage.getItem( COLUMNS_KEY ) || 'null' );
+		return saved && typeof saved === 'object' ? { ...DEFAULT_COLUMNS, ...saved } : DEFAULT_COLUMNS;
+	} catch ( e ) {
+		return DEFAULT_COLUMNS;
+	}
+};
+
+const EMPTY_FILTERS = {
+	search: '',
+	severity: '',
+	category: '',
+	actor: '',
+	eventType: '',
+	userId: 0,
+	userLabel: '',
+	dateStart: '',
+	dateEnd: '',
+};
 
 export default function ActivityLogs() {
-	const [logs, setLogs] = useState([]);
-	const [totalItems, setTotalItems] = useState(0);
-	const [totalPages, setTotalPages] = useState(1);
-	const [page, setPage] = useState(1);
-	const [perPage, setPerPage] = useState(20);
-	const [loading, setLoading] = useState(true);
-	const [error, setError] = useState(null);
+	// Filters handed over by another page (e.g. a dashboard card) apply on first render.
+	const [ initial ] = useState( () => ( { ...EMPTY_FILTERS, ...( takePendingState( 'logs' ) || {} ) } ) );
 
-	// Filters.
-	const [search, setSearch] = useState('');
-	const [severity, setSeverity] = useState('');
-	const [category, setCategory] = useState('');
-	const [actorFilter, setActorFilter] = useState('');
-	const [dateStart, setDateStart] = useState('');
-	const [dateEnd, setDateEnd] = useState('');
+	const [ logs, setLogs ] = useState( [] );
+	const [ totalItems, setTotalItems ] = useState( 0 );
+	const [ totalPages, setTotalPages ] = useState( 1 );
+	const [ page, setPage ] = useState( 1 );
+	const [ perPage, setPerPage ] = useState( 20 );
+	const [ loading, setLoading ] = useState( true );
+	const [ error, setError ] = useState( null );
 
-	// Sorting.
-	const [orderby, setOrderby] = useState('id');
-	const [order, setOrder] = useState('DESC');
+	const [ searchInput, setSearchInput ] = useState( initial.search );
+	const [ filters, setFilters ] = useState( initial );
 
-	// Selected Log for detail modal.
-	const [selectedLog, setSelectedLog] = useState(null);
+	const [ orderby, setOrderby ] = useState( 'id' );
+	const [ order, setOrder ] = useState( 'DESC' );
 
-	// Column Visibility.
-	const [showColumnControls, setShowColumnControls] = useState(false);
-	const [visibleColumns, setVisibleColumns] = useState({
-		id: true,
-		timestamp: true,
-		actor: true,
-		title: true,
-		category: true,
-		severity: true,
-		site: false,
-		method: false,
-	});
+	const [ selectedLog, setSelectedLog ] = useState( null );
 
-	const fetchLogs = () => {
-		setLoading(true);
-		let queryPath = `/tbsh-compliance-audit-logger/v1/logs?page=${page}&per_page=${perPage}&orderby=${orderby}&order=${order}`;
+	const [ showColumnControls, setShowColumnControls ] = useState( false );
+	const [ visibleColumns, setVisibleColumns ] = useState( loadColumns );
+	const columnsRef = useRef( null );
 
-		if ( search ) queryPath += `&search=${encodeURIComponent(search)}`;
-		if ( severity ) queryPath += `&severity=${severity}`;
-		if ( category ) queryPath += `&category=${encodeURIComponent(category)}`;
-		if ( actorFilter ) {
-			queryPath += `&actor=${ actorFilter }`;
+	useEffect( () => {
+		let query = `/tbsh-compliance-audit-logger/v1/logs?page=${ page }&per_page=${ perPage }&orderby=${ orderby }&order=${ order }`;
+		const add = ( key, value ) => {
+			if ( value ) {
+				query += `&${ key }=${ encodeURIComponent( value ) }`;
+			}
+		};
+		add( 'search', filters.search );
+		add( 'severity', filters.severity );
+		add( 'category', filters.category );
+		add( 'actor', filters.actor );
+		add( 'event_type', filters.eventType );
+		add( 'user_id', filters.userId );
+		add( 'date_start', filters.dateStart );
+		add( 'date_end', filters.dateEnd );
+
+		setLoading( true );
+		apiFetch( { path: query } )
+			.then( ( data ) => {
+				setLogs( data.logs || [] );
+				setTotalItems( data.total || 0 );
+				setTotalPages( Math.max( 1, data.pages || 1 ) );
+				setError( null );
+			} )
+			.catch( ( err ) => {
+				setError( err.message || __( 'Failed to load activity logs.', 'tbsh-compliance-audit-logger' ) );
+				setLogs( [] );
+			} )
+			.finally( () => setLoading( false ) );
+	}, [ page, perPage, orderby, order, filters ] );
+
+	useEffect( () => {
+		try {
+			window.localStorage.setItem( COLUMNS_KEY, JSON.stringify( visibleColumns ) );
+		} catch ( e ) {
+			// Storage unavailable; the choice lasts for this visit only.
 		}
-		if ( dateStart ) queryPath += `&date_start=${dateStart}`;
-		if ( dateEnd ) queryPath += `&date_end=${dateEnd}`;
+	}, [ visibleColumns ] );
 
-		apiFetch({ path: queryPath })
-			.then((data) => {
-				setLogs(data.logs || []);
-				setTotalItems(data.total || 0);
-				setTotalPages(data.pages || 1);
-				setError(null);
-				setLoading(false);
-			})
-			.catch((err) => {
-				setError(err.message || __('Failed to load activity logs.', 'tbsh-compliance-audit-logger'));
-				setLogs([]);
-				setLoading(false);
-			});
+	// Close the column menu on Escape or a click outside it.
+	useEffect( () => {
+		if ( ! showColumnControls ) {
+			return undefined;
+		}
+		const onKey = ( e ) => {
+			if ( 'Escape' === e.key ) {
+				setShowColumnControls( false );
+				const toggle = columnsRef.current && columnsRef.current.querySelector( 'button' );
+				if ( toggle ) {
+					toggle.focus();
+				}
+			}
+		};
+		const onClick = ( e ) => {
+			if ( columnsRef.current && ! columnsRef.current.contains( e.target ) ) {
+				setShowColumnControls( false );
+			}
+		};
+		document.addEventListener( 'keydown', onKey );
+		document.addEventListener( 'mousedown', onClick );
+		return () => {
+			document.removeEventListener( 'keydown', onKey );
+			document.removeEventListener( 'mousedown', onClick );
+		};
+	}, [ showColumnControls ] );
+
+	const updateFilter = ( key, value ) => {
+		setFilters( ( prev ) => ( { ...prev, [ key ]: value } ) );
+		setPage( 1 );
 	};
 
-	useEffect(() => {
-		fetchLogs();
-	}, [page, perPage, orderby, order, severity, category, actorFilter, dateStart, dateEnd]);
-
-	const handleSearchSubmit = (e) => {
+	const handleSearchSubmit = ( e ) => {
 		e.preventDefault();
-		setPage(1);
-		fetchLogs();
+		updateFilter( 'search', searchInput.trim() );
 	};
 
 	const resetFilters = () => {
-		setSearch('');
-		setSeverity('');
-		setCategory('');
-		setActorFilter('');
-		setDateStart('');
-		setDateEnd('');
-		setPage(1);
+		setSearchInput( '' );
+		setFilters( EMPTY_FILTERS );
+		setPage( 1 );
 	};
 
-	const toggleColumn = (col) => {
-		setVisibleColumns((prev) => ({
-			...prev,
-			[col]: ! prev[col],
-		}));
-	};
-
-	const handleSort = (column) => {
-		if (orderby === column) {
-			setOrder((prev) => (prev === 'ASC' ? 'DESC' : 'ASC'));
+	const handleSort = ( column ) => {
+		if ( orderby === column ) {
+			setOrder( ( prev ) => ( prev === 'ASC' ? 'DESC' : 'ASC' ) );
 		} else {
-			setOrderby(column);
-			setOrder('DESC');
+			setOrderby( column );
+			setOrder( 'DESC' );
 		}
-		setPage(1);
+		setPage( 1 );
 	};
 
-	const categories = [
-		'Access Control',
-		'Identity Management',
-		'Authentication',
-		'Authorization',
-		'Change Management',
-		'Configuration Management',
-		'Security Monitoring',
-		'Incident Detection',
-		'Operational Security',
-		'Audit Trail',
-	];
+	// Active filters, each removable on its own.
+	const active = [];
+	if ( filters.search ) {
+		/* translators: %s: search text */
+		active.push( { key: 'search', label: sprintf( __( 'Search: %s', 'tbsh-compliance-audit-logger' ), filters.search ) } );
+	}
+	if ( filters.severity ) {
+		/* translators: %s: severity */
+		active.push( { key: 'severity', label: sprintf( __( 'Severity: %s', 'tbsh-compliance-audit-logger' ), severityLabel( filters.severity ) ) } );
+	}
+	if ( filters.category ) {
+		/* translators: %s: category */
+		active.push( { key: 'category', label: sprintf( __( 'Category: %s', 'tbsh-compliance-audit-logger' ), filters.category ) } );
+	}
+	if ( filters.actor ) {
+		/* translators: %s: who made the change, e.g. AI agent */
+		active.push( { key: 'actor', label: sprintf( __( 'Made by: %s', 'tbsh-compliance-audit-logger' ), actorLabels()[ filters.actor ] || filters.actor ) } );
+	}
+	if ( filters.eventType ) {
+		/* translators: %s: event type slug */
+		active.push( { key: 'eventType', label: sprintf( __( 'Event type: %s', 'tbsh-compliance-audit-logger' ), filters.eventType ) } );
+	}
+	if ( filters.userId ) {
+		/* translators: %s: username or user ID */
+		active.push( { key: 'userId', label: sprintf( __( 'User: %s', 'tbsh-compliance-audit-logger' ), filters.userLabel || `#${ filters.userId }` ) } );
+	}
+	if ( filters.dateStart || filters.dateEnd ) {
+		active.push( {
+			key: 'dates',
+			/* translators: 1: start date, 2: end date */
+			label: sprintf( __( 'Dates: %1$s – %2$s', 'tbsh-compliance-audit-logger' ), filters.dateStart || '…', filters.dateEnd || '…' ),
+		} );
+	}
+
+	const removeFilter = ( key ) => {
+		if ( 'dates' === key ) {
+			setFilters( ( prev ) => ( { ...prev, dateStart: '', dateEnd: '' } ) );
+		} else if ( 'userId' === key ) {
+			setFilters( ( prev ) => ( { ...prev, userId: 0, userLabel: '' } ) );
+		} else {
+			if ( 'search' === key ) {
+				setSearchInput( '' );
+			}
+			setFilters( ( prev ) => ( { ...prev, [ key ]: EMPTY_FILTERS[ key ] } ) );
+		}
+		setPage( 1 );
+	};
+
+	const labels = columnLabels();
+
+	const sortHeader = ( column, label ) => {
+		const isSorted = orderby === column;
+		let ariaSort = 'none';
+		if ( isSorted ) {
+			ariaSort = 'ASC' === order ? 'ascending' : 'descending';
+		}
+		return (
+			<th aria-sort={ ariaSort }>
+				<button type="button" className="tbsh-link-button" style={ { textDecoration: 'none', fontWeight: 600, color: 'inherit' } } onClick={ () => handleSort( column ) }>
+					{ label }
+					{ isSorted && <span aria-hidden="true">{ 'ASC' === order ? ' ↑' : ' ↓' }</span> }
+				</button>
+			</th>
+		);
+	};
+
+	const renderTable = () => {
+		if ( loading ) {
+			return <SkeletonLoader rows={ 8 } cols={ 5 } />;
+		}
+		if ( error ) {
+			return <EmptyState title={ __( 'Could not load the activity log', 'tbsh-compliance-audit-logger' ) } description={ error } icon="alert" />;
+		}
+		if ( ! logs.length ) {
+			return active.length ? (
+				<EmptyState
+					title={ __( 'No entries match these filters', 'tbsh-compliance-audit-logger' ) }
+					description={ __( 'Try a wider date range or remove a filter.', 'tbsh-compliance-audit-logger' ) }
+					icon="logs"
+					actionLabel={ __( 'Clear all filters', 'tbsh-compliance-audit-logger' ) }
+					onAction={ resetFilters }
+				/>
+			) : (
+				<EmptyState
+					title={ __( 'No activity recorded yet', 'tbsh-compliance-audit-logger' ) }
+					description={ __( 'Entries appear here as people sign in, edit content and change settings.', 'tbsh-compliance-audit-logger' ) }
+					icon="logs"
+				/>
+			);
+		}
+		return (
+			<table className="tbsh-table tbsh-table-sticky-first">
+				<caption className="tbsh-sr-only">{ __( 'Activity log entries', 'tbsh-compliance-audit-logger' ) }</caption>
+				<thead>
+					<tr>
+						{ visibleColumns.id && sortHeader( 'id', labels.id ) }
+						{ visibleColumns.timestamp && sortHeader( 'created_at', labels.timestamp ) }
+						{ visibleColumns.actor && sortHeader( 'username', labels.actor ) }
+						{ visibleColumns.title && <th>{ labels.title }</th> }
+						{ visibleColumns.category && sortHeader( 'event_category', labels.category ) }
+						{ visibleColumns.severity && sortHeader( 'severity', labels.severity ) }
+						{ visibleColumns.site && <th>{ labels.site }</th> }
+						{ visibleColumns.method && <th>{ labels.method }</th> }
+						<th style={ { textAlign: 'end' } }>
+							<span className="tbsh-sr-only">{ __( 'Actions', 'tbsh-compliance-audit-logger' ) }</span>
+						</th>
+					</tr>
+				</thead>
+				<tbody>
+					{ logs.map( ( log ) => (
+						<tr key={ log.id }>
+							{ visibleColumns.id && <td>{ log.id }</td> }
+							{ visibleColumns.timestamp && (
+								<td>
+									<SiteTime value={ log.created_at } />
+								</td>
+							) }
+							{ visibleColumns.actor && (
+								<td>
+									<strong>{ log.username }</strong>
+									<span style={ { display: 'block', fontSize: '12px', color: 'var(--tbsh-text-muted)' } }>{ log.role }</span>
+									{ log.metadata && 'agent' === log.metadata._actor && (
+										<span className="tbsh-badge tbsh-badge-warning" style={ { marginTop: '4px', display: 'inline-block' } } title={ originText( log.metadata ) }>
+											{ __( 'AI agent', 'tbsh-compliance-audit-logger' ) }
+										</span>
+									) }
+								</td>
+							) }
+							{ visibleColumns.title && <td>{ log.event_title }</td> }
+							{ visibleColumns.category && <td>{ log.event_category }</td> }
+							{ visibleColumns.severity && (
+								<td>
+									<SeverityBadge severity={ log.severity } />
+								</td>
+							) }
+							{ visibleColumns.site && <td>{ log.site_id }</td> }
+							{ visibleColumns.method && (
+								<td>
+									<code>{ log.request_method || 'GET' }</code>
+								</td>
+							) }
+							<td style={ { textAlign: 'end' } }>
+								<button
+									type="button"
+									className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
+									onClick={ () => setSelectedLog( log ) }
+									aria-label={ sprintf(
+										/* translators: 1: event title, 2: date and time */
+										__( 'Details: %1$s, %2$s', 'tbsh-compliance-audit-logger' ),
+										log.event_title,
+										formatSiteTime( log.created_at )
+									) }
+								>
+									{ __( 'Details', 'tbsh-compliance-audit-logger' ) }
+								</button>
+							</td>
+						</tr>
+					) ) }
+				</tbody>
+			</table>
+		);
+	};
 
 	return (
 		<div className="tbsh-logs-page">
-			{/* Advanced Filters Panel */}
 			<div className="tbsh-filters-bar">
-				<form onSubmit={handleSearchSubmit} style={{ display: 'flex', gap: '8px', flexGrow: 1, minWidth: '240px' }}>
-					<input 
-						type="text" 
-						className="tbsh-filter-input" 
-						style={{ flexGrow: 1 }}
-						placeholder={__('Search logs, messages, users...', 'tbsh-compliance-audit-logger')}
-						value={search}
-						onChange={(e) => setSearch(e.target.value)}
-					/>
-					<button type="submit" className="tbsh-btn tbsh-btn-primary">
-						<Icon name="search" />
-						{__('Search', 'tbsh-compliance-audit-logger')}
-					</button>
+				<form onSubmit={ handleSearchSubmit } className="tbsh-filter-field" style={ { flex: '1 1 260px' } } role="search">
+					<label className="tbsh-filter-label" htmlFor="tbsh-logs-search">
+						{ __( 'Search', 'tbsh-compliance-audit-logger' ) }
+					</label>
+					<div style={ { display: 'flex', gap: '8px' } }>
+						<input
+							id="tbsh-logs-search"
+							type="search"
+							className="tbsh-filter-input"
+							style={ { flexGrow: 1, minWidth: 0 } }
+							placeholder={ __( 'Event, message or username', 'tbsh-compliance-audit-logger' ) }
+							value={ searchInput }
+							onChange={ ( e ) => setSearchInput( e.target.value ) }
+						/>
+						<button type="submit" className="tbsh-btn tbsh-btn-primary">
+							<Icon name="search" />
+							{ __( 'Search', 'tbsh-compliance-audit-logger' ) }
+						</button>
+					</div>
 				</form>
 
-				<select 
-					className="tbsh-filter-input"
-					value={severity}
-					onChange={(e) => { setSeverity(e.target.value); setPage(1); }}
-				>
-					<option value="">{__('All Severities', 'tbsh-compliance-audit-logger')}</option>
-					<option value="info">Info</option>
-					<option value="notice">Notice</option>
-					<option value="warning">Warning</option>
-					<option value="error">Error</option>
-					<option value="critical">Critical</option>
-				</select>
-
-				<select 
-					className="tbsh-filter-input"
-					value={category}
-					onChange={(e) => { setCategory(e.target.value); setPage(1); }}
-				>
-					<option value="">{__('All Categories', 'tbsh-compliance-audit-logger')}</option>
-					{categories.map((cat, i) => (
-						<option key={i} value={cat}>{cat}</option>
-					))}
-				</select>
-
-				<select
-					className="tbsh-filter-input"
-					value={ actorFilter }
-					aria-label={ __( 'Made by', 'tbsh-compliance-audit-logger' ) }
-					onChange={ ( e ) => {
-						setActorFilter( e.target.value );
-						setPage( 1 );
-					} }
-				>
-					<option value="">{ __( 'Made by anyone', 'tbsh-compliance-audit-logger' ) }</option>
-					{ Object.entries( actorLabels() ).map( ( [ value, label ] ) => (
-						<option key={ value } value={ value }>
-							{ label }
-						</option>
-					) ) }
-				</select>
-
-				<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-					<input 
-						type="date" 
-						className="tbsh-filter-input" 
-						value={dateStart}
-						onChange={(e) => { setDateStart(e.target.value); setPage(1); }}
-					/>
-					<span style={{ color: 'var(--tbsh-text-muted)' }}>{__('to', 'tbsh-compliance-audit-logger')}</span>
-					<input 
-						type="date" 
-						className="tbsh-filter-input" 
-						value={dateEnd}
-						onChange={(e) => { setDateEnd(e.target.value); setPage(1); }}
-					/>
+				<div className="tbsh-filter-field">
+					<label className="tbsh-filter-label" htmlFor="tbsh-logs-severity">
+						{ __( 'Severity', 'tbsh-compliance-audit-logger' ) }
+					</label>
+					<select id="tbsh-logs-severity" className="tbsh-filter-input" value={ filters.severity } onChange={ ( e ) => updateFilter( 'severity', e.target.value ) }>
+						<SeverityOptions allLabel={ __( 'All severities', 'tbsh-compliance-audit-logger' ) } />
+					</select>
 				</div>
 
-				<button className="tbsh-btn tbsh-btn-secondary" onClick={resetFilters}>
-					{__('Reset', 'tbsh-compliance-audit-logger')}
-				</button>
+				<div className="tbsh-filter-field">
+					<label className="tbsh-filter-label" htmlFor="tbsh-logs-category">
+						{ __( 'Category', 'tbsh-compliance-audit-logger' ) }
+					</label>
+					<select id="tbsh-logs-category" className="tbsh-filter-input" value={ filters.category } onChange={ ( e ) => updateFilter( 'category', e.target.value ) }>
+						<option value="">{ __( 'All categories', 'tbsh-compliance-audit-logger' ) }</option>
+						{ CATEGORIES.map( ( cat ) => (
+							<option key={ cat } value={ cat }>
+								{ cat }
+							</option>
+						) ) }
+					</select>
+				</div>
 
-				<div style={{ position: 'relative' }}>
-					<button 
-						className="tbsh-btn tbsh-btn-secondary" 
-						onClick={() => setShowColumnControls(!showColumnControls)}
+				<div className="tbsh-filter-field">
+					<label className="tbsh-filter-label" htmlFor="tbsh-logs-actor">
+						{ __( 'Made by', 'tbsh-compliance-audit-logger' ) }
+					</label>
+					<select id="tbsh-logs-actor" className="tbsh-filter-input" value={ filters.actor } onChange={ ( e ) => updateFilter( 'actor', e.target.value ) }>
+						<option value="">{ __( 'Anyone', 'tbsh-compliance-audit-logger' ) }</option>
+						{ Object.entries( actorLabels() ).map( ( [ value, label ] ) => (
+							<option key={ value } value={ value }>
+								{ label }
+							</option>
+						) ) }
+					</select>
+				</div>
+
+				<div className="tbsh-filter-field">
+					<label className="tbsh-filter-label" htmlFor="tbsh-logs-from">
+						{ __( 'From', 'tbsh-compliance-audit-logger' ) }
+					</label>
+					<input id="tbsh-logs-from" type="date" className="tbsh-filter-input" value={ filters.dateStart } max={ filters.dateEnd || undefined } onChange={ ( e ) => updateFilter( 'dateStart', e.target.value ) } />
+				</div>
+
+				<div className="tbsh-filter-field">
+					<label className="tbsh-filter-label" htmlFor="tbsh-logs-to">
+						{ __( 'To', 'tbsh-compliance-audit-logger' ) }
+					</label>
+					<input id="tbsh-logs-to" type="date" className="tbsh-filter-input" value={ filters.dateEnd } min={ filters.dateStart || undefined } onChange={ ( e ) => updateFilter( 'dateEnd', e.target.value ) } />
+				</div>
+
+				<div style={ { position: 'relative' } } ref={ columnsRef }>
+					<button
+						type="button"
+						className="tbsh-btn tbsh-btn-secondary"
+						aria-expanded={ showColumnControls }
+						aria-controls="tbsh-logs-columns"
+						onClick={ () => setShowColumnControls( ! showColumnControls ) }
 					>
 						<Icon name="filter" />
-						{__('Columns', 'tbsh-compliance-audit-logger')}
+						{ __( 'Columns', 'tbsh-compliance-audit-logger' ) }
 					</button>
-					
-					{showColumnControls && (
-						<div 
-							className="tbsh-card" 
-							style={{ 
-								position: 'absolute', 
-								right: 0, 
-								top: '100%', 
-								marginTop: '8px', 
-								zIndex: 100, 
-								minWidth: '180px',
-								padding: '12px' 
-							}}
-						>
-							<h4 style={{ margin: '0 0 8px 0', fontSize: '13px' }}>{__('Toggle Columns', 'tbsh-compliance-audit-logger')}</h4>
-							{Object.keys(visibleColumns).map((col) => (
-								<label key={col} style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', fontSize: '13px', cursor: 'pointer' }}>
-									<input 
-										type="checkbox" 
-										checked={visibleColumns[col]} 
-										onChange={() => toggleColumn(col)} 
+
+					{ showColumnControls && (
+						<fieldset id="tbsh-logs-columns" className="tbsh-card tbsh-popover" style={ { margin: '8px 0 0' } }>
+							<legend className="tbsh-section-title" style={ { fontSize: '13px', padding: 0, marginBottom: '8px' } }>
+								{ __( 'Show columns', 'tbsh-compliance-audit-logger' ) }
+							</legend>
+							{ Object.keys( DEFAULT_COLUMNS ).map( ( col ) => (
+								<label key={ col } htmlFor={ `tbsh-logs-col-${ col }` } style={ { display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px', fontSize: '13px', cursor: 'pointer' } }>
+									<input
+										id={ `tbsh-logs-col-${ col }` }
+										type="checkbox"
+										checked={ !! visibleColumns[ col ] }
+										onChange={ () => setVisibleColumns( ( prev ) => ( { ...prev, [ col ]: ! prev[ col ] } ) ) }
 									/>
-									{col.toUpperCase()}
+									{ labels[ col ] }
 								</label>
-							))}
-						</div>
-					)}
+							) ) }
+						</fieldset>
+					) }
 				</div>
 			</div>
 
-			{/* Logs Table Container */}
-			<div className="tbsh-table-container">
-				{loading ? (
-					<SkeletonLoader rows={8} cols={5} />
-				) : error ? (
-					<EmptyState title={__('Error Loading Data', 'tbsh-compliance-audit-logger')} description={error} icon="alert" />
-				) : logs.length > 0 ? (
-					<table className="tbsh-table">
-						<thead>
-							<tr>
-								{visibleColumns.id && <th style={{ cursor: 'pointer' }} onClick={() => handleSort('id')}>{__('ID', 'tbsh-compliance-audit-logger')}</th>}
-								{visibleColumns.timestamp && <th style={{ cursor: 'pointer' }} onClick={() => handleSort('created_at')}>{__('Timestamp', 'tbsh-compliance-audit-logger')}</th>}
-								{visibleColumns.actor && <th style={{ cursor: 'pointer' }} onClick={() => handleSort('username')}>{__('Actor', 'tbsh-compliance-audit-logger')}</th>}
-								{visibleColumns.title && <th>{__('Event Title', 'tbsh-compliance-audit-logger')}</th>}
-								{visibleColumns.category && <th style={{ cursor: 'pointer' }} onClick={() => handleSort('event_category')}>{__('Category', 'tbsh-compliance-audit-logger')}</th>}
-								{visibleColumns.severity && <th style={{ cursor: 'pointer' }} onClick={() => handleSort('severity')}>{__('Severity', 'tbsh-compliance-audit-logger')}</th>}
-								{visibleColumns.site && <th>{__('Site ID', 'tbsh-compliance-audit-logger')}</th>}
-								{visibleColumns.method && <th>{__('Method', 'tbsh-compliance-audit-logger')}</th>}
-								<th style={{ textAlign: 'right' }}>{__('Actions', 'tbsh-compliance-audit-logger')}</th>
-							</tr>
-						</thead>
-						<tbody>
-							{logs.map((log) => {
-								let badgeClass = 'info';
-								if (log.severity === 'warning') badgeClass = 'warning';
-								if (log.severity === 'critical' || log.severity === 'error') badgeClass = 'danger';
-
-								return (
-									<tr key={log.id}>
-										{visibleColumns.id && <td>{log.id}</td>}
-										{visibleColumns.timestamp && <td style={{ whiteSpace: 'nowrap' }}>{log.created_at}</td>}
-										{visibleColumns.actor && (
-											<td>
-												<strong>{log.username}</strong>
-												<span style={{ display: 'block', fontSize: '11px', color: 'var(--tbsh-text-muted)' }}>{log.role}</span>
-												{ log.metadata && 'agent' === log.metadata._actor && (
-													<span
-														className="tbsh-badge tbsh-badge-warning"
-														style={ { marginTop: '4px', display: 'inline-block' } }
-														title={ originText( log.metadata ) }
-													>
-														{ __( 'AI agent', 'tbsh-compliance-audit-logger' ) }
-													</span>
-												) }
-											</td>
-										)}
-										{visibleColumns.title && <td>{log.event_title}</td>}
-										{visibleColumns.category && <td>{log.event_category}</td>}
-										{visibleColumns.severity && (
-											<td>
-												<span className={`tbsh-badge tbsh-badge-${badgeClass}`}>{log.severity}</span>
-											</td>
-										)}
-										{visibleColumns.site && <td>{log.site_id}</td>}
-										{visibleColumns.method && <td><code>{log.request_method || 'GET'}</code></td>}
-										<td style={{ textAlign: 'right' }}>
-											<button 
-												className="tbsh-btn tbsh-btn-secondary" 
-												onClick={() => setSelectedLog(log)}
-												style={{ padding: '4px 8px', fontSize: '12px' }}
-											>
-												{__('Details', 'tbsh-compliance-audit-logger')}
-											</button>
-										</td>
-									</tr>
-								);
-							})}
-						</tbody>
-					</table>
-				) : (
-					<EmptyState title={__('No Audit Records Found', 'tbsh-compliance-audit-logger')} description={__('No logs match your search and filter criteria.', 'tbsh-compliance-audit-logger')} icon="logs" />
-				)}
-
-				{/* Pagination Controls */}
-				<div className="tbsh-pagination">
-					<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-						<span style={{ fontSize: '13px', color: 'var(--tbsh-text-secondary)' }}>
-							{__('Items per page:', 'tbsh-compliance-audit-logger')}
+			{ active.length > 0 && (
+				<div className="tbsh-filter-summary">
+					<span>
+						{ sprintf(
+							/* translators: %d: number of active filters */
+							_n( '%d filter active:', '%d filters active:', active.length, 'tbsh-compliance-audit-logger' ),
+							active.length
+						) }
+					</span>
+					{ active.map( ( f ) => (
+						<span key={ f.key } className="tbsh-badge tbsh-badge-info" style={ { textTransform: 'none', gap: '6px', alignItems: 'center' } }>
+							{ f.label }
+							<button
+								type="button"
+								className="tbsh-link-button"
+								style={ { textDecoration: 'none', lineHeight: 1 } }
+								onClick={ () => removeFilter( f.key ) }
+								aria-label={ sprintf(
+									/* translators: %s: filter description */
+									__( 'Remove filter %s', 'tbsh-compliance-audit-logger' ),
+									f.label
+								) }
+							>
+								×
+							</button>
 						</span>
-						<select 
-							className="tbsh-filter-input" 
-							value={perPage} 
-							onChange={(e) => { setPerPage(parseInt(e.target.value)); setPage(1); }}
-							style={{ padding: '4px 24px 4px 8px', fontSize: '13px', minWidth: '65px' }}
+					) ) }
+					<button type="button" className="tbsh-link-button" onClick={ resetFilters }>
+						{ __( 'Clear all', 'tbsh-compliance-audit-logger' ) }
+					</button>
+				</div>
+			) }
+
+			<div className="tbsh-table-container" role="region" aria-label={ __( 'Activity log entries', 'tbsh-compliance-audit-logger' ) } tabIndex="0">
+				{ renderTable() }
+
+				<div className="tbsh-pagination" style={ { flexWrap: 'wrap', gap: '12px' } }>
+					<div style={ { display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' } }>
+						<label htmlFor="tbsh-logs-per-page" style={ { fontSize: '13px', color: 'var(--tbsh-text-secondary)' } }>
+							{ __( 'Rows per page', 'tbsh-compliance-audit-logger' ) }
+						</label>
+						<select
+							id="tbsh-logs-per-page"
+							className="tbsh-filter-input"
+							value={ perPage }
+							onChange={ ( e ) => {
+								setPerPage( parseInt( e.target.value, 10 ) );
+								setPage( 1 );
+							} }
+							style={ { padding: '4px 24px 4px 8px', fontSize: '13px', minWidth: '65px' } }
 						>
 							<option value="10">10</option>
 							<option value="20">20</option>
 							<option value="50">50</option>
 							<option value="100">100</option>
 						</select>
-						<span style={{ fontSize: '13px', color: 'var(--tbsh-text-muted)', marginLeft: '12px' }}>
-							{sprintf(__('Showing %d total records', 'tbsh-compliance-audit-logger'), totalItems)}
+						<span style={ { fontSize: '13px', color: 'var(--tbsh-text-secondary)', marginInlineStart: '12px' } } aria-live="polite">
+							{ sprintf(
+								/* translators: %s: number of entries */
+								_n( '%s entry', '%s entries', totalItems, 'tbsh-compliance-audit-logger' ),
+								totalItems.toLocaleString()
+							) }
 						</span>
 					</div>
 
-					<div style={{ display: 'flex', gap: '8px' }}>
-						<button 
-							className="tbsh-btn tbsh-btn-secondary" 
-							disabled={page === 1}
-							onClick={() => setPage((p) => Math.max(1, p - 1))}
-							style={{ padding: '6px 12px' }}
-						>
-							{__('Previous', 'tbsh-compliance-audit-logger')}
+					<nav style={ { display: 'flex', gap: '8px', alignItems: 'center' } } aria-label={ __( 'Pagination', 'tbsh-compliance-audit-logger' ) }>
+						<button type="button" className="tbsh-btn tbsh-btn-secondary" disabled={ page <= 1 } onClick={ () => setPage( ( p ) => Math.max( 1, p - 1 ) ) }>
+							{ __( 'Previous', 'tbsh-compliance-audit-logger' ) }
 						</button>
-						<span style={{ display: 'flex', alignItems: 'center', padding: '0 8px', fontSize: '13px', fontWeight: '500' }}>
-							{sprintf(__('Page %1$d of %2$d', 'tbsh-compliance-audit-logger'), page, totalPages)}
+						<span style={ { padding: '0 8px', fontSize: '13px', fontWeight: '500' } }>
+							{ sprintf(
+								/* translators: 1: current page, 2: total pages */
+								__( 'Page %1$d of %2$d', 'tbsh-compliance-audit-logger' ),
+								page,
+								totalPages
+							) }
 						</span>
-						<button 
-							className="tbsh-btn tbsh-btn-secondary" 
-							disabled={page === totalPages}
-							onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-							style={{ padding: '6px 12px' }}
-						>
-							{__('Next', 'tbsh-compliance-audit-logger')}
+						<button type="button" className="tbsh-btn tbsh-btn-secondary" disabled={ page >= totalPages } onClick={ () => setPage( ( p ) => Math.min( totalPages, p + 1 ) ) }>
+							{ __( 'Next', 'tbsh-compliance-audit-logger' ) }
 						</button>
-					</div>
+					</nav>
 				</div>
 			</div>
 
-			{/* Log Detail Modal */}
-			<Modal 
-				title={__('Audit Event Record Inspection', 'tbsh-compliance-audit-logger')} 
-				isOpen={!!selectedLog} 
-				onClose={() => setSelectedLog(null)}
-			>
-				{selectedLog && (
-					<div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-						<div>
-							<strong>{__('UUID:', 'tbsh-compliance-audit-logger')}</strong> 
-							<code style={{ display: 'block', padding: '6px', backgroundColor: 'var(--tbsh-bg-tertiary)', borderRadius: '4px', marginTop: '4px', fontSize: '12px' }}>
-								{selectedLog.event_uuid}
-							</code>
-						</div>
-
-						<div>
-							<strong>{__('Event Action:', 'tbsh-compliance-audit-logger')}</strong> {selectedLog.event_title}
-						</div>
-
-						<div>
-							<strong>{__('Description:', 'tbsh-compliance-audit-logger')}</strong>
-							<p style={{ margin: '4px 0 0 0', padding: '8px', backgroundColor: 'var(--tbsh-bg-tertiary)', borderRadius: '4px' }}>
-								{selectedLog.event_message}
-							</p>
-						</div>
-
-						<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '8px' }}>
-							<div>
-								<strong>{__('Actor ID:', 'tbsh-compliance-audit-logger')}</strong> {selectedLog.user_id}
-							</div>
-							<div>
-								<strong>{__('Username:', 'tbsh-compliance-audit-logger')}</strong> {selectedLog.username}
-							</div>
-							<div>
-								<strong>{__('Severity:', 'tbsh-compliance-audit-logger')}</strong> {selectedLog.severity}
-							</div>
-							<div>
-								<strong>{__('Category:', 'tbsh-compliance-audit-logger')}</strong> {selectedLog.event_category}
-							</div>
-							<div>
-								<strong>{__('Request Method:', 'tbsh-compliance-audit-logger')}</strong> <code>{selectedLog.request_method || 'GET'}</code>
-							</div>
-							<div>
-								<strong>{__('Site ID:', 'tbsh-compliance-audit-logger')}</strong> {selectedLog.site_id}
-							</div>
-							{ originText( selectedLog.metadata ) && (
-								<div>
-									<strong>{ __( 'Made by:', 'tbsh-compliance-audit-logger' ) }</strong>{ ' ' }
-									{ originText( selectedLog.metadata ) }
-								</div>
-							) }
-							{ selectedLog.metadata?._ability && (
-								<div>
-									<strong>{ __( 'Ability:', 'tbsh-compliance-audit-logger' ) }</strong>{ ' ' }
-									<code>{ selectedLog.metadata._ability }</code>
-								</div>
-							) }
-							{ selectedLog.metadata?._app_password && (
-								<div>
-									<strong>{ __( 'Application password:', 'tbsh-compliance-audit-logger' ) }</strong>{ ' ' }
-									{ selectedLog.metadata._app_password }
-								</div>
-							) }
-						</div>
-
-						<div style={{ marginTop: '8px' }}>
-							<strong>{__('Request URI:', 'tbsh-compliance-audit-logger')}</strong>
-							<code style={{ display: 'block', padding: '6px', backgroundColor: 'var(--tbsh-bg-tertiary)', borderRadius: '4px', marginTop: '4px', fontSize: '12px', wordBreak: 'break-all' }}>
-								{selectedLog.request_uri || '-'}
-							</code>
-						</div>
-
-						<div>
-							<strong>{__('Referrer:', 'tbsh-compliance-audit-logger')}</strong>
-							<code style={{ display: 'block', padding: '6px', backgroundColor: 'var(--tbsh-bg-tertiary)', borderRadius: '4px', marginTop: '4px', fontSize: '12px', wordBreak: 'break-all' }}>
-								{selectedLog.referrer || '-'}
-							</code>
-						</div>
-
-						<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-							<div>
-								<strong>{__('Client IP Hash:', 'tbsh-compliance-audit-logger')}</strong>
-								<code style={{ display: 'block', padding: '4px', backgroundColor: 'var(--tbsh-bg-tertiary)', borderRadius: '4px', marginTop: '4px', fontSize: '11px', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-									{selectedLog.ip_hash || '-'}
-								</code>
-							</div>
-							<div>
-								<strong>{__('User Agent Hash:', 'tbsh-compliance-audit-logger')}</strong>
-								<code style={{ display: 'block', padding: '4px', backgroundColor: 'var(--tbsh-bg-tertiary)', borderRadius: '4px', marginTop: '4px', fontSize: '11px', textOverflow: 'ellipsis', overflow: 'hidden' }}>
-									{selectedLog.user_agent_hash || '-'}
-								</code>
-							</div>
-						</div>
-
-						<div style={{ borderTop: '1px solid var(--tbsh-border-color)', paddingTop: '12px', marginTop: '8px' }}>
-							<strong>{__('Compliance Tags:', 'tbsh-compliance-audit-logger')}</strong>
-							<div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '6px' }}>
-								{selectedLog.compliance_tags.split(',').map((tag, idx) => (
-									<span key={idx} className="tbsh-badge tbsh-badge-info">{tag.trim()}</span>
-								))}
-							</div>
-						</div>
-
-						<div style={{ borderTop: '1px solid var(--tbsh-border-color)', paddingTop: '12px' }}>
-							<h5 style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--tbsh-text-primary)' }}>
-								{__('Cryptographic Signatures', 'tbsh-compliance-audit-logger')}
-							</h5>
-							<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-								<div>
-									<span style={{ fontSize: '11px', color: 'var(--tbsh-text-muted)' }}>{__('Current Row Hash (SHA-256):', 'tbsh-compliance-audit-logger')}</span>
-									<code style={{ display: 'block', padding: '4px', backgroundColor: 'var(--tbsh-bg-tertiary)', borderRadius: '4px', fontSize: '11px', wordBreak: 'break-all', color: 'var(--tbsh-success-text)' }}>
-										{selectedLog.integrity_hash}
-									</code>
-								</div>
-								<div>
-									<span style={{ fontSize: '11px', color: 'var(--tbsh-text-muted)' }}>{__('Previous Row Hash (SHA-256):', 'tbsh-compliance-audit-logger')}</span>
-									<code style={{ display: 'block', padding: '4px', backgroundColor: 'var(--tbsh-bg-tertiary)', borderRadius: '4px', fontSize: '11px', wordBreak: 'break-all' }}>
-										{selectedLog.previous_hash}
-									</code>
-								</div>
-							</div>
-						</div>
-
-						{selectedLog.metadata && Object.keys(selectedLog.metadata).length > 0 && (
-							<div style={{ borderTop: '1px solid var(--tbsh-border-color)', paddingTop: '12px' }}>
-								<h5 style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--tbsh-text-primary)' }}>
-									{__('Extended Metadata Context', 'tbsh-compliance-audit-logger')}
-								</h5>
-								<pre style={{ margin: 0, padding: '10px', backgroundColor: 'var(--tbsh-bg-tertiary)', borderRadius: '6px', fontSize: '12px', overflowX: 'auto' }}>
-									{JSON.stringify(selectedLog.metadata, null, 2)}
-								</pre>
-							</div>
-						)}
-					</div>
-				)}
-			</Modal>
+			<LogDetailModal log={ selectedLog } onClose={ () => setSelectedLog( null ) } />
 		</div>
 	);
 }

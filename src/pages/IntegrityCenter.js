@@ -116,7 +116,7 @@ export default function IntegrityCenter() {
 						onClick={runScan}
 					>
 						<Icon name="shield" />
-						{scanLoading ? __('Running Verification Scan...', 'tbsh-compliance-audit-logger') : __('Run Integrity Verification', 'tbsh-compliance-audit-logger')}
+						{scanLoading ? __('Verifying…', 'tbsh-compliance-audit-logger') : __('Run Integrity Verification', 'tbsh-compliance-audit-logger')}
 					</button>
 					)}
 				</div>

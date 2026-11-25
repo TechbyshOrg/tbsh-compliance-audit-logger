@@ -140,6 +140,7 @@ class Menu {
 					'site_id'      => get_current_blog_id(),
 					'capabilities' => AccessControl::current_user_caps(),
 					'settings'     => get_option( 'tbsh_cal_settings', array() ),
+					'today'        => wp_date( 'Y-m-d' ),
 					'setupState'   => current_user_can( 'tbsh_cal_manage_settings' ) ? \TBSHComplianceAuditLogger\API\AutomationController::setup_state() : 'complete',
 				) );
 

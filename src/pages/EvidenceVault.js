@@ -127,7 +127,7 @@ function SnapshotsPanel() {
 						onClick={triggerSnapshot}
 					>
 						<Icon name="shield" />
-						{btnLoading ? __('Capturing...', 'tbsh-compliance-audit-logger') : __('Record State Snapshot', 'tbsh-compliance-audit-logger')}
+						{btnLoading ? __('Capturing…', 'tbsh-compliance-audit-logger') : __('Record State Snapshot', 'tbsh-compliance-audit-logger')}
 					</button>
 				)}
 			</div>
@@ -146,7 +146,7 @@ function SnapshotsPanel() {
 								<th>{__('Title', 'tbsh-compliance-audit-logger')}</th>
 								<th>{__('Trigger Type', 'tbsh-compliance-audit-logger')}</th>
 								<th>{__('Date Logged', 'tbsh-compliance-audit-logger')}</th>
-								<th style={{ textAlign: 'right' }}>{__('Actions', 'tbsh-compliance-audit-logger')}</th>
+								<th style={{ textAlign: 'end' }}>{__('Actions', 'tbsh-compliance-audit-logger')}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -160,7 +160,7 @@ function SnapshotsPanel() {
 										</span>
 									</td>
 									<td>{snap.created_at}</td>
-									<td style={{ textAlign: 'right' }}>
+									<td style={{ textAlign: 'end' }}>
 										<button 
 											type="button"
 											className="tbsh-btn tbsh-btn-secondary"
@@ -215,7 +215,7 @@ function SnapshotsPanel() {
 							</div>
 						</div>
 
-						<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '12px', backgroundColor: 'var(--tbsh-bg-secondary)', borderRadius: '6px' }}>
+						<div className="tbsh-grid-fields" style={{ padding: '12px', backgroundColor: 'var(--tbsh-bg-secondary)', borderRadius: '6px' }}>
 							<div><strong>{__('WordPress Version:', 'tbsh-compliance-audit-logger')}</strong> {selectedDetails.snapshot_data.wp_version}</div>
 							<div><strong>{__('PHP Version:', 'tbsh-compliance-audit-logger')}</strong> {selectedDetails.snapshot_data.php_version}</div>
 							<div><strong>{__('Multisite Network:', 'tbsh-compliance-audit-logger')}</strong> {selectedDetails.snapshot_data.site_config.is_multisite ? __('Yes', 'tbsh-compliance-audit-logger') : __('No', 'tbsh-compliance-audit-logger')}</div>
@@ -258,7 +258,7 @@ function SnapshotsPanel() {
 							<h5 style={{ margin: '0 0 8px 0', fontSize: '14px' }}>
 								{__('Security Config Snapshot', 'tbsh-compliance-audit-logger')}
 							</h5>
-							<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', fontSize: '13px' }}>
+							<div className="tbsh-grid-fields" style={{ gap: '8px', fontSize: '13px' }}>
 								<div>
 									<span>{__('WP Debug Active:', 'tbsh-compliance-audit-logger')} </span>
 									<strong>{selectedDetails.snapshot_data.security.wp_debug ? 'TRUE' : 'FALSE'}</strong>

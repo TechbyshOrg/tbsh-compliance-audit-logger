@@ -3,7 +3,7 @@ import Icon from '../components/Icon';
 
 const textStyle = { margin: 0, fontSize: '13px', color: 'var(--tbsh-text-secondary)', lineHeight: '1.6' };
 const nextTextStyle = { ...textStyle, marginTop: '8px' };
-const listStyle = { ...textStyle, margin: '8px 0 0 0', paddingLeft: '18px' };
+const listStyle = { ...textStyle, margin: '8px 0 0 0', paddingInlineStart: '18px' };
 const codeStyle = { fontSize: '12px', wordBreak: 'break-all' };
 
 function GuideSection( { icon, title, children } ) {
@@ -32,7 +32,7 @@ export default function Help() {
 			</div>
 
 			{/* Frameworks Mapping */}
-			<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }}>
+			<div className="tbsh-grid-2">
 				{/* ISO 27001 */}
 				<div className="tbsh-card" style={{ padding: '20px' }}>
 					<h4 style={{ margin: '0 0 10px 0', fontSize: '15px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '8px' }}>

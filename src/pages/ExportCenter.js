@@ -1,11 +1,13 @@
 import { useState, useEffect } from '@wordpress/element';
 import apiFetch from '@wordpress/api-fetch';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import SkeletonLoader from '../components/SkeletonLoader';
 import EmptyState from '../components/EmptyState';
 import Notice from '../components/Notice';
 import Icon from '../components/Icon';
 import { actorLabels } from '../components/origin';
+import { SeverityOptions } from '../components/labels';
+import { formatSiteTime } from '../components/time';
 
 export default function ExportCenter() {
 	const [exportsList, setExportsList] = useState([]);
@@ -112,43 +114,42 @@ export default function ExportCenter() {
 		<div className="tbsh-exports-page">
 			{notice.message && <Notice type={notice.type} message={notice.message} />}
 
-			<div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '24px', alignItems: 'start' }}>
+			<div className="tbsh-grid-sidebar">
 				{/* Configuration Panel */}
 				<div className="tbsh-card" style={{ padding: '20px' }}>
-					<h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>
-						{__('Configure Audit Export', 'tbsh-compliance-audit-logger')}
-					</h3>
+						<h3 className="tbsh-section-title">
+							{ __( 'Create an export', 'tbsh-compliance-audit-logger' ) }
+						</h3>
 					<form onSubmit={triggerExport}>
-						<div className="tbsh-form-group">
-							<label className="tbsh-form-label">{__('Export Format', 'tbsh-compliance-audit-logger')}</label>
-							<div style={{ display: 'flex', gap: '16px', marginTop: '6px' }}>
-								<label style={{ cursor: 'pointer', fontSize: '14px' }}>
-									<input type="radio" name="format" value="csv" checked={format === 'csv'} onChange={() => setFormat('csv')} />
-									{__(' CSV Layout', 'tbsh-compliance-audit-logger')}
+						<fieldset className="tbsh-form-group" style={ { border: 0, padding: 0, margin: '0 0 16px' } }>
+							<legend className="tbsh-form-label">{ __( 'Format', 'tbsh-compliance-audit-logger' ) }</legend>
+							<div className="tbsh-row" style={ { gap: '16px', marginTop: '6px' } }>
+								<label className="tbsh-row" style={ { cursor: 'pointer', fontSize: '14px', gap: '6px' } }>
+									<input type="radio" name="format" value="csv" checked={ format === 'csv' } onChange={ () => setFormat( 'csv' ) } />
+									{ __( 'CSV (spreadsheets)', 'tbsh-compliance-audit-logger' ) }
 								</label>
-								<label style={{ cursor: 'pointer', fontSize: '14px' }}>
-									<input type="radio" name="format" value="json" checked={format === 'json'} onChange={() => setFormat('json')} />
-									{__(' JSON Raw', 'tbsh-compliance-audit-logger')}
+								<label className="tbsh-row" style={ { cursor: 'pointer', fontSize: '14px', gap: '6px' } }>
+									<input type="radio" name="format" value="json" checked={ format === 'json' } onChange={ () => setFormat( 'json' ) } />
+									{ __( 'JSON (all fields)', 'tbsh-compliance-audit-logger' ) }
 								</label>
 							</div>
-						</div>
+						</fieldset>
 
 						<div className="tbsh-form-group">
-							<label className="tbsh-form-label">{__('Severity Threshold', 'tbsh-compliance-audit-logger')}</label>
-							<select className="tbsh-form-control" value={severity} onChange={(e) => setSeverity(e.target.value)}>
-								<option value="">{__('All Severities', 'tbsh-compliance-audit-logger')}</option>
-								<option value="info">Info</option>
-								<option value="notice">Notice</option>
-								<option value="warning">Warning</option>
-								<option value="error">Error</option>
-								<option value="critical">Critical</option>
+							<label className="tbsh-form-label" htmlFor="tbsh-export-severity">
+								{ __( 'Severity', 'tbsh-compliance-audit-logger' ) }
+							</label>
+							<select id="tbsh-export-severity" className="tbsh-form-control" value={ severity } onChange={ ( e ) => setSeverity( e.target.value ) }>
+								<SeverityOptions allLabel={ __( 'All severities', 'tbsh-compliance-audit-logger' ) } />
 							</select>
 						</div>
 
 						<div className="tbsh-form-group">
-							<label className="tbsh-form-label">{__('Compliance Category', 'tbsh-compliance-audit-logger')}</label>
-							<select className="tbsh-form-control" value={category} onChange={(e) => setCategory(e.target.value)}>
-								<option value="">{__('All Categories', 'tbsh-compliance-audit-logger')}</option>
+							<label className="tbsh-form-label" htmlFor="tbsh-export-category">
+								{ __( 'Category', 'tbsh-compliance-audit-logger' ) }
+							</label>
+							<select id="tbsh-export-category" className="tbsh-form-control" value={ category } onChange={ ( e ) => setCategory( e.target.value ) }>
+								<option value="">{ __( 'All categories', 'tbsh-compliance-audit-logger' ) }</option>
 								{categories.map((cat, i) => (
 									<option key={i} value={cat}>{cat}</option>
 								))}
@@ -157,7 +158,7 @@ export default function ExportCenter() {
 
 						<div className="tbsh-form-group">
 							<label className="tbsh-form-label" htmlFor="tbsh-export-actor">
-								{ __( 'Made By', 'tbsh-compliance-audit-logger' ) }
+								{ __( 'Made by', 'tbsh-compliance-audit-logger' ) }
 							</label>
 							<select
 								id="tbsh-export-actor"
@@ -174,36 +175,46 @@ export default function ExportCenter() {
 							</select>
 						</div>
 
-						<div className="tbsh-form-group">
-							<label className="tbsh-form-label">{__('Date Range', 'tbsh-compliance-audit-logger')}</label>
-							<div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-								<input type="date" className="tbsh-form-control" value={dateStart} onChange={(e) => setDateStart(e.target.value)} />
-								<span style={{ fontSize: '11px', color: 'var(--tbsh-text-muted)', textAlign: 'center' }}>{__('to', 'tbsh-compliance-audit-logger')}</span>
-								<input type="date" className="tbsh-form-control" value={dateEnd} onChange={(e) => setDateEnd(e.target.value)} />
+						<div className="tbsh-form-group tbsh-grid-fields">
+							<div>
+								<label className="tbsh-form-label" htmlFor="tbsh-export-from">
+									{ __( 'From', 'tbsh-compliance-audit-logger' ) }
+								</label>
+								<input id="tbsh-export-from" type="date" className="tbsh-form-control" value={ dateStart } max={ dateEnd || undefined } onChange={ ( e ) => setDateStart( e.target.value ) } />
+							</div>
+							<div>
+								<label className="tbsh-form-label" htmlFor="tbsh-export-to">
+									{ __( 'To', 'tbsh-compliance-audit-logger' ) }
+								</label>
+								<input id="tbsh-export-to" type="date" className="tbsh-form-control" value={ dateEnd } min={ dateStart || undefined } onChange={ ( e ) => setDateEnd( e.target.value ) } />
 							</div>
 						</div>
 
 						<div className="tbsh-form-group">
-							<label className="tbsh-form-label">{__('Keyword Search', 'tbsh-compliance-audit-logger')}</label>
-							<input type="text" className="tbsh-form-control" placeholder={__('Logs content keyword...', 'tbsh-compliance-audit-logger')} value={search} onChange={(e) => setSearch(e.target.value)} />
+							<label className="tbsh-form-label" htmlFor="tbsh-export-search">
+								{ __( 'Contains text', 'tbsh-compliance-audit-logger' ) }
+							</label>
+							<input id="tbsh-export-search" type="search" className="tbsh-form-control" placeholder={ __( 'Event, message or username', 'tbsh-compliance-audit-logger' ) } value={ search } onChange={ ( e ) => setSearch( e.target.value ) } />
 						</div>
 
 						<div className="tbsh-form-group">
-							<label className="tbsh-form-label">{__('User ID Filter', 'tbsh-compliance-audit-logger')}</label>
-							<input type="number" className="tbsh-form-control" placeholder={__('e.g. 1', 'tbsh-compliance-audit-logger')} value={userId} onChange={(e) => setUserId(e.target.value)} />
+							<label className="tbsh-form-label" htmlFor="tbsh-export-user">
+								{ __( 'User ID', 'tbsh-compliance-audit-logger' ) }
+							</label>
+							<input id="tbsh-export-user" type="number" min="0" inputMode="numeric" className="tbsh-form-control" placeholder={ __( 'e.g. 1', 'tbsh-compliance-audit-logger' ) } value={ userId } onChange={ ( e ) => setUserId( e.target.value ) } />
 						</div>
 
 						<button type="submit" className="tbsh-btn tbsh-btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '12px' }} disabled={btnLoading}>
 							<Icon name="export" />
-							{btnLoading ? __('Generating...', 'tbsh-compliance-audit-logger') : __('Compile Export File', 'tbsh-compliance-audit-logger')}
+							{ btnLoading ? __( 'Creating…', 'tbsh-compliance-audit-logger' ) : __( 'Create export', 'tbsh-compliance-audit-logger' ) }
 						</button>
 					</form>
 				</div>
 
 				{/* Available Downloads list */}
 				<div className="tbsh-card" style={{ padding: '20px' }}>
-					<h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: '600' }}>
-						{__('Available Compliance Exports', 'tbsh-compliance-audit-logger')}
+					<h3 className="tbsh-section-title">
+						{ __( 'Your exports', 'tbsh-compliance-audit-logger' ) }
 					</h3>
 					<p style={{ fontSize: '13px', color: 'var(--tbsh-text-secondary)', marginBottom: '16px' }}>
 						{__('Generated files are capability-protected and expire after 2 hours for security. You can also mint a temporary share link for auditors.', 'tbsh-compliance-audit-logger')}
@@ -220,15 +231,15 @@ export default function ExportCenter() {
 						{loading ? (
 							<SkeletonLoader rows={4} cols={3} />
 						) : error ? (
-							<EmptyState title={__('Error Loading Data', 'tbsh-compliance-audit-logger')} description={error} icon="alert" />
+							<EmptyState title={ __( 'Could not load exports', 'tbsh-compliance-audit-logger' ) } description={ error } icon="alert" />
 						) : exportsList.length > 0 ? (
 							<table className="tbsh-table">
 								<thead>
 									<tr>
-										<th>{__('Date Compiled', 'tbsh-compliance-audit-logger')}</th>
+<th>{ __( 'Created', 'tbsh-compliance-audit-logger' ) }</th>
 										<th>{__('Format', 'tbsh-compliance-audit-logger')}</th>
 										<th>{__('File Size', 'tbsh-compliance-audit-logger')}</th>
-										<th style={{ textAlign: 'right' }}>{__('Actions', 'tbsh-compliance-audit-logger')}</th>
+<th style={ { textAlign: 'end' } }>{ __( 'Actions', 'tbsh-compliance-audit-logger' ) }</th>
 									</tr>
 								</thead>
 								<tbody>
@@ -244,30 +255,42 @@ export default function ExportCenter() {
 
 										return (
 											<tr key={idx}>
-												<td>{item.created_at}</td>
+<td>{ formatSiteTime( item.created_at ) }</td>
 												<td>
 													<span className={`tbsh-badge tbsh-badge-${item.format === 'csv' ? 'success' : 'info'}`}>
 														{item.format}
 													</span>
 												</td>
 												<td><code>{sizeStr}</code></td>
-												<td style={{ textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
-													<a 
-														href={getDownloadUrl(item.filename)} 
-														className="tbsh-btn tbsh-btn-secondary"
-														style={{ padding: '4px 8px', fontSize: '12px' }}
+												<td style={ { textAlign: 'end' } }>
+													<div className="tbsh-row" style={ { justifyContent: 'flex-end', flexWrap: 'nowrap' } }>
+													<a
+														href={ getDownloadUrl( item.filename ) }
+														className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
+														aria-label={ sprintf(
+															/* translators: 1: file format, 2: creation date */
+															__( 'Download %1$s export from %2$s', 'tbsh-compliance-audit-logger' ),
+															String( item.format ).toUpperCase(),
+															formatSiteTime( item.created_at )
+														) }
 													>
 														<Icon name="download" />
 														{__('Download', 'tbsh-compliance-audit-logger')}
 													</a>
 													<button
 														type="button"
-														className="tbsh-btn tbsh-btn-secondary"
-														style={{ padding: '4px 8px', fontSize: '12px' }}
-														onClick={() => createShareLink(item.filename)}
+														className="tbsh-btn tbsh-btn-secondary tbsh-btn-sm"
+														onClick={ () => createShareLink( item.filename ) }
+														aria-label={ sprintf(
+															/* translators: 1: file format, 2: creation date */
+															__( 'Create share link for %1$s export from %2$s', 'tbsh-compliance-audit-logger' ),
+															String( item.format ).toUpperCase(),
+															formatSiteTime( item.created_at )
+														) }
 													>
-														{__('Share Link', 'tbsh-compliance-audit-logger')}
+														{ __( 'Share link', 'tbsh-compliance-audit-logger' ) }
 													</button>
+													</div>
 												</td>
 											</tr>
 										);
@@ -275,7 +298,7 @@ export default function ExportCenter() {
 								</tbody>
 							</table>
 						) : (
-							<EmptyState title={__('No Available Exports', 'tbsh-compliance-audit-logger')} description={__('Use the parameters on the left to compile an audit report.', 'tbsh-compliance-audit-logger')} icon="info" />
+<EmptyState title={ __( 'No exports yet', 'tbsh-compliance-audit-logger' ) } description={ __( 'Choose filters and select "Create export". Files are kept for 2 hours.', 'tbsh-compliance-audit-logger' ) } icon="info" />
 						)}
 					</div>
 				</div>

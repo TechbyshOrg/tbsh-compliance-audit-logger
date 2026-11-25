@@ -58,7 +58,7 @@ function FileList( { title, files, count } ) {
 	return (
 		<div style={ { marginTop: '8px' } }>
 			<strong style={ { fontSize: '13px' } }>{ title } ({ count })</strong>
-			<ul style={ { margin: '4px 0 0', paddingLeft: '18px', fontSize: '12px', fontFamily: 'monospace', wordBreak: 'break-all' } }>
+			<ul style={ { margin: '4px 0 0', paddingInlineStart: '18px', fontSize: '12px', fontFamily: 'monospace', wordBreak: 'break-all' } }>
 				{ files.map( ( f ) => <li key={ f }>{ f }</li> ) }
 				{ count > files.length && (
 					<li>

@@ -230,6 +230,10 @@ Back up your database first. Once this version is active, the separate edition i
 * New: Real-time SIEM forwarding (HTTPS JSON, Splunk HEC, syslog over TLS/TCP) with retries and failure alerts.
 * New: Weekly or monthly compliance digest email with a signed executive report attached.
 * New: AI agent attribution. Each entry records whether a person, an AI agent, an integration or an automated task made it, through which channel and with which application password or ability; WordPress ability runs (6.9+), refusals and failures (7.1+) are logged. Activity Logs and exports can be filtered by who made the change.
+* Improved: Accessibility and usability across the admin: dialogs keep keyboard focus, status messages are announced, focus is always visible, text and form fields meet WCAG 2.2 AA contrast in light and dark mode, and every filter is labelled.
+* Improved: Every page shows its title and purpose, the menu collapses on small screens, wide tables scroll instead of being cut off, and dark mode follows your system setting until you choose.
+* Improved: The Dashboard shows what needs attention (critical events today, open incidents, file changes, unverified log) and every figure opens the matching filtered activity log.
+* Improved: Activity Logs shows times in your site's date format, lists active filters with one-click removal, and remembers your column choice; Settings shows an unsaved-changes bar with Save and Discard and links to each section.
 * Improved: Accepting the current files of a very large plugin or theme as its integrity baseline now runs in short steps with progress, so it no longer hits server time limits.
 * New: Setup assistant for new installs, logging exclusions for service accounts, roles and event types, and a public `tbsh_cal_log()` developer API.
 * Improved: The admin app now loads each screen on demand, making the first load much smaller.
