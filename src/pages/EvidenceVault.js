@@ -1073,9 +1073,14 @@ function VaultsPanel() {
 							{ __( 'Download the package from your storage, then decrypt it with the vault passphrase using either command:', 'tbsh-compliance-audit-logger' ) }
 						</p>
 						<pre style={ { margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' } }><code>wp tbsh-cal vault-decrypt &lt;file&gt;</code></pre>
-						<pre style={ { margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' } }><code>php tools/decrypt-vault.php &lt;file&gt;</code></pre>
+						<pre style={ { margin: 0, whiteSpace: 'pre-wrap', wordBreak: 'break-all' } }><code>php decrypt-vault.php &lt;file&gt;</code></pre>
 						<p className="tbsh-muted" style={ { margin: 0 } }>
-							{ __( 'The second command runs from the plugin folder and does not need WordPress, so it works even if this site is gone.', 'tbsh-compliance-audit-logger' ) }
+							{ __( 'The second command uses the standalone decryptor, which does not need WordPress, so it works even if this site is gone. It needs PHP with the sodium extension.', 'tbsh-compliance-audit-logger' ) }
+							{ ' ' }
+							<a href="https://github.com/TechbyshOrg/tbsh-compliance-audit-logger/tree/main/tools" target="_blank" rel="noopener noreferrer">
+								{ __( 'Download decrypt-vault.php from the plugin’s GitHub repository', 'tbsh-compliance-audit-logger' ) }
+								<span className="tbsh-sr-only">{ __( '(opens in a new tab)', 'tbsh-compliance-audit-logger' ) }</span>
+							</a>
 						</p>
 					</div>
 				</div>

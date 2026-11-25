@@ -142,7 +142,7 @@ class BehaviorBaseline {
 	 */
 	public static function all( $limit = 50 ) {
 		$users = get_users( array(
-			'meta_key' => self::META_KEY, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_query_meta_key
+			'meta_key' => self::META_KEY, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Small lookup of users with a stored baseline.
 			'number'   => $limit,
 			'fields'   => array( 'ID', 'user_login', 'display_name' ),
 		) );

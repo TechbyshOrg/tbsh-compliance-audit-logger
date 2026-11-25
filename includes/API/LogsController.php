@@ -129,7 +129,7 @@ class LogsController extends BaseController {
 		// Count, capped: an exact count of millions of rows costs seconds on every page.
 		$count = function ( array $where, array $args ) use ( $wpdb, $table_name ) {
 			$where_clause = implode( ' AND ', $where );
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- $where_clause holds only placeholders.
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- $where_clause holds only placeholders.
 			$sql = $wpdb->prepare( "SELECT COUNT(*) FROM ( SELECT 1 FROM %i WHERE $where_clause LIMIT %d ) AS capped", array_merge( array( $table_name ), $args, array( self::COUNT_CAP + 1 ) ) );
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQL.NotPrepared
 			return intval( $wpdb->get_var( $sql ) );

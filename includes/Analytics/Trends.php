@@ -40,7 +40,7 @@ class Trends {
 
 		$series = function ( $sql, ...$args ) use ( $wpdb, $zero ) {
 			$out = $zero;
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- The SQL strings are literals in this method; values go through $wpdb->prepare().
 			foreach ( (array) $wpdb->get_results( $wpdb->prepare( $sql, ...$args ) ) as $row ) {
 				if ( isset( $out[ $row->d ] ) ) {
 					$out[ $row->d ] = (int) $row->c;

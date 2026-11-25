@@ -738,7 +738,7 @@
             </tr>
             <tr>
               <td><code>/tools/decrypt-vault.php</code></td>
-              <td>Standalone vault package decryptor that runs without WordPress.</td>
+              <td>Standalone vault package decryptor that runs without WordPress. Kept in the GitHub repository only; it is not part of the WordPress.org package (the WP-CLI command <code>wp tbsh-cal vault-decrypt</code> is).</td>
             </tr>
             <tr>
               <td><code>/assets/</code></td>
@@ -1334,8 +1334,8 @@ this package (logs_after_id), the hash-chain head and the plugin version.</code>
         <pre><code># With WP-CLI (output defaults to &lt;file&gt;.jsonl.gz)
 wp tbsh-cal vault-decrypt evidence-example-com-20261123-020000.tbshvault --output=restore.jsonl.gz
 
-# Without WordPress (PHP 7.2+ with sodium)
-TBSH_CAL_VAULT_PASSPHRASE='your passphrase' php tools/decrypt-vault.php package.tbshvault restore.jsonl.gz
+# Without WordPress (PHP 7.2+ with sodium; decrypt-vault.php from the GitHub repository's tools folder)
+TBSH_CAL_VAULT_PASSPHRASE='your passphrase' php decrypt-vault.php package.tbshvault restore.jsonl.gz
 
 # Inspect
 gunzip -c restore.jsonl.gz | head</code></pre>

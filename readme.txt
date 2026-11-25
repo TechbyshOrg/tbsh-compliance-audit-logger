@@ -208,7 +208,7 @@ Yes. The Export Center creates CSV or JSON exports with filters for dates, categ
 Yes. In **Compliance Reports**, choose PDF, HTML, CSV or JSON. PDF files are created on your server without extra libraries. Every report is signed with SHA-256 and HMAC-SHA256 and can be verified later. PDFs show Latin (including Central and Eastern European), Greek, Cyrillic, Armenian, Georgian and Vietnamese text, using a bundled font only when a report needs it. For Arabic, Hebrew, Indic, Thai, Chinese, Japanese and Korean, choose HTML and use your browser's "Save as PDF".
 
 = How do encrypted off-site vaults work, and how do I restore one? =
-Add a vault (S3-compatible storage, FTPS, or another WordPress site running this plugin) and choose a passphrase. On its schedule, the plugin packs new log entries, the incident register and new evidence snapshots, encrypts them on your server (XChaCha20-Poly1305) and uploads them. Keep the passphrase safe: without it a package cannot be decrypted. To restore, run `wp tbsh-cal vault-decrypt <file>`, or `php tools/decrypt-vault.php <file>` on any computer with the PHP sodium extension.
+Add a vault (S3-compatible storage, FTPS, or another WordPress site running this plugin) and choose a passphrase. On its schedule, the plugin packs new log entries, the incident register and new evidence snapshots, encrypts them on your server (XChaCha20-Poly1305) and uploads them. Keep the passphrase safe: without it a package cannot be decrypted. To restore, run `wp tbsh-cal vault-decrypt <file>`, or use the standalone `decrypt-vault.php` from the plugin's GitHub repository (https://github.com/TechbyshOrg/tbsh-compliance-audit-logger/tree/main/tools), which runs on any computer with PHP and the sodium extension, without WordPress.
 
 = Is AI analysis on by default, and what is sent? =
 No, it is off by default. It works only after an administrator chooses a provider and API key (or a self-hosted endpoint), and only when someone clicks to analyse a specific incident. Only that incident's fields are sent. Log entries, IP hashes and user records are never sent.
@@ -270,7 +270,7 @@ New: incidents, governance and evidence
 * New: Executive dashboard and readiness engine with NIS2, DORA, ISO/IEC 27001:2022 and SOC 2 coverage.
 * New: Signed, verifiable compliance reports as PDF (generated on the server), print-ready HTML, CSV and JSON.
 * New: Weekly or monthly compliance digest email with a signed executive report attached.
-* New: Encrypted off-site evidence vaults (S3-compatible, FTP/FTPS, another WordPress site) with `wp tbsh-cal vault-decrypt` and a standalone decryptor.
+* New: Encrypted off-site evidence vaults (S3-compatible, FTP/FTPS, another WordPress site) with `wp tbsh-cal vault-decrypt` and a standalone decryptor (in the GitHub repository).
 * New: Expiring, revocable read-only auditor links.
 * New: Site Network: one overview of other sites running this plugin, connected with their read-only auditor links.
 * New: Unified data retention with log archiving and hash-chain re-anchoring.

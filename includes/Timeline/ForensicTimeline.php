@@ -59,7 +59,7 @@ class ForensicTimeline {
 				$try_args    = array_merge( $try_args, $search_args );
 			}
 			$where_clause = implode( ' AND ', $try_where );
-			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- The WHERE clause holds only placeholders built in this method; every value goes through $wpdb->prepare().
 			$found = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM ( SELECT 1 FROM %i WHERE $where_clause LIMIT 1 ) AS any_row", array_merge( array( $table_name ), $try_args ) ) );
 			$retry = 'fulltext' === $mode && 0 === $found;
 			$exact = true;
@@ -75,7 +75,7 @@ class ForensicTimeline {
 		$count_args = array_merge( array( $table_name ), $args );
 		// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared
 		$count_sql = $wpdb->prepare( $count_sql, $count_args );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- The WHERE clause holds only placeholders built in this method; every value goes through $wpdb->prepare().
 		$total = intval( $wpdb->get_var( $count_sql ) );
 
 		$sql = "SELECT id, created_at, event_uuid, event_type, event_category, severity, event_title, event_message, user_id, username, role, ip_hash, request_method, request_uri

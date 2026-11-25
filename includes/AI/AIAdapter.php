@@ -86,7 +86,7 @@ class AIAdapter {
 				$text = self::call_anthropic( $model, $prompt );
 				break;
 			case 'openai':
-				$text = self::call_openai_compatible( 'https://api.openai.com/v1/chat/completions', Secrets::get( 'ai_api_key' ), $model, $prompt );
+				$text = self::call_openai_compatible( 'https://api.openai.com/v1/chat/completions', Secrets::get( 'ai_api_key' ), $model, $prompt ); // phpcs:ignore PluginCheck.CodeAnalysis.AIProvider.DirectIntegration -- Opt-in incident analysis with the provider and key the administrator chooses; the plugin supports WordPress versions without the core AI client.
 				break;
 			case 'gemini':
 				$text = self::call_gemini( $model, $prompt );
@@ -184,7 +184,7 @@ class AIAdapter {
 			$body['fallbacks']         = 'default';
 		}
 
-		$data = self::post( 'https://api.anthropic.com/v1/messages', $headers, $body );
+		$data = self::post( 'https://api.anthropic.com/v1/messages', $headers, $body ); // phpcs:ignore PluginCheck.CodeAnalysis.AIProvider.DirectIntegration -- Opt-in incident analysis with the provider and key the administrator chooses; the plugin supports WordPress versions without the core AI client.
 		if ( is_wp_error( $data ) ) {
 			return $data;
 		}
@@ -238,7 +238,7 @@ class AIAdapter {
 	 * @return string|\WP_Error
 	 */
 	private static function call_gemini( $model, $prompt ) {
-		$url  = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode( $model ) . ':generateContent';
+		$url  = 'https://generativelanguage.googleapis.com/v1beta/models/' . rawurlencode( $model ) . ':generateContent'; // phpcs:ignore PluginCheck.CodeAnalysis.AIProvider.DirectIntegration -- Opt-in incident analysis with the provider and key the administrator chooses; the plugin supports WordPress versions without the core AI client.
 		$data = self::post(
 			$url,
 			array( 'x-goog-api-key' => Secrets::get( 'ai_api_key' ) ),

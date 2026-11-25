@@ -85,7 +85,7 @@ class LogSearch {
 
 		$sample = min( 5000, $rows );
 		$probe  = implode( ' AND ', array_merge( $where, array( $exact[0], 'id > %d' ) ) );
-		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- $probe holds only placeholders.
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, PluginCheck.Security.DirectDB.UnescapedDBParameter -- $probe holds only placeholders.
 		$hits = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE $probe", array_merge( array( $table ), $args, $exact[1], array( (int) $range->hi - $sample ) ) ) );
 
 		// Break-even measured on MySQL 8: index cost ~7 µs per match, substring

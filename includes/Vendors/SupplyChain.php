@@ -12,7 +12,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Software supply-chain inventory built from real site data: installed plugins and
  * themes with pending updates, vendor-register mapping, and configured outbound
- * integrations. Cached for 12 hours and flushed when the inventory changes.
+ * integrations. Cached for 12 hours, flushed when the inventory changes, and rebuilt
+ * when WordPress has fetched new update information (see update_fingerprint()).
  */
 class SupplyChain {
 
@@ -22,9 +23,32 @@ class SupplyChain {
 	 * Register cache invalidation hooks.
 	 */
 	public static function init() {
-		foreach ( array( 'upgrader_process_complete', 'activated_plugin', 'deactivated_plugin', 'deleted_plugin', 'switch_theme', 'set_site_transient_update_plugins', 'set_site_transient_update_themes' ) as $hook ) {
+		foreach ( array( 'upgrader_process_complete', 'activated_plugin', 'deactivated_plugin', 'deleted_plugin', 'switch_theme' ) as $hook ) {
 			add_action( $hook, array( __CLASS__, 'flush' ) );
 		}
+	}
+
+	/**
+	 * Fingerprint of the update information WordPress last fetched.
+	 *
+	 * Reads WordPress's own update data (it is never modified): when WordPress
+	 * finds new or different pending updates, the cached inventory is rebuilt.
+	 *
+	 * @return string
+	 */
+	private static function update_fingerprint() {
+		$parts = array();
+		foreach ( array( 'update_plugins', 'update_themes' ) as $type ) {
+			$data    = get_site_transient( $type );
+			$pending = array();
+			foreach ( (array) ( is_object( $data ) && isset( $data->response ) ? $data->response : array() ) as $key => $update ) {
+				$update          = (array) $update;
+				$pending[ $key ] = (string) ( $update['new_version'] ?? '' );
+			}
+			ksort( $pending );
+			$parts[] = ( is_object( $data ) && isset( $data->last_checked ) ? (int) $data->last_checked : 0 ) . ':' . wp_json_encode( $pending );
+		}
+		return md5( implode( '|', $parts ) );
 	}
 
 	/**
@@ -41,8 +65,9 @@ class SupplyChain {
 	 * @return array
 	 */
 	public static function inventory( $force = false ) {
-		$cached = $force ? false : get_transient( self::CACHE_KEY );
-		if ( is_array( $cached ) ) {
+		$fingerprint = self::update_fingerprint();
+		$cached      = $force ? false : get_transient( self::CACHE_KEY );
+		if ( is_array( $cached ) && ( $cached['fingerprint'] ?? '' ) === $fingerprint ) {
 			return $cached;
 		}
 
@@ -113,6 +138,7 @@ class SupplyChain {
 			'generated_at' => current_time( 'mysql' ),
 		);
 
+		$inventory['fingerprint'] = $fingerprint;
 		set_transient( self::CACHE_KEY, $inventory, 12 * HOUR_IN_SECONDS );
 		return $inventory;
 	}

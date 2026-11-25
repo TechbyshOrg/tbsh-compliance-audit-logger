@@ -29,7 +29,7 @@ class SessionManager {
 	 */
 	public static function supports_single_logout() {
 		/** This filter is documented in wp-includes/class-wp-session-tokens.php */
-		return 'WP_User_Meta_Session_Tokens' === apply_filters( 'session_token_manager', 'WP_User_Meta_Session_Tokens' );
+		return 'WP_User_Meta_Session_Tokens' === apply_filters( 'session_token_manager', 'WP_User_Meta_Session_Tokens' ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WordPress core filter.
 	}
 
 	/**

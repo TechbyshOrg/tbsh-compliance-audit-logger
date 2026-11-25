@@ -230,9 +230,14 @@ export default function Help() {
 					<ul style={listStyle}>
 						<li><code style={codeStyle}>wp tbsh-cal vault-decrypt &lt;file.tbshvault&gt;</code></li>
 						<li>
-							<code style={codeStyle}>php tools/decrypt-vault.php &lt;file.tbshvault&gt; [output.jsonl.gz]</code>
+							<code style={codeStyle}>php decrypt-vault.php &lt;file.tbshvault&gt; [output.jsonl.gz]</code>
 							{' '}
 							{__('(standalone, works without WordPress; requires the PHP sodium extension)', 'tbsh-compliance-audit-logger')}
+							{' '}
+							<a href="https://github.com/TechbyshOrg/tbsh-compliance-audit-logger/tree/main/tools" target="_blank" rel="noopener noreferrer">
+								{__('Get it from GitHub', 'tbsh-compliance-audit-logger')}
+								<span className="tbsh-sr-only">{__('(opens in a new tab)', 'tbsh-compliance-audit-logger')}</span>
+							</a>
 						</li>
 					</ul>
 				</GuideSection>

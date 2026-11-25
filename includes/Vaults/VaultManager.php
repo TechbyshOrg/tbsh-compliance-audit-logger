@@ -384,9 +384,9 @@ class VaultManager {
 			$where   .= ' AND vault_id = %d';
 			$params[] = absint( $args['vault_id'] );
 		}
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- The WHERE clause holds only placeholders built in this method; every value goes through $wpdb->prepare().
 		$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE $where", $params ) );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- The WHERE clause holds only placeholders built in this method; every value goes through $wpdb->prepare().
 		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i WHERE $where ORDER BY id DESC LIMIT %d OFFSET %d", array_merge( $params, array( $per_page, $offset ) ) ), ARRAY_A );
 		return Repository::paged( (array) $rows, $total, $per_page, $page );
 	}
@@ -405,7 +405,7 @@ class VaultManager {
 		$c = self::credentials( $row ) ?? array();
 		switch ( $row->vault_type ) {
 			case 's3_compatible':
-				return ! empty( $c['endpoint'] ) ? (string) wp_parse_url( $c['endpoint'], PHP_URL_HOST ) : 's3.' . ( ! empty( $c['region'] ) ? $c['region'] : 'us-east-1' ) . '.amazonaws.com';
+				return ! empty( $c['endpoint'] ) ? (string) wp_parse_url( $c['endpoint'], PHP_URL_HOST ) : 's3.' . ( ! empty( $c['region'] ) ? $c['region'] : 'us-east-1' ) . '.amazonaws.com'; // phpcs:ignore PluginCheck.CodeAnalysis.Offloading.OffloadedContent -- Default endpoint of the off-site evidence backup an administrator configures; no site assets are loaded from it.
 			case 'ftp':
 				return (string) ( $c['host'] ?? '' );
 			case 'remote_site':

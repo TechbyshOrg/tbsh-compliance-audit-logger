@@ -28,3 +28,6 @@ exports/
 
 # Exclude internal content planning notes
 SEO-CONTENT-PLAN.txt
+
+# Standalone CLI decryptor: published in the GitHub repository and release zip only
+tools/

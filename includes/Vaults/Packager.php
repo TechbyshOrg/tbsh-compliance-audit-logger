@@ -21,8 +21,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  *   | repeated: ciphertext length (uint32 big-endian) | ciphertext chunk
  * Key = PBKDF2-HMAC-SHA256(passphrase, salt, iterations, 32 bytes).
  * Chunks use libsodium crypto_secretstream_xchacha20poly1305; the last carries TAG_FINAL.
- * The format is documented in tools/decrypt-vault.php so backups can be restored
- * without WordPress.
+ * The format is also implemented by tools/decrypt-vault.php in the GitHub repository
+ * (not in the WordPress.org package), so backups can be restored without WordPress.
  */
 class Packager {
 

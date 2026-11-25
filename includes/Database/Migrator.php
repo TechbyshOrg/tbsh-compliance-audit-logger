@@ -157,7 +157,7 @@ class Migrator {
 			if ( in_array( 'id', $shared, true ) ) {
 				$cols = implode( ',', array_map( array( __CLASS__, 'quote_identifier' ), $shared ) );
 				// Identifiers are validated by quote_identifier(); table names via %i.
-				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Column names come from the tables themselves and are validated by quote_identifier(); tables use %i.
 				$copied = $wpdb->query( $wpdb->prepare( "INSERT IGNORE INTO %i ($cols) SELECT $cols FROM %i l WHERE NOT EXISTS (SELECT 1 FROM %i t WHERE t.id = l.id)", $target, $legacy, $target ) );
 				if ( false === $copied ) {
 					return false;

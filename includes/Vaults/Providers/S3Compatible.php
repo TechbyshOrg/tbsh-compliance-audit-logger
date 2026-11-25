@@ -33,7 +33,7 @@ class S3Compatible implements ProviderInterface {
 		$endpoint = rtrim( trim( (string) ( $config['endpoint'] ?? '' ) ), '/' );
 		$custom   = '' !== $endpoint;
 		if ( ! $custom ) {
-			$endpoint = 'https://s3.' . $region . '.amazonaws.com';
+			$endpoint = 'https://s3.' . $region . '.amazonaws.com'; // phpcs:ignore PluginCheck.CodeAnalysis.Offloading.OffloadedContent -- Default endpoint of the off-site evidence backup an administrator configures; no site assets are loaded from it.
 		}
 		if ( ! preg_match( '#^https?://#i', $endpoint ) ) {
 			$endpoint = 'https://' . $endpoint;

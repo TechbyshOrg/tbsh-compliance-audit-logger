@@ -199,11 +199,11 @@ class AlertManager {
 		}
 		$where_sql = implode( ' AND ', $where );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- The WHERE clause holds only placeholders built in this method; every value goes through $wpdb->prepare().
 		$total = (int) $wpdb->get_var( $wpdb->prepare( "SELECT COUNT(*) FROM %i WHERE $where_sql", $params ) );
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber -- The WHERE clause holds only placeholders built in this method; every value goes through $wpdb->prepare().
 		$rows = $wpdb->get_results( $wpdb->prepare(
-			"SELECT id, alert_type, channel, recipient_masked, severity, subject, status, response_message, attempts, next_attempt_at, sent_at, created_at FROM %i WHERE $where_sql ORDER BY id DESC LIMIT %d OFFSET %d",
+			"SELECT id, alert_type, channel, recipient_masked, severity, subject, status, response_message, attempts, next_attempt_at, sent_at, created_at FROM %i WHERE $where_sql ORDER BY id DESC LIMIT %d OFFSET %d", // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The WHERE clause holds only placeholders built in this method; every value goes through $wpdb->prepare().
 			array_merge( $params, array( $per_page, $offset ) )
 		), ARRAY_A );
 
