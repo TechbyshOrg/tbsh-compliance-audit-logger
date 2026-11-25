@@ -24,6 +24,11 @@ class AnomalyDetector {
 	const IGNORED_TYPES = array( 'behavior_anomaly', 'incident_created', 'incident_updated' );
 
 	/**
+	 * Routine actions scored only on timing and bursts, never as new or rare.
+	 */
+	const ROUTINE_TYPES = array( 'user_login', 'user_logout' );
+
+	/**
 	 * Guard against recursion.
 	 *
 	 * @var bool
@@ -121,6 +126,11 @@ class AnomalyDetector {
 		$counts = (array) ( $baseline['event_counts'] ?? array() );
 		$total  = max( 1, (int) ( $baseline['total'] ?? 1 ) );
 		$seen   = (int) ( $counts[ $type ] ?? 0 );
+		if ( in_array( $type, self::ROUTINE_TYPES, true ) ) {
+			// Everyone signs in and out; novelty is not a signal for these (and baselines
+			// built before sign-ins were attributed to the user do not contain them).
+			$seen = $total;
+		}
 		if ( 0 === $seen ) {
 			$score    += 40;
 			$reasons[] = __( 'action never performed by this user before', 'tbsh-compliance-audit-logger' );

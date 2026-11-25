@@ -233,16 +233,21 @@ Back up your database first. Once this version is active, the separate edition i
 
 == Screenshots ==
 
-1. Dashboard: see today's events, critical events and failed sign-ins at a glance, with the latest activity below.
-2. Activity Logs: search and filter every recorded change, with its SHA-256 chain signature.
-3. Forensic Timeline: follow administrative actions in time order to reconstruct an incident.
-4. Evidence Vault: capture snapshots of plugins, themes, capabilities and configuration as audit evidence.
-5. Integrity Center: verify that the audit log hash chain is unbroken and review past checks.
-6. Compliance Overview: see how your logging and controls map to NIS2, DORA, GDPR and ISO 27001.
-7. System Health: check that logging, scheduled tasks and storage are working correctly.
-8. Export Center: export filtered log entries as CSV or JSON for auditors or a SIEM.
-9. Settings: choose retention periods, IP masking and scheduled checks.
-10. Help & Reference: a guide to every feature and how each figure is calculated.
+1. Dashboard: today's events, errors and failed sign-ins, what needs attention, and the latest activity.
+2. Executive Dashboard: an overall compliance score and what drives it, with open incidents, risks, vendors and backups at a glance.
+3. Activity Logs: search and filter every change and sign-in by user, severity, category, date and who made it.
+4. Event details: the full record of one entry, with compliance tags and its SHA-256 tamper-evidence hashes.
+5. Forensic Timeline: reconstruct an incident in time order, here an Author account briefly given Administrator rights.
+6. Incident Center: security incidents from detection to closure, with NIS2 reporting deadlines.
+7. Incident details: status, owner, notes, timeline, linked evidence, NIS2 stages and optional AI analysis.
+8. Compliance Overview: readiness checks behind your NIS2, DORA, ISO/IEC 27001 and GDPR evidence.
+9. Risk Register: a 5×5 likelihood and impact heat map with owners, treatment plans and review dates.
+10. Vendor Governance: the site's software supply chain, with pending updates, inactive plugins and mapped vendors.
+11. Evidence Vault: encrypted off-site backups of the audit log and evidence, with their sync history.
+12. Integrity Center: verify the log hash chain, WordPress core checksums and plugin, theme and uploads files.
+13. Compliance Reports: generate signed PDF, HTML, CSV or JSON reports for auditors and verify them later.
+14. Behavioral Anomalies: activity that differs from each user's usual behaviour, with the reasons for each score.
+15. Settings: choose what is logged, how long it is kept, IP masking, alerts and scheduled integrity scans.
 
 == Changelog ==
 
@@ -303,6 +308,7 @@ Improved
 Fixed
 
 * Fixed: Off-site vault sync failed on servers without the PHP sodium extension; packages are now encrypted with WordPress's built-in sodium_compat as well, and stay compatible both ways.
+* Fixed: Sign-ins were recorded under "system" instead of the person who signed in, so they were missing from user filters, "Most active users" and behavioural baselines. Anomaly scoring rates sign-ins on timing and bursts only, never as a new or rare action.
 * Fixed: Score colours, status icons and the integrity check time now meet WCAG AA contrast; long hashes and URLs wrap instead of widening the page on small screens; tab rows wrap.
 
 Upgrade

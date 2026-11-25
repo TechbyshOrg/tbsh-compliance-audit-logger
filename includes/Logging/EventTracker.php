@@ -107,6 +107,10 @@ class EventTracker {
 			/* translators: %s: username */
 			sprintf( __( 'User "%s" logged in successfully.', 'tbsh-compliance-audit-logger' ), $user_login ),
 			array(
+				// The current user is not set yet when wp_login fires; attribute the entry explicitly.
+				'user_id'     => $user->ID,
+				'username'    => $user_login,
+				'role'        => ! empty( $user->roles ) ? (string) reset( $user->roles ) : 'none',
 				'object_type' => 'user',
 				'object_id'   => $user->ID,
 				'metadata'    => array(
