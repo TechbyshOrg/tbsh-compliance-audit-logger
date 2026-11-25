@@ -145,7 +145,7 @@ export default function BehavioralAnomaly() {
 					{ __( 'Every action by a logged-in user is compared with that user’s own baseline (built from their recent history). Users need at least 5 active days of history before they are scored. Points are added for:', 'tbsh-compliance-audit-logger' ) }
 				</p>
 				<ul style={ { margin: '0 0 12px 18px', listStyle: 'disc', fontSize: '13px' } }>
-					<li>{ __( '+25 — action outside the user’s usual working hours', 'tbsh-compliance-audit-logger' ) }</li>
+					<li>{ __( '+25 — action outside the user’s usual working hours (+60 for a sign-in, so an odd-hour sign-in is always logged)', 'tbsh-compliance-audit-logger' ) }</li>
 					<li>{ __( '+40 — an action the user has never performed before, or +20 if they perform it rarely (under 2% of their activity)', 'tbsh-compliance-audit-logger' ) }</li>
 					<li>{ __( '+25 — a burst of activity well above the user’s normal hourly rate', 'tbsh-compliance-audit-logger' ) }</li>
 				</ul>

@@ -189,7 +189,7 @@ export default function Help() {
 
 				<GuideSection icon="anomaly" title={__('Behavioural anomalies', 'tbsh-compliance-audit-logger')}>
 					<p style={textStyle}>
-						{__('When enabled in Settings, every action by a logged-in user is compared with that user’s baseline from the last 30 days. The score (0–100) adds points for an unusual hour (+25), an action never performed before (+40) or rarely performed (+20), and a burst above the normal hourly rate (+25). Scores of 60 or more are logged as anomalies and open an incident. Users need at least 5 days of history before they are scored.', 'tbsh-compliance-audit-logger')}
+						{__('When enabled in Settings, every action by a logged-in user is compared with that user’s baseline from the last 30 days. The score (0–100) adds points for an unusual hour (+25, or +60 for a sign-in), an action never performed before (+40) or rarely performed (+20), and a burst above the normal hourly rate (+25). Scores of 60 or more are logged as anomalies, so a sign-in at an unusual hour is always logged; scores of 85 or more also open an incident. Users need at least 5 days of history before they are scored.', 'tbsh-compliance-audit-logger')}
 					</p>
 				</GuideSection>
 

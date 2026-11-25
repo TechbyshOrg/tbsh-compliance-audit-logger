@@ -14,8 +14,9 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Scores each authenticated user action against that user's baseline and logs a
  * `behavior_anomaly` event when the score reaches the threshold.
  *
- * Score components (max 100): unusual hour (+25), never-performed action (+40) or
- * rarely performed action (+20), burst above normal hourly rate (+25).
+ * Score components (max 100): unusual hour (+25; +60 for a sign-in, so an odd-hour
+ * sign-in alone reaches the threshold), never-performed action (+40) or rarely
+ * performed action (+20), burst above normal hourly rate (+25).
  */
 class AnomalyDetector {
 
@@ -118,9 +119,15 @@ class AnomalyDetector {
 
 		$hour = (int) substr( (string) $datetime, 11, 2 );
 		if ( ! in_array( $hour, (array) ( $baseline['usual_hours'] ?? array() ), true ) ) {
-			$score    += 25;
-			/* translators: %02d: hour */
-			$reasons[] = sprintf( __( 'outside usual hours (%02d:00)', 'tbsh-compliance-audit-logger' ), $hour );
+			if ( 'user_login' === $type ) {
+				$score    += self::THRESHOLD;
+				/* translators: %02d: hour */
+				$reasons[] = sprintf( __( 'sign-in outside usual hours (%02d:00)', 'tbsh-compliance-audit-logger' ), $hour );
+			} else {
+				$score    += 25;
+				/* translators: %02d: hour */
+				$reasons[] = sprintf( __( 'outside usual hours (%02d:00)', 'tbsh-compliance-audit-logger' ), $hour );
+			}
 		}
 
 		$counts = (array) ( $baseline['event_counts'] ?? array() );

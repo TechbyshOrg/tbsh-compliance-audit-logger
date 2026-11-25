@@ -308,7 +308,7 @@ Improved
 Fixed
 
 * Fixed: Off-site vault sync failed on servers without the PHP sodium extension; packages are now encrypted with WordPress's built-in sodium_compat as well, and stay compatible both ways.
-* Fixed: Sign-ins were recorded under "system" instead of the person who signed in, so they were missing from user filters, "Most active users" and behavioural baselines. Anomaly scoring rates sign-ins on timing and bursts only, never as a new or rare action.
+* Fixed: Sign-ins were recorded under "system" instead of the person who signed in, so they were missing from user filters, "Most active users" and behavioural baselines. Anomaly detection now logs a sign-in at an unusual hour for that user (sign-ins are scored on timing and bursts, never as a new or rare action).
 * Fixed: Score colours, status icons and the integrity check time now meet WCAG AA contrast; long hashes and URLs wrap instead of widening the page on small screens; tab rows wrap.
 
 Upgrade

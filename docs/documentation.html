@@ -1233,7 +1233,7 @@ $integrity_hash = hash('sha256', $canonical_string);</code></pre>
       <h3>Advanced Analytics</h3>
       <p>Event trends over 7 to 90 days (default 30).</p>
       <h3>Behavioural Anomaly Detection (opt-in)</h3>
-      <p>When <code>anomaly_detection</code> is enabled, the plugin builds a 30-day baseline per user (usual hours, action mix, daily and hourly rates), refreshed daily. Each authenticated action is scored: unusual hour (+25), never-performed action (+40) or rarely performed action (+20), and a burst above the normal hourly rate (+25). Scores of 60 or more are logged as <code>behavior_anomaly</code> events; scores of 85 or more also open an incident. Users need at least 5 active days of history before they are scored. Baselines can be rebuilt on demand.</p>
+      <p>When <code>anomaly_detection</code> is enabled, the plugin builds a 30-day baseline per user (usual hours, action mix, daily and hourly rates), refreshed daily. Each authenticated action is scored: unusual hour (+25, or +60 for a sign-in, so an odd-hour sign-in alone is logged), never-performed action (+40) or rarely performed action (+20), and a burst above the normal hourly rate (+25). Scores of 60 or more are logged as <code>behavior_anomaly</code> events; scores of 85 or more also open an incident. Users need at least 5 active days of history before they are scored. Baselines can be rebuilt on demand.</p>
     </section>
 
     <!-- Section: Reports -->
