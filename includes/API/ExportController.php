@@ -121,6 +121,7 @@ class ExportController extends BaseController {
 			'severity'   => sanitize_text_field( $request->get_param( 'severity' ) ),
 			'user_id'    => intval( $request->get_param( 'user_id' ) ),
 			'search'     => sanitize_text_field( $request->get_param( 'search' ) ),
+			'actor'      => sanitize_key( (string) $request->get_param( 'actor' ) ),
 		);
 
 		$format = sanitize_key( $request->get_param( 'format' ) ?: 'csv' );

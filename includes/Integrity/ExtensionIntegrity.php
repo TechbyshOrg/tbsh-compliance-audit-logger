@@ -32,6 +32,7 @@ class ExtensionIntegrity {
 	const RESULT_OPTION = 'tbsh_cal_file_integrity_result';
 	const CRON_HOOK     = 'tbsh_cal_file_integrity';
 	const LOCK          = 'tbsh_cal_file_integrity_lock';
+	const ACCEPT_LOCK   = 'tbsh_cal_file_accept_lock';
 
 	/**
 	 * Files listed and hashed per component at most.
@@ -616,20 +617,22 @@ class ExtensionIntegrity {
 	/**
 	 * Job file path.
 	 *
+	 * @param string $name scan-job (scans) or accept-job (baseline acceptance).
 	 * @return string|false
 	 */
-	private static function job_path() {
+	private static function job_path( $name = 'scan-job' ) {
 		$dir = Storage::dir( 'integrity' );
-		return $dir ? $dir . 'scan-job.json' : false;
+		return $dir ? $dir . $name . '.json' : false;
 	}
 
 	/**
 	 * Load the in-progress job.
 	 *
+	 * @param string $name Job name.
 	 * @return array|null
 	 */
-	private static function load_job() {
-		$file = self::job_path();
+	private static function load_job( $name = 'scan-job' ) {
+		$file = self::job_path( $name );
 		if ( ! $file || ! is_readable( $file ) ) {
 			return null;
 		}
@@ -640,10 +643,11 @@ class ExtensionIntegrity {
 	/**
 	 * Save the in-progress job.
 	 *
-	 * @param array $job Job.
+	 * @param array  $job  Job.
+	 * @param string $name Job name.
 	 */
-	private static function save_job( array $job ) {
-		$file = self::job_path();
+	private static function save_job( array $job, $name = 'scan-job' ) {
+		$file = self::job_path( $name );
 		if ( $file ) {
 			file_put_contents( $file, wp_json_encode( $job ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_file_put_contents
 		}
@@ -651,9 +655,11 @@ class ExtensionIntegrity {
 
 	/**
 	 * Delete the in-progress job.
+	 *
+	 * @param string $name Job name.
 	 */
-	private static function clear_job() {
-		$file = self::job_path();
+	private static function clear_job( $name = 'scan-job' ) {
+		$file = self::job_path( $name );
 		if ( $file && is_file( $file ) ) {
 			wp_delete_file( $file );
 		}
@@ -854,13 +860,16 @@ class ExtensionIntegrity {
 	/**
 	 * Accept the current files of a component as its new baseline (after an intentional change).
 	 *
-	 * Runs synchronously for one component; the time limit is raised where the host allows it.
+	 * Works in steps like a scan: each call lists and hashes files for up to $budget seconds and
+	 * saves its progress, so very large plugins never hit the host's time limit. Call again with
+	 * the same component until `done` is true. Starting another component discards unfinished work.
 	 *
-	 * @param string $type plugin|theme|mu-plugins.
-	 * @param string $id   Component ID.
-	 * @return true|\WP_Error
+	 * @param string $type   plugin|theme|mu-plugins.
+	 * @param string $id     Component ID.
+	 * @param float  $budget Seconds of work for this call.
+	 * @return array|\WP_Error { done: bool, busy?: bool, phase: string, files: int, hashed: int }.
 	 */
-	public static function accept( $type, $id ) {
+	public static function accept( $type, $id, $budget = 15 ) {
 		if ( ! in_array( $type, array( 'plugin', 'theme', 'mu-plugins' ), true ) ) {
 			return new \WP_Error( 'tbsh_cal_invalid', __( 'Only plugins, themes and must-use plugins have a baseline.', 'tbsh-compliance-audit-logger' ), array( 'status' => 400 ) );
 		}
@@ -868,32 +877,56 @@ class ExtensionIntegrity {
 		if ( null === $desc ) {
 			return new \WP_Error( 'tbsh_cal_not_found', __( 'Component not found.', 'tbsh-compliance-audit-logger' ), array( 'status' => 404 ) );
 		}
-		$limit = (int) ini_get( 'max_execution_time' );
-		if ( $limit > 0 && $limit < 300 && function_exists( 'set_time_limit' ) ) {
-			@set_time_limit( 300 ); // phpcs:ignore WordPress.PHP.NoSilencedErrors.Discouraged -- Not allowed on every host; only ever raises the limit.
+		$desc['path'] = rtrim( wp_normalize_path( $desc['path'] ), '/' );
+		if ( '' === $desc['path'] || ( $desc['single'] ? ! is_readable( $desc['path'] ) : ! is_dir( $desc['path'] ) ) ) {
+			return new \WP_Error( 'tbsh_cal_unreadable', __( 'The files could not be read.', 'tbsh-compliance-audit-logger' ), array( 'status' => 500 ) );
 		}
 
-		$desc['path'] = rtrim( wp_normalize_path( $desc['path'] ), '/' );
-		$job          = array(
-			'desc'    => $desc,
-			'stack'   => $desc['single'] ? array() : array( '' ),
-			'files'   => $desc['single'] ? array( basename( $desc['path'] ) ) : array(),
-			'visited' => 0,
-			'capped'  => false,
-			'index'   => 0,
-			'hashes'  => array(),
-		);
-		$forever = PHP_INT_MAX;
-		self::list_step( $job, $forever );
-		$job['targets'] = $job['files'];
-		self::hash_step( $job, $forever );
+		if ( get_transient( self::ACCEPT_LOCK ) ) {
+			// Another request is working on it; the caller waits and asks again.
+			return array( 'done' => false, 'busy' => true, 'phase' => 'wait', 'files' => 0, 'hashed' => 0 );
+		}
+		set_transient( self::ACCEPT_LOCK, 1, 2 * MINUTE_IN_SECONDS );
+
+		$key = $desc['type'] . ':' . $desc['id'];
+		$job = self::load_job( 'accept-job' );
+		if ( ! $job || ( $job['key'] ?? '' ) !== $key || (string) ( $job['desc']['version'] ?? '' ) !== (string) $desc['version'] ) {
+			unset( $desc['checksums'] );
+			$job = array(
+				'key'     => $key,
+				'desc'    => $desc,
+				'phase'   => 'list',
+				'stack'   => $desc['single'] ? array() : array( '' ),
+				'files'   => $desc['single'] ? array( basename( $desc['path'] ) ) : array(),
+				'visited' => 0,
+				'capped'  => false,
+				'index'   => 0,
+				'hashes'  => array(),
+			);
+		}
+		$desc     = $job['desc'];
+		$deadline = microtime( true ) + max( 0.05, (float) $budget );
+
+		if ( 'list' === $job['phase'] ) {
+			if ( ! self::list_step( $job, $deadline ) ) {
+				return self::accept_pause( $job );
+			}
+			$job['phase']   = 'hash';
+			$job['targets'] = $job['files'];
+		}
+		if ( ! self::hash_step( $job, $deadline ) ) {
+			return self::accept_pause( $job );
+		}
+
 		$files = array_filter( $job['hashes'], function ( $hash ) {
 			return 'missing' !== $hash;
 		} );
-
 		if ( ! self::write_baseline( $desc['type'], $desc['id'], $desc['version'], $files ) ) {
+			delete_transient( self::ACCEPT_LOCK );
 			return new \WP_Error( 'tbsh_cal_storage', __( 'The baseline could not be written.', 'tbsh-compliance-audit-logger' ), array( 'status' => 500 ) );
 		}
+		self::clear_job( 'accept-job' );
+		delete_transient( self::ACCEPT_LOCK );
 
 		Logger::log(
 			'file_baseline_accepted',
@@ -911,7 +944,24 @@ class ExtensionIntegrity {
 		);
 
 		self::mark_accepted( $desc['type'], $desc['id'], count( $files ) );
-		return true;
+		return array( 'done' => true, 'phase' => 'done', 'files' => count( $files ), 'hashed' => count( $files ) );
+	}
+
+	/**
+	 * Save an unfinished acceptance and report its progress.
+	 *
+	 * @param array $job Job.
+	 * @return array
+	 */
+	private static function accept_pause( array $job ) {
+		self::save_job( $job, 'accept-job' );
+		delete_transient( self::ACCEPT_LOCK );
+		return array(
+			'done'   => false,
+			'phase'  => $job['phase'],
+			'files'  => count( $job['files'] ),
+			'hashed' => (int) $job['index'],
+		);
 	}
 
 	/**

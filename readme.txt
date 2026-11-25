@@ -229,7 +229,8 @@ Back up your database first. Once this version is active, the separate edition i
 * New: Active Sessions screen to end a login session or sign a user out everywhere (new capability `tbsh_cal_manage_sessions`).
 * New: Real-time SIEM forwarding (HTTPS JSON, Splunk HEC, syslog over TLS/TCP) with retries and failure alerts.
 * New: Weekly or monthly compliance digest email with a signed executive report attached.
-* New: AI agent attribution. Each entry records whether a person, an AI agent, an integration or an automated task made it, through which channel and with which application password or ability; WordPress ability runs (6.9+), refusals and failures (7.1+) are logged.
+* New: AI agent attribution. Each entry records whether a person, an AI agent, an integration or an automated task made it, through which channel and with which application password or ability; WordPress ability runs (6.9+), refusals and failures (7.1+) are logged. Activity Logs and exports can be filtered by who made the change.
+* Improved: Accepting the current files of a very large plugin or theme as its integrity baseline now runs in short steps with progress, so it no longer hits server time limits.
 * New: Setup assistant for new installs, logging exclusions for service accounts, roles and event types, and a public `tbsh_cal_log()` developer API.
 * Improved: The admin app now loads each screen on demand, making the first load much smaller.
 * New: Wider activity coverage: theme and plugin file editor edits (with before/after file hashes), roles and capabilities granted outside the role dropdown, Super Admin changes, edits to published content, menus, widgets, theme customisations, Customizer and Site Editor changes, comment moderation, category and tag changes, privacy requests, content exports and multisite network changes.

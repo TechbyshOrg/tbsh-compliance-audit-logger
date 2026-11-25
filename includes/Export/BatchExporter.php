@@ -1,6 +1,8 @@
 <?php
 namespace TBSHComplianceAuditLogger\Export;
 
+use TBSHComplianceAuditLogger\Logging\Origin;
+
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
@@ -28,7 +30,7 @@ class BatchExporter {
 	/**
 	 * Run the exporter and generate the file.
 	 *
-	 * @param array  $filters Filter options (date_start, date_end, category, severity, user_id).
+	 * @param array  $filters Filter options (date_start, date_end, category, severity, user_id, search, actor).
 	 * @param string $format  Format (csv or json).
 	 * @return string|bool Filename of the generated export, or false on error.
 	 */
@@ -66,6 +68,12 @@ class BatchExporter {
 			$args[]  = $like;
 			$args[]  = $like;
 			$args[]  = $like;
+		}
+
+		$actor_like = Origin::actor_like( $filters['actor'] ?? '' );
+		if ( '' !== $actor_like ) {
+			$where[] = 'metadata_json LIKE %s';
+			$args[]  = $actor_like;
 		}
 
 		$where_clause = implode( ' AND ', $where );
@@ -110,7 +118,10 @@ class BatchExporter {
 				'Compliance Tags',
 				'Integrity Hash',
 				'Previous Hash',
-			) );
+				'Made By',
+				'Via',
+				'Ability',
+			), ',', '"', '\\' );
 		} elseif ( 'json' === $format ) {
 			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite
 			fwrite( $file_handle, "[\n" );
@@ -145,6 +156,8 @@ class BatchExporter {
 				}
 
 				if ( 'csv' === $format ) {
+					$meta = json_decode( (string) ( $log->metadata_json ?? '' ), true );
+					$meta = is_array( $meta ) ? $meta : array();
 					fputcsv( $file_handle, array(
 						$log->id,
 						$log->event_uuid,
@@ -167,7 +180,10 @@ class BatchExporter {
 						$log->compliance_tags,
 						$log->integrity_hash,
 						$log->previous_hash,
-					) );
+						(string) ( $meta['_actor'] ?? '' ),
+						(string) ( $meta['_via'] ?? '' ),
+						(string) ( $meta['_ability'] ?? '' ),
+					), ',', '"', '\\' );
 				} elseif ( 'json' === $format ) {
 					if ( ! $first_row ) {
 						// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite

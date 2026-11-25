@@ -201,6 +201,21 @@ class Origin {
 	}
 
 	/**
+	 * LIKE pattern matching entries made by an actor (attribution lives in metadata_json).
+	 *
+	 * @param string $actor Actor value.
+	 * @return string Pattern for `metadata_json LIKE %s`, or '' for an unknown actor.
+	 */
+	public static function actor_like( $actor ) {
+		global $wpdb;
+		$actor = (string) $actor;
+		if ( ! in_array( $actor, self::ACTORS, true ) ) {
+			return '';
+		}
+		return '%' . $wpdb->esc_like( '"_actor":"' . $actor . '"' ) . '%';
+	}
+
+	/**
 	 * Origin of the current request, ready to merge into an entry's metadata.
 	 *
 	 * @return array Keys prefixed with an underscore.

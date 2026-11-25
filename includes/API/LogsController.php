@@ -100,10 +100,11 @@ class LogsController extends BaseController {
 			$args[]  = $event_type;
 		}
 
-		if ( in_array( $actor, \TBSHComplianceAuditLogger\Logging\Origin::ACTORS, true ) ) {
+		$actor_like = \TBSHComplianceAuditLogger\Logging\Origin::actor_like( $actor );
+		if ( '' !== $actor_like ) {
 			// Attribution is stored in the hashed metadata (see Logging\Origin).
 			$where[] = 'metadata_json LIKE %s';
-			$args[]  = '%' . $wpdb->esc_like( '"_actor":"' . $actor . '"' ) . '%';
+			$args[]  = $actor_like;
 		}
 
 		if ( $user_id > 0 ) {

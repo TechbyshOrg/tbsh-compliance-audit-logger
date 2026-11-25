@@ -82,6 +82,7 @@ export default function FileIntegrityPanel() {
 	const [ filter, setFilter ] = useState( 'attention' );
 	const [ acceptTarget, setAcceptTarget ] = useState( null );
 	const [ accepting, setAccepting ] = useState( false );
+	const [ acceptProgress, setAcceptProgress ] = useState( null );
 	const alive = useRef( true );
 
 	const canScan = can( 'verify_integrity' ) && ! isAuditor();
@@ -125,18 +126,63 @@ export default function FileIntegrityPanel() {
 			.finally( () => alive.current && setScanning( false ) );
 	};
 
+	// Large plugins are hashed over several requests; keep asking until the baseline is written.
+	const acceptStep = ( target ) =>
+		post( '/file-integrity/baseline', { type: target.type, id: target.id } ).then( ( data ) => {
+			if ( ! alive.current ) {
+				return null;
+			}
+			const progress = data.accept || {};
+			if ( progress.done ) {
+				return data;
+			}
+			setAcceptProgress( progress );
+			const delay = progress.busy ? 3000 : 0;
+			return new Promise( ( resolve ) => setTimeout( resolve, delay ) ).then( () => acceptStep( target ) );
+		} );
+
 	const confirmAccept = () => {
 		setAccepting( true );
-		post( '/file-integrity/baseline', { type: acceptTarget.type, id: acceptTarget.id } )
+		setAcceptProgress( null );
+		acceptStep( acceptTarget )
 			.then( ( data ) => {
-				setStatus( data );
-				setNotice( { type: 'success', message: data.message } );
+				if ( data && alive.current ) {
+					setStatus( data );
+					setNotice( { type: 'success', message: data.message } );
+				}
 			} )
-			.catch( ( err ) => setNotice( { type: 'error', message: ( err && err.message ) || __( 'The baseline could not be updated.', 'tbsh-compliance-audit-logger' ) } ) )
+			.catch( ( err ) => alive.current && setNotice( { type: 'error', message: ( err && err.message ) || __( 'The baseline could not be updated.', 'tbsh-compliance-audit-logger' ) } ) )
 			.finally( () => {
-				setAccepting( false );
-				setAcceptTarget( null );
+				if ( alive.current ) {
+					setAccepting( false );
+					setAcceptProgress( null );
+					setAcceptTarget( null );
+				}
 			} );
+	};
+
+	/**
+	 * Button label while a baseline is being recorded.
+	 *
+	 * @return {string} Label.
+	 */
+	const acceptingLabel = () => {
+		if ( acceptProgress && 'hash' === acceptProgress.phase && acceptProgress.files ) {
+			return sprintf(
+				/* translators: 1: files processed, 2: total files */
+				__( 'Saving… %1$s of %2$s files', 'tbsh-compliance-audit-logger' ),
+				acceptProgress.hashed.toLocaleString(),
+				acceptProgress.files.toLocaleString()
+			);
+		}
+		if ( acceptProgress && 'list' === acceptProgress.phase ) {
+			return sprintf(
+				/* translators: %s: files found so far */
+				__( 'Saving… listing files (%s)', 'tbsh-compliance-audit-logger' ),
+				acceptProgress.files.toLocaleString()
+			);
+		}
+		return __( 'Saving…', 'tbsh-compliance-audit-logger' );
 	};
 
 	const result = status && status.result;
@@ -294,7 +340,7 @@ export default function FileIntegrityPanel() {
 								{ __( 'Cancel', 'tbsh-compliance-audit-logger' ) }
 							</button>
 							<button type="button" className="tbsh-btn tbsh-btn-primary" onClick={ confirmAccept } disabled={ accepting }>
-								{ accepting ? __( 'Saving…', 'tbsh-compliance-audit-logger' ) : __( 'Accept files', 'tbsh-compliance-audit-logger' ) }
+								{ accepting ? acceptingLabel() : __( 'Accept files', 'tbsh-compliance-audit-logger' ) }
 							</button>
 						</div>
 					</div>

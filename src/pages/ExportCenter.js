@@ -5,6 +5,7 @@ import SkeletonLoader from '../components/SkeletonLoader';
 import EmptyState from '../components/EmptyState';
 import Notice from '../components/Notice';
 import Icon from '../components/Icon';
+import { actorLabels } from '../components/origin';
 
 export default function ExportCenter() {
 	const [exportsList, setExportsList] = useState([]);
@@ -22,6 +23,7 @@ export default function ExportCenter() {
 	const [dateEnd, setDateEnd] = useState('');
 	const [search, setSearch] = useState('');
 	const [userId, setUserId] = useState('');
+	const [actor, setActor] = useState('');
 
 	const fetchExports = () => {
 		setLoading(true);
@@ -57,7 +59,8 @@ export default function ExportCenter() {
 				date_start: dateStart,
 				date_end: dateEnd,
 				search,
-				user_id: userId
+				user_id: userId,
+				actor
 			}
 		})
 		.then((res) => {
@@ -149,6 +152,25 @@ export default function ExportCenter() {
 								{categories.map((cat, i) => (
 									<option key={i} value={cat}>{cat}</option>
 								))}
+							</select>
+						</div>
+
+						<div className="tbsh-form-group">
+							<label className="tbsh-form-label" htmlFor="tbsh-export-actor">
+								{ __( 'Made By', 'tbsh-compliance-audit-logger' ) }
+							</label>
+							<select
+								id="tbsh-export-actor"
+								className="tbsh-form-control"
+								value={ actor }
+								onChange={ ( e ) => setActor( e.target.value ) }
+							>
+								<option value="">{ __( 'Anyone', 'tbsh-compliance-audit-logger' ) }</option>
+								{ Object.entries( actorLabels() ).map( ( [ value, label ] ) => (
+									<option key={ value } value={ value }>
+										{ label }
+									</option>
+								) ) }
 							</select>
 						</div>
 

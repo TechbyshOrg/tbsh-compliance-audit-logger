@@ -71,7 +71,8 @@ class FileIntegrityController extends BaseController {
 	}
 
 	/**
-	 * Accept current files as a component's baseline.
+	 * Accept current files as a component's baseline: one step of about 15 seconds.
+	 * Call again while `accept.done` is false.
 	 *
 	 * @param \WP_REST_Request $request Request.
 	 * @return \WP_REST_Response|\WP_Error
@@ -81,8 +82,11 @@ class FileIntegrityController extends BaseController {
 		if ( is_wp_error( $result ) ) {
 			return $result;
 		}
-		$status            = ExtensionIntegrity::status();
-		$status['message'] = __( 'Baseline updated. Future scans compare against the current files.', 'tbsh-compliance-audit-logger' );
+		$status           = ExtensionIntegrity::status();
+		$status['accept'] = $result;
+		if ( $result['done'] ) {
+			$status['message'] = __( 'Baseline updated. Future scans compare against the current files.', 'tbsh-compliance-audit-logger' );
+		}
 		return $this->success( $status );
 	}
 }

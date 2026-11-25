@@ -12,6 +12,7 @@ use TBSHComplianceAuditLogger\Integrity\ChainVerifier;
 use TBSHComplianceAuditLogger\Integrity\CoreChecksum;
 use TBSHComplianceAuditLogger\Integrity\ExtensionIntegrity;
 use TBSHComplianceAuditLogger\Logging\Logger;
+use TBSHComplianceAuditLogger\Logging\Origin;
 use TBSHComplianceAuditLogger\Risk\RiskRegister;
 use TBSHComplianceAuditLogger\Vendors\VendorRegister;
 
@@ -273,7 +274,7 @@ class ComplianceDigest {
 			$logs,
 			$since,
 			$until,
-			'%' . $wpdb->esc_like( '"_actor":"agent"' ) . '%'
+			Origin::actor_like( 'agent' )
 		) );
 
 		$incidents = Schema::table( 'incidents' );
