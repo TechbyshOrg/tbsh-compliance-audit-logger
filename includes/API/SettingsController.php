@@ -32,6 +32,7 @@ class SettingsController extends BaseController {
 		'log_comment_events',
 		'log_taxonomy_events',
 		'log_woocommerce_events',
+		'log_ability_events',
 		'auto_core_checksum',
 		'auto_file_integrity',
 		'digest_attach_report',
@@ -102,6 +103,7 @@ class SettingsController extends BaseController {
 			'log_comment_events'          => true,
 			'log_taxonomy_events'         => true,
 			'log_woocommerce_events'      => true,
+			'log_ability_events'          => true,
 			'auto_core_checksum'          => false,
 			'auto_file_integrity'         => false,
 			// Exclusions (never applied to error/critical or protected events).

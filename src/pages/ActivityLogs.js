@@ -6,6 +6,49 @@ import EmptyState from '../components/EmptyState';
 import Modal from '../components/Modal';
 import Icon from '../components/Icon';
 
+/**
+ * Labels for who or what made a change (see Logging\Origin).
+ *
+ * @return {Object} Actor => label.
+ */
+const actorLabels = () => ( {
+	person: __( 'Person', 'tbsh-compliance-audit-logger' ),
+	agent: __( 'AI agent', 'tbsh-compliance-audit-logger' ),
+	integration: __( 'Integration', 'tbsh-compliance-audit-logger' ),
+	automation: __( 'Automation', 'tbsh-compliance-audit-logger' ),
+	visitor: __( 'Visitor', 'tbsh-compliance-audit-logger' ),
+} );
+
+/**
+ * Labels for the channel a change came through.
+ *
+ * @return {Object} Channel => label.
+ */
+const viaLabels = () => ( {
+	web: __( 'Browser', 'tbsh-compliance-audit-logger' ),
+	ajax: __( 'Browser (AJAX)', 'tbsh-compliance-audit-logger' ),
+	rest: __( 'REST API', 'tbsh-compliance-audit-logger' ),
+	mcp: __( 'MCP', 'tbsh-compliance-audit-logger' ),
+	xmlrpc: __( 'XML-RPC', 'tbsh-compliance-audit-logger' ),
+	cron: __( 'Scheduled task', 'tbsh-compliance-audit-logger' ),
+	cli: __( 'WP-CLI', 'tbsh-compliance-audit-logger' ),
+} );
+
+/**
+ * Short "AI agent · MCP" description of an entry's origin, or an empty string.
+ *
+ * @param {Object} metadata Entry metadata.
+ * @return {string} Description.
+ */
+const originText = ( metadata ) => {
+	if ( ! metadata || ! metadata._actor ) {
+		return '';
+	}
+	const actor = actorLabels()[ metadata._actor ] || metadata._actor;
+	const via = metadata._via ? viaLabels()[ metadata._via ] || metadata._via : '';
+	return via ? `${ actor } · ${ via }` : actor;
+};
+
 export default function ActivityLogs() {
 	const [logs, setLogs] = useState([]);
 	const [totalItems, setTotalItems] = useState(0);
@@ -19,6 +62,7 @@ export default function ActivityLogs() {
 	const [search, setSearch] = useState('');
 	const [severity, setSeverity] = useState('');
 	const [category, setCategory] = useState('');
+	const [actorFilter, setActorFilter] = useState('');
 	const [dateStart, setDateStart] = useState('');
 	const [dateEnd, setDateEnd] = useState('');
 
@@ -49,6 +93,9 @@ export default function ActivityLogs() {
 		if ( search ) queryPath += `&search=${encodeURIComponent(search)}`;
 		if ( severity ) queryPath += `&severity=${severity}`;
 		if ( category ) queryPath += `&category=${encodeURIComponent(category)}`;
+		if ( actorFilter ) {
+			queryPath += `&actor=${ actorFilter }`;
+		}
 		if ( dateStart ) queryPath += `&date_start=${dateStart}`;
 		if ( dateEnd ) queryPath += `&date_end=${dateEnd}`;
 
@@ -69,7 +116,7 @@ export default function ActivityLogs() {
 
 	useEffect(() => {
 		fetchLogs();
-	}, [page, perPage, orderby, order, severity, category, dateStart, dateEnd]);
+	}, [page, perPage, orderby, order, severity, category, actorFilter, dateStart, dateEnd]);
 
 	const handleSearchSubmit = (e) => {
 		e.preventDefault();
@@ -81,6 +128,7 @@ export default function ActivityLogs() {
 		setSearch('');
 		setSeverity('');
 		setCategory('');
+		setActorFilter('');
 		setDateStart('');
 		setDateEnd('');
 		setPage(1);
@@ -157,6 +205,23 @@ export default function ActivityLogs() {
 					{categories.map((cat, i) => (
 						<option key={i} value={cat}>{cat}</option>
 					))}
+				</select>
+
+				<select
+					className="tbsh-filter-input"
+					value={ actorFilter }
+					aria-label={ __( 'Made by', 'tbsh-compliance-audit-logger' ) }
+					onChange={ ( e ) => {
+						setActorFilter( e.target.value );
+						setPage( 1 );
+					} }
+				>
+					<option value="">{ __( 'Made by anyone', 'tbsh-compliance-audit-logger' ) }</option>
+					{ Object.entries( actorLabels() ).map( ( [ value, label ] ) => (
+						<option key={ value } value={ value }>
+							{ label }
+						</option>
+					) ) }
 				</select>
 
 				<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -252,6 +317,15 @@ export default function ActivityLogs() {
 											<td>
 												<strong>{log.username}</strong>
 												<span style={{ display: 'block', fontSize: '11px', color: 'var(--tbsh-text-muted)' }}>{log.role}</span>
+												{ log.metadata && 'agent' === log.metadata._actor && (
+													<span
+														className="tbsh-badge tbsh-badge-warning"
+														style={ { marginTop: '4px', display: 'inline-block' } }
+														title={ originText( log.metadata ) }
+													>
+														{ __( 'AI agent', 'tbsh-compliance-audit-logger' ) }
+													</span>
+												) }
 											</td>
 										)}
 										{visibleColumns.title && <td>{log.event_title}</td>}
@@ -372,6 +446,24 @@ export default function ActivityLogs() {
 							<div>
 								<strong>{__('Site ID:', 'tbsh-compliance-audit-logger')}</strong> {selectedLog.site_id}
 							</div>
+							{ originText( selectedLog.metadata ) && (
+								<div>
+									<strong>{ __( 'Made by:', 'tbsh-compliance-audit-logger' ) }</strong>{ ' ' }
+									{ originText( selectedLog.metadata ) }
+								</div>
+							) }
+							{ selectedLog.metadata?._ability && (
+								<div>
+									<strong>{ __( 'Ability:', 'tbsh-compliance-audit-logger' ) }</strong>{ ' ' }
+									<code>{ selectedLog.metadata._ability }</code>
+								</div>
+							) }
+							{ selectedLog.metadata?._app_password && (
+								<div>
+									<strong>{ __( 'Application password:', 'tbsh-compliance-audit-logger' ) }</strong>{ ' ' }
+									{ selectedLog.metadata._app_password }
+								</div>
+							) }
 						</div>
 
 						<div style={{ marginTop: '8px' }}>

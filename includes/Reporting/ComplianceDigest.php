@@ -266,6 +266,16 @@ class ComplianceDigest {
 			$until
 		) );
 
+		// Entries attributed to AI agents (see Logging\Origin).
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$by_agents = (int) $wpdb->get_var( $wpdb->prepare(
+			'SELECT COUNT(*) FROM %i WHERE created_at >= %s AND created_at <= %s AND metadata_json LIKE %s',
+			$logs,
+			$since,
+			$until,
+			'%' . $wpdb->esc_like( '"_actor":"agent"' ) . '%'
+		) );
+
 		$incidents = Schema::table( 'incidents' );
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$opened = (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i WHERE COALESCE(detected_at, created_at) >= %s', $incidents, $since ) );
@@ -309,6 +319,7 @@ class ComplianceDigest {
 			'events'    => array(
 				'total'       => array_sum( $by_severity ),
 				'by_severity' => $by_severity,
+				'by_agents'   => $by_agents,
 				'important'   => (array) $important,
 			),
 			'incidents' => array(
@@ -397,6 +408,14 @@ class ComplianceDigest {
 			<?php endforeach; ?>
 		</tr>
 	</table>
+	<?php if ( ! empty( $d['events']['by_agents'] ) ) : ?>
+		<p style="margin:8px 0 0;font-size:14px;">
+			<?php
+			/* translators: %s: number of entries */
+			echo esc_html( sprintf( _n( '%s entry was made by AI agents.', '%s entries were made by AI agents.', (int) $d['events']['by_agents'], 'tbsh-compliance-audit-logger' ), number_format_i18n( (int) $d['events']['by_agents'] ) ) );
+			?>
+		</p>
+	<?php endif; ?>
 
 	<?php if ( $d['events']['important'] ) : ?>
 		<h2 style="<?php echo esc_attr( $h2 ); ?>"><?php echo esc_html__( 'Errors and critical events', 'tbsh-compliance-audit-logger' ); ?></h2>

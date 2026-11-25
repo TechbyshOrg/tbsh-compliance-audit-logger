@@ -151,7 +151,14 @@ class Logger {
 		// Extra args.
 		$object_type     = isset( $args['object_type'] ) ? sanitize_text_field( $args['object_type'] ) : '';
 		$object_id       = isset( $args['object_id'] ) ? sanitize_text_field( $args['object_id'] ) : '';
-		$metadata_json   = isset( $args['metadata'] ) ? wp_json_encode( $args['metadata'] ) : '{}';
+		$metadata        = isset( $args['metadata'] ) ? $args['metadata'] : array();
+		if ( is_object( $metadata ) ) {
+			$metadata = get_object_vars( $metadata );
+		} elseif ( ! is_array( $metadata ) ) {
+			$metadata = array( 'value' => $metadata );
+		}
+		// Attribution (actor, channel, application password, ability); overrides caller-supplied keys.
+		$metadata_json   = wp_json_encode( array_merge( $metadata, Origin::current() ) );
 		$compliance_tags = isset( $args['compliance_tags'] ) ? sanitize_text_field( $args['compliance_tags'] ) : $event_category;
 
 		// Add to queue.

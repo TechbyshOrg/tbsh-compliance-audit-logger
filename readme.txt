@@ -41,6 +41,7 @@ Designed to assist compliance officers, developers, and security teams in meetin
 *   **WooCommerce Audit Trail:** Order status changes and edits by staff, refunds, deleted orders, product price, stock and download changes, coupons and store settings, without logging customer data.
 *   **Active Sessions:** See who is signed in on which device and end a session or sign a user out everywhere during an incident.
 *   **Logging Exclusions:** Silence routine activity from service accounts, roles or event types; security-relevant events and errors are always kept.
+*   **AI Agent Attribution:** Every entry records who or what made the change (a person, an AI agent, an integration, an automated task or a visitor) and how it arrived (browser, REST API, MCP, XML-RPC, cron or WP-CLI), including the application password and the WordPress ability used. Ability runs by AI agents and MCP servers are logged, with refused and failed attempts. Filter the log by "Made by".
 *   **Developer API:** Add your own events to the tamper-evident log with `tbsh_cal_log()` or `do_action( 'tbsh_cal_log', ... )`.
 *   **Evidence Vault:** Capture point-in-time snapshots of themes, plugins, capabilities and system configuration, manually or daily/weekly.
 *   **GDPR Privacy Masking:** Anonymize client IP addresses and user agents using local cryptographic salts, with WordPress personal data exporter and eraser support.
@@ -177,6 +178,9 @@ Yes. Administrators receive every capability by default: `tbsh_cal_view_logs`, `
 = Can I add my own events to the audit log? =
 Yes. After `plugins_loaded`, call `tbsh_cal_log( 'invoice_approved', array( 'title' => 'Invoice approved', 'message' => 'Invoice 1042 approved by finance.', 'severity' => 'notice', 'object_type' => 'invoice', 'object_id' => 1042 ) )` or `do_action( 'tbsh_cal_log', 'invoice_approved', array( ... ) )`. Entries are hash-chained like every other event. Event types used by the detection rules are reserved, and a request can add at most 200 entries.
 
+= Can I tell changes made by AI agents from changes made by people? =
+Yes. Every entry records who made it: a person, an AI agent, an integration (an application password without an ability), an automated task (cron or WP-CLI) or a visitor, plus the channel and the application password or WordPress ability involved. A request counts as an AI agent when it arrives through an MCP server route or runs an ability with an application password. Filter Activity Logs by "Made by", and see the count in the compliance digest. Abilities that change the site are logged as their own entries (read-only abilities are skipped, and only input field names are kept, never values). Plugins that run their own AI assistant can mark their changes with the `tbsh_cal_request_origin` filter.
+
 = How do I forward logs to my SIEM? =
 In Settings → SIEM & Log Forwarding, choose an HTTPS JSON endpoint, Splunk HTTP Event Collector or syslog over TLS/TCP, enter the destination and save, then click "Send test event". New entries are sent within minutes, in order, with their chain hashes; if the destination is down they are retried automatically and an alert is raised after an hour.
 
@@ -225,6 +229,7 @@ Back up your database first. Once this version is active, the separate edition i
 * New: Active Sessions screen to end a login session or sign a user out everywhere (new capability `tbsh_cal_manage_sessions`).
 * New: Real-time SIEM forwarding (HTTPS JSON, Splunk HEC, syslog over TLS/TCP) with retries and failure alerts.
 * New: Weekly or monthly compliance digest email with a signed executive report attached.
+* New: AI agent attribution. Each entry records whether a person, an AI agent, an integration or an automated task made it, through which channel and with which application password or ability; WordPress ability runs (6.9+), refusals and failures (7.1+) are logged.
 * New: Setup assistant for new installs, logging exclusions for service accounts, roles and event types, and a public `tbsh_cal_log()` developer API.
 * Improved: The admin app now loads each screen on demand, making the first load much smaller.
 * New: Wider activity coverage: theme and plugin file editor edits (with before/after file hashes), roles and capabilities granted outside the role dropdown, Super Admin changes, edits to published content, menus, widgets, theme customisations, Customizer and Site Editor changes, comment moderation, category and tag changes, privacy requests, content exports and multisite network changes.

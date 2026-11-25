@@ -59,7 +59,7 @@ class PublicApi {
 	public static function reserved_types() {
 		return array_merge(
 			array_keys( \TBSHComplianceAuditLogger\Incidents\IncidentDetector::rules() ),
-			array( 'incident_created', 'file_integrity_check', 'siem_forward_failed', 'compliance_digest_sent' )
+			array( 'incident_created', 'file_integrity_check', 'siem_forward_failed', 'compliance_digest_sent', 'ability_executed', 'ability_failed', 'ability_denied' )
 		);
 	}
 

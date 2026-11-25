@@ -75,6 +75,10 @@ class EventTracker {
 		Trackers\SiteStructureTracker::init();
 		Trackers\ContentTracker::init();
 		Trackers\WooCommerceTracker::init();
+
+		// Attribution: who or what made each change (people, AI agents, integrations).
+		Origin::init();
+		Trackers\AbilityTracker::init();
 	}
 
 	/**

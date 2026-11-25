@@ -321,7 +321,8 @@ class SiemForwarder {
 	 * @return array
 	 */
 	private static function event( $row ) {
-		$time = date_create( $row->created_at, wp_timezone() );
+		$time     = date_create( $row->created_at, wp_timezone() );
+		$metadata = Repository::json( $row->metadata_json );
 		return array(
 			'id'          => (int) $row->id,
 			'uuid'        => $row->event_uuid,
@@ -347,8 +348,13 @@ class SiemForwarder {
 				'method' => $row->request_method,
 				'uri'    => $row->request_uri,
 			),
+			'origin'      => array(
+				'actor'   => (string) ( $metadata['_actor'] ?? '' ),
+				'via'     => (string) ( $metadata['_via'] ?? '' ),
+				'ability' => (string) ( $metadata['_ability'] ?? '' ),
+			),
 			'tags'        => $row->compliance_tags,
-			'metadata'    => Repository::json( $row->metadata_json ),
+			'metadata'    => $metadata,
 			'integrity'   => array(
 				'hash'          => $row->integrity_hash,
 				'previous_hash' => $row->previous_hash,

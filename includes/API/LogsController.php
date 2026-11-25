@@ -54,6 +54,7 @@ class LogsController extends BaseController {
 		$severity  = sanitize_text_field( $request->get_param( 'severity' ) );
 		$category  = sanitize_text_field( $request->get_param( 'category' ) );
 		$event_type= sanitize_text_field( $request->get_param( 'event_type' ) );
+		$actor     = sanitize_key( (string) $request->get_param( 'actor' ) );
 		$user_id   = intval( $request->get_param( 'user_id' ) );
 		$site_id   = intval( $request->get_param( 'site_id' ) );
 		$date_start= sanitize_text_field( $request->get_param( 'date_start' ) );
@@ -97,6 +98,12 @@ class LogsController extends BaseController {
 		if ( ! empty( $event_type ) ) {
 			$where[] = 'event_type = %s';
 			$args[]  = $event_type;
+		}
+
+		if ( in_array( $actor, \TBSHComplianceAuditLogger\Logging\Origin::ACTORS, true ) ) {
+			// Attribution is stored in the hashed metadata (see Logging\Origin).
+			$where[] = 'metadata_json LIKE %s';
+			$args[]  = '%' . $wpdb->esc_like( '"_actor":"' . $actor . '"' ) . '%';
 		}
 
 		if ( $user_id > 0 ) {

@@ -596,6 +596,15 @@ export default function Settings() {
 							/>
 						) }
 
+						<Toggle
+							id="tbsh-log-abilities"
+							label={ __( 'Log AI Agent and Ability Actions', 'tbsh-compliance-audit-logger' ) }
+							checked={ settings.log_ability_events !== false }
+							disabled={ disabled }
+							onChange={ ( v ) => handleChange( 'log_ability_events', v ) }
+							description={ __( 'Abilities run by AI agents, MCP servers or the editor (WordPress 6.9+), plus failed and refused attempts (WordPress 7.1+). Read-only abilities are skipped and only input field names are kept, never values. Every entry still records who made it: a person, an AI agent, an integration or an automated task.', 'tbsh-compliance-audit-logger' ) }
+						/>
+
 						<p style={ helpStyle }>
 							{ __( 'Always logged, regardless of these switches: theme and plugin file editor changes, role and capability grants, Super Admin changes, privacy requests, content exports and, on multisite, network site and setting changes.', 'tbsh-compliance-audit-logger' ) }
 						</p>
