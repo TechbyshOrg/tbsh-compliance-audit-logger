@@ -226,7 +226,7 @@ class DrillRegister {
 
 		$title = Repository::line( $get( 'title', '' ) );
 		if ( '' === $title ) {
-			return new \WP_Error( 'tbsh_cal_invalid', __( 'A drill title is required.', 'tbsh-compliance-audit-logger' ) );
+			return new \WP_Error( 'tbsh_cal_invalid', __( 'A drill title is required.', 'tbsh-compliance-audit-logger' ), array( 'status' => 400 ) );
 		}
 		$status       = Repository::enum( $get( 'status', 'planned' ), self::STATUSES, 'planned' );
 		$completed_at = Repository::datetime_or_null( $get( 'completed_at', null ) );

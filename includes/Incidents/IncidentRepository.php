@@ -103,7 +103,7 @@ class IncidentRepository {
 
 		$title = Repository::line( $data['event_title'] ?? ( $data['title'] ?? '' ) );
 		if ( '' === $title ) {
-			return new \WP_Error( 'tbsh_cal_invalid', __( 'An incident title is required.', 'tbsh-compliance-audit-logger' ) );
+			return new \WP_Error( 'tbsh_cal_invalid', __( 'An incident title is required.', 'tbsh-compliance-audit-logger' ), array( 'status' => 400 ) );
 		}
 
 		$now      = Time::now();
@@ -370,7 +370,7 @@ class IncidentRepository {
 			return new \WP_Error( 'tbsh_cal_not_found', __( 'Incident not found.', 'tbsh-compliance-audit-logger' ), array( 'status' => 404 ) );
 		}
 		if ( '' === trim( $content ) ) {
-			return new \WP_Error( 'tbsh_cal_invalid', __( 'The note is empty.', 'tbsh-compliance-audit-logger' ) );
+			return new \WP_Error( 'tbsh_cal_invalid', __( 'The note is empty.', 'tbsh-compliance-audit-logger' ), array( 'status' => 400 ) );
 		}
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$wpdb->insert(

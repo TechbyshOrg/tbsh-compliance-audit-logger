@@ -131,7 +131,7 @@ class VaultManager {
 
 		$type = $row ? $row->vault_type : (string) ( $data['vault_type'] ?? '' );
 		if ( ! isset( self::FIELDS[ $type ] ) ) {
-			return new \WP_Error( 'tbsh_cal_invalid', __( 'Choose a supported storage provider.', 'tbsh-compliance-audit-logger' ) );
+			return new \WP_Error( 'tbsh_cal_invalid', __( 'Choose a supported storage provider.', 'tbsh-compliance-audit-logger' ), array( 'status' => 400 ) );
 		}
 
 		$creds  = $row ? ( self::credentials( $row ) ?? array() ) : array();
@@ -191,11 +191,11 @@ class VaultManager {
 			foreach ( self::FIELDS[ $type ] as $field => list( $secret, $required ) ) {
 				if ( $required && '' === (string) ( $creds[ $field ] ?? '' ) ) {
 					/* translators: %s: field name */
-					return new \WP_Error( 'tbsh_cal_invalid', sprintf( __( 'The field "%s" is required to activate this vault.', 'tbsh-compliance-audit-logger' ), ucwords( str_replace( '_', ' ', $field ) ) ) );
+					return new \WP_Error( 'tbsh_cal_invalid', sprintf( __( 'The field "%s" is required to activate this vault.', 'tbsh-compliance-audit-logger' ), ucwords( str_replace( '_', ' ', $field ) ) ), array( 'status' => 400 ) );
 				}
 			}
 			if ( 'remote_site' === $type && 0 !== strpos( (string) ( $creds['url'] ?? '' ), 'https://' ) ) {
-				return new \WP_Error( 'tbsh_cal_invalid', __( 'The receiver URL must use https.', 'tbsh-compliance-audit-logger' ) );
+				return new \WP_Error( 'tbsh_cal_invalid', __( 'The receiver URL must use https.', 'tbsh-compliance-audit-logger' ), array( 'status' => 400 ) );
 			}
 		}
 
@@ -434,7 +434,7 @@ class VaultManager {
 	private static function provider( $row ) {
 		$creds = self::credentials( $row );
 		if ( null === $creds ) {
-			return new \WP_Error( 'tbsh_cal_vault_creds', __( 'Stored credentials could not be decrypted (the site encryption key may have changed). Re-enter them.', 'tbsh-compliance-audit-logger' ) );
+			return new \WP_Error( 'tbsh_cal_vault_creds', __( 'Stored credentials could not be decrypted (the site encryption key may have changed). Re-enter them.', 'tbsh-compliance-audit-logger' ), array( 'status' => 400 ) );
 		}
 		switch ( $row->vault_type ) {
 			case 's3_compatible':
@@ -444,7 +444,7 @@ class VaultManager {
 			case 'remote_site':
 				return new RemoteSite( $creds );
 		}
-		return new \WP_Error( 'tbsh_cal_vault_type', __( 'This storage provider is no longer supported. Configure an S3-compatible, FTP/FTPS or remote-site vault instead.', 'tbsh-compliance-audit-logger' ) );
+		return new \WP_Error( 'tbsh_cal_vault_type', __( 'This storage provider is no longer supported. Configure an S3-compatible, FTP/FTPS or remote-site vault instead.', 'tbsh-compliance-audit-logger' ), array( 'status' => 400 ) );
 	}
 
 	/**

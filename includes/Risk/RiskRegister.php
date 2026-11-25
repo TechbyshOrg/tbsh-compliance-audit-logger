@@ -221,7 +221,7 @@ class RiskRegister {
 
 		$title = Repository::line( $get( 'title', '' ) );
 		if ( '' === $title ) {
-			return new \WP_Error( 'tbsh_cal_invalid', __( 'A risk title is required.', 'tbsh-compliance-audit-logger' ) );
+			return new \WP_Error( 'tbsh_cal_invalid', __( 'A risk title is required.', 'tbsh-compliance-audit-logger' ), array( 'status' => 400 ) );
 		}
 		$likelihood = Repository::clamp( $get( 'likelihood', 3 ), 1, 5 );
 		$impact     = Repository::clamp( $get( 'impact', 3 ), 1, 5 );

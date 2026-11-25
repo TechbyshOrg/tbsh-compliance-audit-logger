@@ -212,7 +212,7 @@ class Nis2Tracker {
 			return new \WP_Error( 'tbsh_cal_not_found', __( 'Incident not found.', 'tbsh-compliance-audit-logger' ), array( 'status' => 404 ) );
 		}
 		if ( ! isset( self::STAGES[ $stage ] ) ) {
-			return new \WP_Error( 'tbsh_cal_invalid', __( 'Unknown NIS2 reporting stage.', 'tbsh-compliance-audit-logger' ) );
+			return new \WP_Error( 'tbsh_cal_invalid', __( 'Unknown NIS2 reporting stage.', 'tbsh-compliance-audit-logger' ), array( 'status' => 400 ) );
 		}
 
 		$nis2 = $incident['nis2'];

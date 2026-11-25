@@ -61,13 +61,13 @@ class ReportGenerator {
 		$type   = Repository::enum( $args['type'] ?? '', self::TYPES, '' );
 		$format = Repository::enum( $args['format'] ?? 'html', self::FORMATS, 'html' );
 		if ( '' === $type ) {
-			return new \WP_Error( 'tbsh_cal_invalid', __( 'Unknown report type.', 'tbsh-compliance-audit-logger' ) );
+			return new \WP_Error( 'tbsh_cal_invalid', __( 'Unknown report type.', 'tbsh-compliance-audit-logger' ), array( 'status' => 400 ) );
 		}
 
 		$end   = Repository::date_or_null( $args['end_date'] ?? '' ) ?? wp_date( 'Y-m-d' );
 		$start = Repository::date_or_null( $args['start_date'] ?? '' ) ?? Time::date_days_ago( 30 );
 		if ( $start > $end ) {
-			return new \WP_Error( 'tbsh_cal_invalid', __( 'The start date must be before the end date.', 'tbsh-compliance-audit-logger' ) );
+			return new \WP_Error( 'tbsh_cal_invalid', __( 'The start date must be before the end date.', 'tbsh-compliance-audit-logger' ), array( 'status' => 400 ) );
 		}
 
 		$data = self::build( $type, array(
@@ -333,7 +333,7 @@ class ReportGenerator {
 		switch ( $type ) {
 			case 'nis2':
 				if ( ! $p['incident_id'] ) {
-					return new \WP_Error( 'tbsh_cal_invalid', __( 'Choose the incident to report.', 'tbsh-compliance-audit-logger' ) );
+					return new \WP_Error( 'tbsh_cal_invalid', __( 'Choose the incident to report.', 'tbsh-compliance-audit-logger' ), array( 'status' => 400 ) );
 				}
 				$package = Nis2Tracker::package( $p['incident_id'], $p['stage'] );
 				if ( is_wp_error( $package ) ) {

@@ -245,7 +245,7 @@ class VendorRegister {
 
 		$name = Repository::line( $get( 'name', '' ) );
 		if ( '' === $name ) {
-			return new \WP_Error( 'tbsh_cal_invalid', __( 'A vendor name is required.', 'tbsh-compliance-audit-logger' ) );
+			return new \WP_Error( 'tbsh_cal_invalid', __( 'A vendor name is required.', 'tbsh-compliance-audit-logger' ), array( 'status' => 400 ) );
 		}
 		$service = Repository::line( $get( 'service_type', 'SaaS Integration' ), 100 );
 
