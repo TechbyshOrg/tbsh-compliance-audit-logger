@@ -41,6 +41,7 @@ jobs:
             --exclude='.wordpress-org' \
             --exclude='scratch' \
             --exclude='docs' \
+            --exclude='SEO-CONTENT-PLAN.txt' \
             --exclude='composer.json' \
             --exclude='composer.lock' \
             --exclude='package.json' \

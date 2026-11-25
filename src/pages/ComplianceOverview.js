@@ -176,7 +176,7 @@ export default function ComplianceOverview() {
 							{__('Access Control & Identity', 'tbsh-compliance-audit-logger')}
 						</h4>
 						<p style={{ fontSize: '12px', color: 'var(--tbsh-text-muted)', margin: '0 0 12px 0' }}>
-							{__('ISO 27001 Annex A.9 / SOC 2 CC6.1 - User registrations, creations, profile alterations.', 'tbsh-compliance-audit-logger')}
+							{__('ISO 27001:2022 A.5.16 / SOC 2 CC6.1 - New users, deleted users and profile changes.', 'tbsh-compliance-audit-logger')}
 						</p>
 						<span style={{ fontSize: '24px', fontWeight: '700', color: 'var(--tbsh-primary)' }}>{cats.access_control}</span>
 					</div>
@@ -186,7 +186,7 @@ export default function ComplianceOverview() {
 							{__('Authentication Events', 'tbsh-compliance-audit-logger')}
 						</h4>
 						<p style={{ fontSize: '12px', color: 'var(--tbsh-text-muted)', margin: '0 0 12px 0' }}>
-							{__('ISO 27001 Annex A.9.4.2 - Logins, logouts, passwords changes, failed credentials attempts.', 'tbsh-compliance-audit-logger')}
+							{__('ISO 27001:2022 A.8.5 - Sign-ins, sign-outs, password changes and failed sign-in attempts.', 'tbsh-compliance-audit-logger')}
 						</p>
 						<span style={{ fontSize: '24px', fontWeight: '700', color: 'var(--tbsh-primary)' }}>{cats.authentication}</span>
 					</div>
@@ -196,7 +196,7 @@ export default function ComplianceOverview() {
 							{__('Authorization Modifications', 'tbsh-compliance-audit-logger')}
 						</h4>
 						<p style={{ fontSize: '12px', color: 'var(--tbsh-text-muted)', margin: '0 0 12px 0' }}>
-							{__('ISO 27001 Annex A.9.2 - User role changes, capability modifications, escalation alerts.', 'tbsh-compliance-audit-logger')}
+							{__('ISO 27001:2022 A.5.18 / A.8.2 - Role changes, capability changes and privilege escalation alerts.', 'tbsh-compliance-audit-logger')}
 						</p>
 						<span style={{ fontSize: '24px', fontWeight: '700', color: 'var(--tbsh-primary)' }}>{cats.authorization}</span>
 					</div>
@@ -206,7 +206,7 @@ export default function ComplianceOverview() {
 							{__('Change & Config Management', 'tbsh-compliance-audit-logger')}
 						</h4>
 						<p style={{ fontSize: '12px', color: 'var(--tbsh-text-muted)', margin: '0 0 12px 0' }}>
-							{__('ISO 27001 Annex A.12.1.2 / SOC 2 CC8.1 - Theme activations, plugin upgrades, systems updates.', 'tbsh-compliance-audit-logger')}
+							{__('ISO 27001:2022 A.8.32 / SOC 2 CC8.1 - Theme activations, plugin updates and system updates.', 'tbsh-compliance-audit-logger')}
 						</p>
 						<span style={{ fontSize: '24px', fontWeight: '700', color: 'var(--tbsh-primary)' }}>{cats.changes}</span>
 					</div>
@@ -216,7 +216,7 @@ export default function ComplianceOverview() {
 							{__('Security & Incident Monitor', 'tbsh-compliance-audit-logger')}
 						</h4>
 						<p style={{ fontSize: '12px', color: 'var(--tbsh-text-muted)', margin: '0 0 12px 0' }}>
-							{__('ISO 27001 Annex A.16 / DORA Article 17 - Excessive failed logins, blockchain integrity anomalies.', 'tbsh-compliance-audit-logger')}
+							{__('ISO 27001:2022 A.5.24–A.5.28 / DORA Article 17 - Repeated failed sign-ins and audit-log integrity problems.', 'tbsh-compliance-audit-logger')}
 						</p>
 						<span style={{ fontSize: '24px', fontWeight: '700', color: 'var(--tbsh-primary)' }}>{cats.security}</span>
 					</div>

@@ -10,7 +10,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 /**
- * Compliance Audit Trail & Evidence Logger maintenance commands.
+ * Compliance Audit Log maintenance commands.
  */
 class Command {
 

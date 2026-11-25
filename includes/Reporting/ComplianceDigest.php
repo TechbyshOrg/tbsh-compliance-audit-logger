@@ -480,7 +480,7 @@ class ComplianceDigest {
 	<?php endif; ?>
 
 	<p style="margin-top:24px;"><a href="<?php echo $link; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Escaped above. ?>" style="display:inline-block;background:#1d4ed8;color:#ffffff;text-decoration:none;padding:10px 16px;border-radius:6px;font-size:14px;"><?php echo esc_html__( 'Open the executive dashboard', 'tbsh-compliance-audit-logger' ); ?></a></p>
-	<p style="color:#64748b;font-size:12px;margin-top:24px;"><?php echo esc_html__( 'Sent by Compliance Audit Trail & Evidence Logger. Change the frequency or recipients under Settings → Compliance Digest.', 'tbsh-compliance-audit-logger' ); ?></p>
+	<p style="color:#64748b;font-size:12px;margin-top:24px;"><?php echo esc_html__( 'Sent by Compliance Audit Log. Change the frequency or recipients under Settings → Compliance Digest.', 'tbsh-compliance-audit-logger' ); ?></p>
 </div>
 </body>
 </html>

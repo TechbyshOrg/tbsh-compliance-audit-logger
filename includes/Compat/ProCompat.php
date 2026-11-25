@@ -111,7 +111,7 @@ class ProCompat {
 		?>
 		<div class="notice notice-success">
 			<p>
-				<strong><?php esc_html_e( 'Compliance Audit Trail & Evidence Logger now includes every feature.', 'tbsh-compliance-audit-logger' ); ?></strong>
+				<strong><?php esc_html_e( 'Compliance Audit Log (formerly Compliance Audit Trail & Evidence Logger) now includes every feature.', 'tbsh-compliance-audit-logger' ); ?></strong>
 				<?php esc_html_e( 'Your incidents, risks, vendors, reports, vaults, alert settings and auditor links were migrated. The previous separate edition was deactivated and can now be deleted from the Plugins screen — delete it while this plugin stays active.', 'tbsh-compliance-audit-logger' ); ?>
 			</p>
 			<p>

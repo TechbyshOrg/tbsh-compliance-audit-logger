@@ -300,7 +300,7 @@ export default function App() {
 		<div className={ `tbsh-cal-app ${ darkMode ? 'tbsh-dark' : '' }` }>
 			<header className="tbsh-app-header">
 				<div className="tbsh-app-title">
-					<h1>{ auditor ? __( 'Compliance Audit Portal', 'tbsh-compliance-audit-logger' ) : __( 'Compliance Audit Trail & Evidence Logger', 'tbsh-compliance-audit-logger' ) }</h1>
+					<h1>{ auditor ? __( 'Compliance Audit Portal', 'tbsh-compliance-audit-logger' ) : __( 'Compliance Audit Log', 'tbsh-compliance-audit-logger' ) }</h1>
 					<p>
 						{ auditor
 							? sprintf(
@@ -309,7 +309,7 @@ export default function App() {
 								settings.siteName || '',
 								settings.expiresAt || ''
 							)
-							: __( 'Governance, Risk, Incident Response & Cryptographic Verification', 'tbsh-compliance-audit-logger' ) }
+							: __( 'Tamper-evident audit log, incident response and audit evidence', 'tbsh-compliance-audit-logger' ) }
 					</p>
 				</div>
 				<div className="tbsh-header-actions">

@@ -304,7 +304,7 @@ class ReportGenerator {
 			'generated_at' => Time::now(),
 			'generated_by' => wp_get_current_user()->display_name,
 			'chain_head'   => $chain_head,
-			'plugin'       => 'Compliance Audit Trail & Evidence Logger ' . TBSH_CAL_VERSION,
+			'plugin'       => 'Compliance Audit Log ' . TBSH_CAL_VERSION,
 		);
 
 		$assessment = ReadinessEngine::assess();

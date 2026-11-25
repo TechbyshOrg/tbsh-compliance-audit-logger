@@ -282,7 +282,7 @@ class SiemForwarder {
 			'category'    => 'Operational Security',
 			'severity'    => 'notice',
 			'title'       => 'SIEM test event',
-			'message'     => 'Test event from Compliance Audit Trail & Evidence Logger.',
+			'message'     => 'Test event from Compliance Audit Log.',
 			'integrity'   => array( 'hash' => '', 'previous_hash' => '' ),
 		);
 		$result = self::send( array( $event ), $settings );

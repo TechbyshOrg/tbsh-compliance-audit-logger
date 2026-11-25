@@ -25,3 +25,6 @@ exports/
 
 # Exclude release packages
 *.zip
+
+# Exclude internal content planning notes
+SEO-CONTENT-PLAN.txt

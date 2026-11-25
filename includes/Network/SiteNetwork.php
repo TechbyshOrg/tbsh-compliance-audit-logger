@@ -360,7 +360,7 @@ class SiteNetwork {
 				$message = __( 'The auditor link is not allowed to read this information.', 'tbsh-compliance-audit-logger' );
 				break;
 			case 404:
-				$message = __( 'Compliance Audit Trail was not found on that site, or it runs an older version.', 'tbsh-compliance-audit-logger' );
+				$message = __( 'Compliance Audit Log was not found on that site, or the site runs an older version.', 'tbsh-compliance-audit-logger' );
 				break;
 			case 429:
 				$message = __( 'The site is limiting requests. Try again later.', 'tbsh-compliance-audit-logger' );

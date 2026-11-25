@@ -1,6 +1,6 @@
 <?php
 /**
- * Standalone decryptor for Compliance Audit Trail & Evidence Logger vault packages.
+ * Standalone decryptor for Compliance Audit Log vault packages.
  *
  * Restores a .tbshvault file without WordPress:
  *

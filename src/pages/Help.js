@@ -27,7 +27,7 @@ export default function Help() {
 					{__('Compliance Reference Manual', 'tbsh-compliance-audit-logger')}
 				</h3>
 				<p style={{ margin: 0, color: 'var(--tbsh-text-secondary)', fontSize: '14px', lineHeight: '1.6' }}>
-					{__('Compliance Audit Trail & Evidence Logger provides cryptographic, tamper-evident trails of site activity and configures audit evidence vaults. This panel shows how the system complies with common international standards.', 'tbsh-compliance-audit-logger')}
+					{__('Compliance Audit Log keeps a tamper-evident record of what changes on this site and turns it into audit evidence. This page shows which controls of common standards the plugin helps you evidence, and how each feature works. The plugin supports your compliance work; it does not make a site compliant on its own.', 'tbsh-compliance-audit-logger')}
 				</p>
 			</div>
 
@@ -40,9 +40,9 @@ export default function Help() {
 						{__('ISO/IEC 27001 Alignment', 'tbsh-compliance-audit-logger')}
 					</h4>
 					<p style={{ margin: 0, fontSize: '13px', color: 'var(--tbsh-text-secondary)', lineHeight: '1.6' }}>
-						<strong>{__('Control A.12.4.1 (Event Logging):', 'tbsh-compliance-audit-logger')}</strong> {__('Produces detailed log events including actors, timestamps, events types, and IP addresses.', 'tbsh-compliance-audit-logger')}
+						<strong>{__('Control A.8.15 (Logging):', 'tbsh-compliance-audit-logger')}</strong> {__('Records who did what, when and from where, and protects the record: each entry is hash-chained with SHA-256, so any edit or deletion is detected.', 'tbsh-compliance-audit-logger')}
 						<br /><br />
-						<strong>{__('Control A.12.4.2 (Protection of Log Information):', 'tbsh-compliance-audit-logger')}</strong> {__('Leverages SHA-256 blockchain hashing chains to detect unauthorized record deletion or modification.', 'tbsh-compliance-audit-logger')}
+						<strong>{__('Control A.8.16 (Monitoring activities):', 'tbsh-compliance-audit-logger')}</strong> {__('Detection rules, file integrity scans, anomaly scoring and alerts flag unusual activity for review.', 'tbsh-compliance-audit-logger')}
 					</p>
 				</div>
 
@@ -66,7 +66,7 @@ export default function Help() {
 						{__('DORA (Digital Operational Resilience Act)', 'tbsh-compliance-audit-logger')}
 					</h4>
 					<p style={{ margin: 0, fontSize: '13px', color: 'var(--tbsh-text-secondary)', lineHeight: '1.6' }}>
-						<strong>{__('Article 17 (ICT Incident Logging):', 'tbsh-compliance-audit-logger')}</strong> {__('Captures warning logs and critical errors. The Integrity scan engine identifies anomalous log gaps and logs indicators for rapid security analysis.', 'tbsh-compliance-audit-logger')}
+						<strong>{__('Article 17 (ICT-related incident management):', 'tbsh-compliance-audit-logger')}</strong> {__('Records incidents with severity, root cause and impact, and keeps the warnings and errors around them. The hash chain shows if log entries are missing or changed.', 'tbsh-compliance-audit-logger')}
 					</p>
 				</div>
 
@@ -77,7 +77,7 @@ export default function Help() {
 						{__('NIS 2 Directive', 'tbsh-compliance-audit-logger')}
 					</h4>
 					<p style={{ margin: 0, fontSize: '13px', color: 'var(--tbsh-text-secondary)', lineHeight: '1.6' }}>
-						<strong>{__('Article 21 (Cybersecurity Risk-Management):', 'tbsh-compliance-audit-logger')}</strong> {__('Establishes continuous logging, verification controls, and evidence collections required for organizational audit reporting.', 'tbsh-compliance-audit-logger')}
+						<strong>{__('Article 21 (Cybersecurity Risk-Management):', 'tbsh-compliance-audit-logger')}</strong> {__('Continuous logging, verification and evidence snapshots support the risk-management measures; Article 23 reporting deadlines are tracked in the Incident Center.', 'tbsh-compliance-audit-logger')}
 					</p>
 				</div>
 			</div>
@@ -93,6 +93,44 @@ export default function Help() {
 			</div>
 
 			<div className="tbsh-grid-2">
+				<GuideSection icon="logs" title={__('What is logged and who made it', 'tbsh-compliance-audit-logger')}>
+					<p style={textStyle}>
+						{__('Sign-ins and failed sign-ins, users, roles and capabilities, plugins and themes, edits in the file editor, content, media, menus, widgets, Customizer and Site Editor changes, comments, categories and tags, settings, privacy requests, exports, multisite network changes and application passwords. With WooCommerce, staff order changes, refunds, product price, stock and download changes, coupons and store settings are logged too, without customer details.', 'tbsh-compliance-audit-logger')}
+					</p>
+					<p style={nextTextStyle}>
+						{__('Each entry shows who made the change (a person, an AI agent, an integration, an automated task or a visitor) and how it arrived (browser, REST API, MCP, XML-RPC, cron or WP-CLI). Use "Made by" in Activity Logs to filter. Abilities run by AI agents are logged with their field names only, never the values.', 'tbsh-compliance-audit-logger')}
+					</p>
+					<p style={nextTextStyle}>
+						{__('Logging exclusions in Settings can silence routine activity from service accounts, roles or event types. Errors, critical events and security-relevant event types are always logged.', 'tbsh-compliance-audit-logger')}
+					</p>
+				</GuideSection>
+
+				<GuideSection icon="integrity" title={__('File integrity', 'tbsh-compliance-audit-logger')}>
+					<p style={textStyle}>
+						{__('WordPress core and plugins from WordPress.org are compared with the official checksums for their exact version. Other plugins, themes and must-use plugins are compared with a baseline recorded on the first scan and refreshed after updates. The uploads folder is searched for PHP files. Any change opens an incident. If you changed files on purpose, use "Accept current files" in the Integrity Center.', 'tbsh-compliance-audit-logger')}
+					</p>
+				</GuideSection>
+
+				<GuideSection icon="user" title={__('Active sessions', 'tbsh-compliance-audit-logger')}>
+					<p style={textStyle}>
+						{__('See who is signed in and on which device. During an incident, end a single session or sign a user out everywhere.', 'tbsh-compliance-audit-logger')}
+					</p>
+				</GuideSection>
+
+				<GuideSection icon="export" title={__('SIEM forwarding & compliance digest', 'tbsh-compliance-audit-logger')}>
+					<p style={textStyle}>
+						{__('SIEM forwarding sends every new entry with its chain hash to an HTTPS endpoint, Splunk HTTP Event Collector or a syslog server over TLS/TCP. Entries are sent in order within minutes; if the destination is down they are retried, and an alert is raised after an hour.', 'tbsh-compliance-audit-logger')}
+					</p>
+					<p style={nextTextStyle}>
+						{__('The compliance digest is a weekly or monthly email summarising activity, incidents and NIS2 deadlines, integrity and readiness, with a signed report attached as evidence of regular log review.', 'tbsh-compliance-audit-logger')}
+					</p>
+				</GuideSection>
+
+				<GuideSection icon="check" title={__('Setup Assistant', 'tbsh-compliance-audit-logger')}>
+					<p style={textStyle}>
+						{__('Pick the frameworks you work with, and the assistant applies recommended alerts, scheduled checks and retention periods in four steps. You can change every setting afterwards.', 'tbsh-compliance-audit-logger')}
+					</p>
+				</GuideSection>
 				<GuideSection icon="incidents" title={__('Incident Center & NIS2 deadlines', 'tbsh-compliance-audit-logger')}>
 					<p style={textStyle}>
 						{__('Incidents are opened manually or automatically by the detection rules in Settings (brute-force logins, administrator grants, critical setting changes, code edited in the theme or plugin file editor, modified plugin, theme or uploads files, log tampering, modified core files, failing off-site vaults and, if enabled, behavioural anomalies). Each incident moves through open, investigating, contained, resolved and closed, with notes, linked evidence and framework mappings.', 'tbsh-compliance-audit-logger')}
@@ -249,15 +287,15 @@ export default function Help() {
 							{__('1. How does the hash chain work?', 'tbsh-compliance-audit-logger')}
 						</strong>
 						<span style={{ fontSize: '13px', color: 'var(--tbsh-text-secondary)', lineHeight: '1.6' }}>
-							{__('Every log row hashes all row contents (UUID, message, actor, timestamp) along with the hash of the preceding record. Because of this connection, changing or deleting a single row will cause the verification engine to report a mismatch on all subsequent logs.', 'tbsh-compliance-audit-logger')}
+							{__('Each entry’s SHA-256 hash covers its contents (event, user, object, hashed IP, request, details and time) and the hash of the entry before it. Changing or deleting one entry breaks the chain, and verification reports the first entry where it fails.', 'tbsh-compliance-audit-logger')}
 						</span>
 					</li>
 					<li>
 						<strong style={{ fontSize: '14px', color: 'var(--tbsh-text-primary)', display: 'block', marginBottom: '4px' }}>
-							{__('2. Are IP addresses GDPR-compliant?', 'tbsh-compliance-audit-logger')}
+							{__('2. How are IP addresses protected for GDPR?', 'tbsh-compliance-audit-logger')}
 						</strong>
 						<span style={{ fontSize: '13px', color: 'var(--tbsh-text-secondary)', lineHeight: '1.6' }}>
-							{__('Yes, when IP Address Masking is enabled in settings (recommended), client IPs are salted and hashed using HMAC-SHA-256 before being recorded. This represents irreversible pseudonymization compliant with GDPR and HIPAA.', 'tbsh-compliance-audit-logger')}
+							{__('When IP address masking is on (the default), IP addresses and browser details are hashed with HMAC-SHA-256 and a key unique to this site before they are stored, so the raw values are never saved. The plugin also works with the WordPress personal data export and erasure tools.', 'tbsh-compliance-audit-logger')}
 						</span>
 					</li>
 					<li>
@@ -265,7 +303,7 @@ export default function Help() {
 							{__('3. How do I export audit trails for auditors?', 'tbsh-compliance-audit-logger')}
 						</strong>
 						<span style={{ fontSize: '13px', color: 'var(--tbsh-text-secondary)', lineHeight: '1.6' }}>
-							{__('Navigate to the Export Center, select your required date ranges or category filters, choose CSV or JSON, and click Compile. You can download the completed file securely from the table.', 'tbsh-compliance-audit-logger')}
+							{__('Open the Export Center, choose a date range and any filters, pick CSV or JSON and click "Create export". Download the file from "Your exports", or create an expiring share link. For a signed summary, use Compliance Reports instead.', 'tbsh-compliance-audit-logger')}
 						</span>
 					</li>
 				</ul>

@@ -105,7 +105,7 @@ export default function IntegrityCenter() {
 							{__('Cryptographic Integrity Verification', 'tbsh-compliance-audit-logger')}
 						</h3>
 						<p style={{ margin: 0, color: 'var(--tbsh-text-secondary)', fontSize: '14px' }}>
-							{__('Verify log authenticity using blockchain-style SHA-256 hash chains.', 'tbsh-compliance-audit-logger')}
+							{__('Check that no log entry has been changed or deleted, using the SHA-256 hash chain.', 'tbsh-compliance-audit-logger')}
 						</p>
 					</div>
 					{canVerify && (

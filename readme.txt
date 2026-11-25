@@ -1,83 +1,112 @@
-=== Compliance Audit Trail & Evidence Logger ===
+=== Compliance Audit Log – Tamper-Evident Activity Log ===
 Contributors: techbysh
-Tags: compliance, audit-trail, security-log, tamper-evident, nis2
+Tags: audit-log, activity-log, audit-trail, compliance, nis2
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 8.0
 Stable tag: 2.0.0
 License: GPLv2 or later
-License URI: http://www.gnu.org/licenses/gpl-2.0.html
+License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Tamper-evident audit trail, incident response, risk & vendor registers, signed reports and encrypted off-site evidence for NIS2, DORA, ISO 27001.
+Tamper-evident audit log and activity log for WordPress, with incident response, signed reports and audit evidence for NIS2, DORA and ISO 27001.
 
 == Description ==
 
-Is your website ready for a cybersecurity audit?
+**Compliance Audit Log is a tamper-evident audit log for WordPress.** It records who changed what on your site (people, AI agents, integrations and scheduled tasks) and proves that the record has not been edited since.
 
-When a website is hacked, the first thing intruders do is modify database logs to cover their tracks. Standard security plugins log user actions, but they do not guarantee that the logs themselves have not been altered or deleted.
+It is built for site owners, agencies and security teams who need audit evidence for NIS2, DORA, ISO/IEC 27001 or SOC 2. Everything is free. There is no paid tier and no usage limit.
 
-**Compliance Audit Log & Tamper-Evident Security Trail** transforms your WordPress dashboard into a secure GRC (Governance, Risk, and Compliance) platform. By combining real-time activity tracking with cryptographic SHA-256 chain verification, it ensures your security audit trails are tamper-evident, verifiable, and defensible in an audit. On top of the audit trail it adds incident response with NIS2 deadline tracking, risk and third-party registers, signed compliance reports and encrypted off-site evidence backups.
+= Why a tamper-evident audit log? =
 
-Every feature described below is included in this plugin. There is no separate paid edition.
+A normal activity log is just rows in your database. Anyone with database access can change or delete them, and nobody would notice.
 
-= Cryptographic Log Integrity =
-Every log entry calculates a SHA-256 signature containing its contents and the signature of the preceding row. If an unauthorized actor inserts, deletes, or edits a log record directly in the database, the cryptographic chain breaks. The built-in verifier identifies exactly when and where the compromise occurred.
+Compliance Audit Log links every entry to the one before it with a SHA-256 hash. If a single entry is edited or removed, the chain breaks, and the built-in check shows exactly where. That turns your activity log into an audit trail you can show an auditor as evidence.
 
-= Fulfill Global Compliance Regulations =
-Designed to assist compliance officers, developers, and security teams in meeting strict international guidelines:
-*   **NIS2 Directive (EU)**: Article 21 risk management and logging, plus Article 23 incident reporting deadlines (24 hours / 72 hours / 1 month).
-*   **DORA (Digital Operational Resilience Act)**: ICT incident records, resilience testing with RTO/RPO, and an ICT third-party register (Article 28).
-*   **SOC 2 & ISO/IEC 27001:2022**: Access control monitoring, change management and configuration audit evidence.
-*   **GDPR & HIPAA**: Mask IPs using HMAC-SHA-256 salted hashes, support data exports and erasures, and enforce retention periods.
+= How it works =
 
-= Features =
+1. **Install and run the Setup Assistant.** Pick your frameworks (NIS2, DORA, ISO 27001, SOC 2) and apply recommended alerts, checks and retention in four steps.
+2. **Let it record.** Sign-ins, user and role changes, plugin and theme changes, content, settings, WooCommerce changes and more are logged automatically, with very little overhead.
+3. **Use the evidence.** Verify the log, handle incidents, create signed reports and give your auditor a read-only link.
 
-**Audit trail & integrity**
+= What it tracks =
 
-*   **Tamper-Evident Chaining:** Link logs cryptographically using SHA-256 signatures and verify the chain on demand or with WP-CLI.
-*   **Granular Activity Tracking:** Log logins and failed logins, user, role and capability changes, Super Admin grants, plugin and theme changes, edits made in the theme and plugin file editor, content and edits to published content, media, menus, widgets, Customizer and Site Editor changes, comment moderation, categories and tags, settings, privacy requests, content exports, multisite network changes and application passwords. Bulk actions are summarised so the log stays readable.
-*   **Core File Integrity:** Compare WordPress core files against the official checksums from WordPress.org, manually or on a schedule.
-*   **Plugin, Theme & Uploads File Integrity:** Compare WordPress.org plugins with their official per-version checksums, other plugins, themes and must-use plugins with a signed local baseline (refreshed after updates), and find PHP files hidden in the uploads folder. Changes open an incident.
-*   **WooCommerce Audit Trail:** Order status changes and edits by staff, refunds, deleted orders, product price, stock and download changes, coupons and store settings, without logging customer data.
-*   **Active Sessions:** See who is signed in on which device and end a session or sign a user out everywhere during an incident.
-*   **Logging Exclusions:** Silence routine activity from service accounts, roles or event types; security-relevant events and errors are always kept.
-*   **Site Network:** See the readiness score, activity, errors, failed sign-ins, open incidents and log integrity of all your sites on one page. Each site is connected with one of its own read-only, expiring auditor links, so nothing new is installed or exposed on it.
-*   **AI Agent Attribution:** Every entry records who or what made the change (a person, an AI agent, an integration, an automated task or a visitor) and how it arrived (browser, REST API, MCP, XML-RPC, cron or WP-CLI), including the application password and the WordPress ability used. Ability runs by AI agents and MCP servers are logged, with refused and failed attempts. Filter the log by "Made by".
-*   **Developer API:** Add your own events to the tamper-evident log with `tbsh_cal_log()` or `do_action( 'tbsh_cal_log', ... )`.
-*   **Evidence Vault:** Capture point-in-time snapshots of themes, plugins, capabilities and system configuration, manually or daily/weekly.
-*   **GDPR Privacy Masking:** Anonymize client IP addresses and user agents using local cryptographic salts, with WordPress personal data exporter and eraser support.
-*   **Forensic Timeline:** Browse events chronologically through a responsive, filterable layout.
-*   **SIEM Export:** Compile logs into CSV or JSON formats, with optional expiring share links.
-*   **Real-time SIEM Forwarding:** Stream every entry with its chain hash to an HTTPS endpoint, Splunk HTTP Event Collector or a syslog server over TLS/TCP, with automatic retries.
-*   **Compliance Digest:** A weekly or monthly email summarising activity, incidents and NIS2 deadlines, integrity, readiness and governance, with a signed report attached as evidence of regular log review.
-*   **Setup Assistant:** Pick your frameworks and apply recommended alerts, scheduled checks and retention in four steps.
+* Sign-ins, failed sign-ins and application passwords.
+* Users, roles and capabilities, including Super Admin grants and capabilities granted outside the role menu.
+* Plugin and theme installs, updates, activations and deletions, and edits made in the theme and plugin file editor.
+* Posts, pages and media, including edits to published content.
+* Menus, widgets, Customizer and Site Editor changes, comments, categories and tags.
+* Settings, privacy requests, content exports and multisite network changes.
+* **WooCommerce:** staff order changes, refunds, deleted orders, product price, stock and download changes, coupons and store settings. Customer details are not logged.
+* **AI agents:** each entry says who made the change (a person, an AI agent, an integration, an automated task or a visitor) and how it arrived (browser, REST API, MCP, XML-RPC, cron or WP-CLI). WordPress abilities run by AI agents are logged, including refused and failed attempts. Filter the log by "Made by".
 
-**Incident response**
+Bulk actions are summarised so the log stays readable. Logging exclusions can silence routine activity from service accounts, roles or event types, while errors, critical events and security-relevant events are always kept.
 
-*   **Incident Center:** Record incidents with severity, status, assignee, root cause, impact, notes and linked evidence snapshots.
-*   **Automatic Detection:** Opens incidents for brute-force logins, administrator privilege grants, critical site setting changes, core checksum failures, audit-log tampering, failing off-site backups and high-risk behaviour anomalies. Each rule can be switched off.
-*   **NIS2 Article 23 Tracking:** For significant incidents, tracks the early warning (24 hours), incident notification (72 hours) and final report (1 month) with due dates, references and overdue reminders.
-*   **Multi-Channel Alerts:** Email, Slack, Discord, Microsoft Teams (Workflows), Telegram and a generic HMAC-signed webhook. Alerts are queued and delivered in the background by WP-Cron with automatic retries, and every delivery is recorded in the Alert Center.
-*   **Optional AI Incident Analysis:** Ask Anthropic Claude, OpenAI, Google Gemini or any OpenAI-compatible endpoint (such as a local Ollama server) for a summary, likely causes and recommended actions. Off by default; only incident fields are sent, never log rows or IP hashes.
+= Protect and verify your log =
 
-**Governance**
+* **Hash-chain verification** in one click or with `wp tbsh-cal verify-chain`. If the chain breaks, an incident is opened and an alert is sent.
+* **File integrity scans:** WordPress core and WordPress.org plugins are checked against official checksums. Other plugins, themes and must-use plugins are checked against a signed local baseline. The uploads folder is searched for hidden PHP files.
+* **Evidence snapshots** of your plugins, themes, capabilities and configuration, taken manually or daily or weekly.
+* **Encrypted off-site copies** of logs, incidents and snapshots on S3-compatible storage (AWS S3, Cloudflare R2, Wasabi, Backblaze B2, MinIO, Google Cloud Storage), an FTP/FTPS server or another WordPress site running this plugin.
 
-*   **Risk Register:** Score risks by likelihood and impact on a 5×5 heat map, with owners, review dates and mitigation plans.
-*   **Vendor & ICT Third-Party Register (DORA Art. 28):** Track criticality, data access, risk rating, contract renewals and security reviews, with reminders 30 and 7 days ahead.
-*   **Software Supply-Chain Inventory:** Lists installed plugins and themes with pending updates (from WordPress's own update data) and every outbound integration you have configured.
-*   **Operational Resilience:** Plan and record backup-restore, failover, incident-response and tabletop drills with RTO/RPO targets and actual results.
-*   **Behavioural Anomaly Detection (opt-in):** Learns each user's normal hours and actions over 30 days and flags unusual activity.
+= Respond to incidents =
 
-**Evidence & reporting**
+* **Incident Center** with severity, status, owner, root cause, impact, notes and linked evidence.
+* **Automatic detection** of brute-force sign-ins, new administrators, critical setting changes, changed core or plugin files, log tampering, failing off-site copies and unusual user behaviour. Each rule can be switched off.
+* **NIS2 Article 23 deadlines:** the 24-hour early warning, 72-hour notification and 1-month final report, with due dates and overdue reminders.
+* **Alerts** by email, Slack, Discord, Microsoft Teams, Telegram or a signed webhook, sent in the background with retries.
+* **Active sessions:** see who is signed in and sign a user out everywhere during an incident.
+* **Optional AI incident analysis** with Anthropic Claude, OpenAI, Google Gemini or a self-hosted OpenAI-compatible model. Off by default.
 
-*   **Executive Dashboard & Readiness Score:** Computed from your real data, with framework coverage for NIS2, DORA, ISO/IEC 27001:2022 and SOC 2.
-*   **Signed Compliance Reports:** Executive, NIS2, DORA, ISO/IEC 27001, SOC 2, incident, risk and third-party reports as PDF, print-ready HTML, CSV or JSON. Each report is signed with SHA-256 and HMAC-SHA256 and can be verified later.
-*   **Encrypted Off-Site Evidence Vaults:** Push encrypted evidence packages (logs, incidents and snapshots) to S3-compatible storage (AWS S3, Google Cloud Storage via HMAC interoperability keys, Cloudflare R2, Wasabi, Backblaze B2, MinIO), an FTP/FTPS server, or another WordPress site running this plugin. Packages are encrypted with libsodium secretstream (XChaCha20-Poly1305) using a PBKDF2-derived passphrase key, and can be restored with `wp tbsh-cal vault-decrypt` or the bundled `tools/decrypt-vault.php`, even without WordPress.
-*   **Read-Only Auditor Links:** Give external auditors expiring (up to 90 days), revocable, read-only access. Tokens are stored only as hashes.
-*   **Unified Data Retention:** Per-type retention for logs (archived, then purged with hash-chain re-anchoring), closed incidents, evidence and alert/vault delivery history.
-*   **WP-CLI:** `wp tbsh-cal vault-decrypt`, `wp tbsh-cal vault-sync` and `wp tbsh-cal verify-chain`.
-*   **Encrypted Credentials:** API keys, webhook URLs and vault credentials are encrypted at rest and never sent back to the browser. Define `TBSH_CAL_ENCRYPTION_KEY` in wp-config.php to decouple them from your WordPress salts.
-*   **Granular Capabilities:** Separate view/manage capabilities for logs, evidence, incidents, risks, vendors, reports, vaults, alerts, analytics and auditor access.
+= Governance registers =
+
+* **Risk register** with a 5×5 likelihood and impact heat map, owners and review dates.
+* **Vendor and ICT third-party register** (DORA Article 28) with contract and review reminders.
+* **Software supply-chain inventory** of installed plugins and themes, pending updates and connected services.
+* **Operational resilience drills** with RTO and RPO targets and results.
+* **Behavioural anomaly detection** (opt-in) that learns each user's normal hours and actions.
+
+= Evidence and reporting =
+
+* **Readiness score** computed from your real data, with coverage for NIS2, DORA, ISO/IEC 27001:2022 and SOC 2.
+* **Signed compliance reports:** executive, NIS2, DORA, ISO 27001, SOC 2, incident, risk and vendor reports as PDF, HTML, CSV or JSON. Each report is signed and can be verified later.
+* **Read-only auditor links** that expire (after up to 90 days) and can be revoked. Auditors need no WordPress account.
+* **Weekly or monthly compliance digest** email with a signed report attached.
+* **Exports and SIEM forwarding:** CSV or JSON exports, or real-time forwarding to an HTTPS endpoint, Splunk HTTP Event Collector or syslog over TLS.
+* **Site Network:** see the readiness, errors, incidents and log integrity of all your sites on one page.
+
+= Perfect for =
+
+* **EU businesses under NIS2 or DORA** that must log security events and report incidents on time.
+* **Teams preparing for ISO 27001 or SOC 2** who need logging and change-management evidence.
+* **Agencies** that manage client sites and need to show who changed what.
+* **WooCommerce stores** that want accountability for staff changes to orders, prices and stock.
+* **Sites using AI agents or MCP servers** that need to see what the agents changed.
+
+= Compliance frameworks =
+
+The plugin helps you collect evidence for these frameworks. It does not make a site compliant on its own, and it is not legal advice.
+
+* **NIS2 Directive:** Article 21 logging and monitoring, Article 23 incident reporting deadlines.
+* **DORA:** ICT incident records, resilience testing and the ICT third-party register.
+* **ISO/IEC 27001:2022:** logging (A.8.15), monitoring (A.8.16) and evidence collection (A.5.28).
+* **SOC 2:** access control and change-management evidence.
+* **GDPR:** IP masking, personal data export and erasure, and retention periods.
+
+= What it does not do =
+
+* It is not a firewall or malware scanner, and it does not block attacks. Use it alongside your security plugin.
+* It does not make your site compliant by itself. It gives you the records and reports that audits ask for.
+* It only records activity from the time it is activated.
+
+= Privacy and your data =
+
+All data stays in your WordPress database and uploads folder. IP addresses and browser details are hashed by default. Nothing is sent to an outside service unless you set one up (see "External services" below). Credentials are encrypted at rest. Your data is kept when you uninstall, unless you choose to delete it in Settings.
+
+= Documentation and support =
+
+* Open **Compliance Logs → Help & Reference** in your dashboard for a guide to every feature.
+* Ask questions in the [support forum](https://wordpress.org/support/plugin/tbsh-compliance-audit-logger/).
+* Developers can add their own events with `tbsh_cal_log()`, and use WP-CLI commands and granular capabilities.
 
 == Source Code ==
 
@@ -124,143 +153,144 @@ The plugin works without any external service. Apart from the items below, nothi
 
 == Installation ==
 
-1. Back up your database if you are upgrading.
-2. Upload the `tbsh-compliance-audit-logger` folder to the `/wp-content/plugins/` directory.
-3. Activate the plugin through the 'Plugins' menu in WordPress.
-4. Navigate to 'Compliance Logs' in the admin sidebar.
-5. Run your first database integrity check in the 'Integrity Center'.
-6. Optional: configure alert channels, detection rules, retention and AI analysis in 'Settings', and add an off-site evidence vault.
-7. Recommended: before saving any credentials, add `define( 'TBSH_CAL_ENCRYPTION_KEY', 'a-random-string-of-at-least-32-characters' );` to wp-config.php so rotating your WordPress salts does not make stored credentials unreadable.
+1. In your dashboard, go to **Plugins → Add New Plugin** and search for "Compliance Audit Log".
+2. Click **Install Now**, then **Activate**.
+3. Open **Compliance Logs** in the admin menu and click **Start setup**. The Setup Assistant applies recommended settings for the frameworks you pick.
+4. Open **Integrity Center** and click **Run Integrity Verification** to check the log for the first time.
+5. Optional: in **Settings**, add alert channels, adjust detection rules and retention, and add an encrypted off-site vault.
+6. Recommended before saving any credentials: add `define( 'TBSH_CAL_ENCRYPTION_KEY', 'a-random-string-of-at-least-32-characters' );` to `wp-config.php`, so changing your WordPress salts later does not make stored credentials unreadable.
 
-If you used the separate edition of this plugin before, see "I used the separate edition. What happens when I upgrade?" below.
+To install manually, upload the `tbsh-compliance-audit-logger` folder to `/wp-content/plugins/` and activate it on the **Plugins** screen. If you are upgrading, back up your database first.
 
 == Frequently Asked Questions ==
 
-= How does the cryptographic hash chain protect my logs? =
-Every log entry combines its ID, message, timestamp, and metadata with the hash of the preceding entry to calculate its own SHA-256 signature. If a database record is altered, its signature changes, causing validation checks to fail for that row and all subsequent rows.
+= What does Compliance Audit Log do? =
+Compliance Audit Log records who changed what on a WordPress site and links every entry with a SHA-256 hash chain, so any later edit or deletion can be detected. On top of the audit log it adds incident response with NIS2 deadlines, risk and vendor registers, signed compliance reports, encrypted off-site copies and read-only auditor links.
 
-= Does this plugin affect page load times? =
-No. The plugin uses an asynchronous-like queue. Logs are stored in memory during the runtime and written to the database during the WordPress `shutdown` hook, after the page has finished loading for the visitor. Alert delivery, vault uploads and retention run in the background through WP-Cron, never during a page view.
+= How is it different from a regular activity log plugin? =
+A regular activity log shows what happened, but cannot prove that the log itself was not changed. Compliance Audit Log can: each entry includes the hash of the entry before it, and the verifier reports the first entry where the chain breaks. It also turns the log into audit evidence with incidents, signed reports, evidence snapshots and auditor access.
 
-= Can I use this on a WordPress Multisite network? =
-Yes. The plugin is fully multisite-ready, supports network-wide activation, and stores logs with site identifiers to allow filtering by site.
+= How does the hash chain prove the log was not changed? =
+Each entry's SHA-256 hash covers its contents (event, user, object, hashed IP, request, details and time) and the hash of the previous entry. If an entry is edited or deleted in the database, its hash no longer matches and the chain breaks from that point. Run the check in **Integrity Center** or with `wp tbsh-cal verify-chain`. With tamper detection on (the default), a broken chain opens an incident and sends an alert.
 
-= Are IP addresses stored in a GDPR-compliant manner? =
-Yes. When IP address anonymization is enabled (default), client IPs are salted and hashed using HMAC-SHA-256 before insertion. They cannot be reversed to reveal the raw IP.
+= Will it slow down my site? =
+The impact is very small. Entries are collected during a request and written to the database once, at the end of the request. Alerts, off-site copies, SIEM forwarding and retention run in the background through WP-Cron, never during a page view.
 
-= Are there any limits? =
-No. There is no limit on the number of logs, incidents, risks, vendors, reports, exports, evidence snapshots or vaults, and no feature is reserved for a paid plan.
+= Does it make my site NIS2, DORA, ISO 27001 or SOC 2 compliant? =
+No plugin can do that on its own. Compliance Audit Log gives you the records that these frameworks ask for: a protected audit log, incident records with NIS2 reporting deadlines, risk and third-party registers, resilience drills and signed reports. The readiness score shows which controls still need work.
 
-= How do I run a database validation check? =
-Go to 'Compliance Logs' -> 'Integrity Center' and click the 'Run Integrity Verification' button. The verifier will scan all records and report if any anomalies are found. You can also run `wp tbsh-cal verify-chain`.
+= Is it GDPR friendly? =
+Yes. IP addresses and browser details are hashed with a key unique to your site before they are stored (on by default). The plugin works with the WordPress personal data export and erasure tools; after an erasure it anonymises that user's entries and rebuilds the hash chain. Retention periods delete old data automatically.
 
-= What happens if the hash chain is compromised? =
-If the Integrity Center reports a compromised status, it lists the exact log ID where the validation failed, indicating that the database row was modified or deleted. With tamper detection enabled (default), an incident is opened and an alert is queued automatically.
+= Who can see the audit log? =
+Administrators can see everything. Access is controlled by separate capabilities for logs, evidence, incidents, risks, vendors, reports, vaults, alerts, analytics, sessions and auditor access, which you can give to other roles with any role editor. External auditors can get a temporary read-only link.
 
-= How does the Evidence Vault work? =
-The Evidence Vault takes a snapshot of your site's technical configuration (plugins list, theme versions, user capability definitions, security constants). It provides proof of the site's state at a specific point in time. Snapshots can be linked to incidents and copied off-site with an encrypted vault.
+= Can I see what AI agents changed on my site? =
+Yes. Every entry records whether a person, an AI agent, an integration, an automated task or a visitor made the change, and through which channel (browser, REST API, MCP, XML-RPC, cron or WP-CLI). A request counts as an AI agent when it arrives through an MCP server or runs a WordPress ability with an application password. Filter Activity Logs and exports by "Made by". Only the field names of an ability's input are kept, never the values.
 
-= How do off-site evidence vaults work? =
-Add a vault (S3-compatible storage, FTP/FTPS, or another WordPress site running this plugin) with an encryption passphrase. On its schedule, the plugin builds a package with new log rows, the incident register and new evidence snapshots, encrypts it on your server and uploads it. Keep the passphrase safe: without it a package cannot be decrypted. To restore, run `wp tbsh-cal vault-decrypt <file>` or `php tools/decrypt-vault.php <file>` (works without WordPress).
+= Does it work with WooCommerce? =
+Yes. When WooCommerce is active, staff changes to orders, refunds, deleted orders, product prices, stock and downloads, coupons and store settings are logged. Customer personal data is not logged.
 
-= Is AI analysis enabled by default? =
-No. It stays off until an administrator picks a provider, model and API key (or endpoint), and it runs only when someone clicks to analyse a specific incident. Only incident fields are sent. The key is stored encrypted.
+= Does it work on WordPress Multisite? =
+Yes. It supports network activation, logs multisite network changes such as new sites and Super Admin grants, and stores the site ID with each entry. To see several separate sites on one page, use **Site Network**.
 
-= Can I generate a PDF report? =
-Yes. Choose "PDF" as the format in Compliance Reports. PDF files are created on your server without extra libraries and are signed like every other format. The built-in PDF fonts cover Western European languages; for other scripts choose HTML and use your browser's "Print" -> "Save as PDF". Each stored report can be verified in 'Compliance Reports'.
+= Can an external auditor see the logs without a WordPress account? =
+Yes. In **Auditor Access**, create a link with a label and a lifetime of 1 to 90 days. The link is shown once, stored only as a hash, gives read-only access to dashboards, logs, evidence, incidents, registers and reports, and can be revoked at any time.
 
-= How do auditor links work? =
-In 'Auditor Access', create a link with a label and a lifetime of 1 to 90 days. The link is shown only once. It gives read-only access to dashboards, logs, evidence, incidents, registers and reports, and can be revoked at any time.
+= Can I export logs or send them to my SIEM? =
+Yes. The Export Center creates CSV or JSON exports with filters for dates, categories, severity and who made the change, and can create expiring share links. For real-time forwarding, open **Settings → SIEM & Log Forwarding** and choose an HTTPS endpoint, Splunk HTTP Event Collector or syslog over TLS/TCP. Entries are sent in order with their chain hashes and retried if the destination is down.
 
-= Can I export logs for external analysis? =
-Yes. You can generate CSV or JSON log exports from the Export Center, using filters like date ranges, compliance categories, or severity levels.
+= Can I create PDF compliance reports? =
+Yes. In **Compliance Reports**, choose PDF, HTML, CSV or JSON. PDF files are created on your server without extra libraries. Every report is signed with SHA-256 and HMAC-SHA256 and can be verified later. The built-in PDF fonts cover Western European languages; for other scripts, choose HTML and use your browser's "Save as PDF".
 
-= Does this plugin support capability-based access? =
-Yes. Administrators receive every capability by default: `tbsh_cal_view_logs`, `tbsh_cal_view_evidence`, `tbsh_cal_export_data`, `tbsh_cal_manage_settings`, `tbsh_cal_verify_integrity`, `tbsh_cal_view_incidents`, `tbsh_cal_manage_incidents`, `tbsh_cal_view_risks`, `tbsh_cal_manage_risks`, `tbsh_cal_view_vendors`, `tbsh_cal_manage_vendors`, `tbsh_cal_view_reports`, `tbsh_cal_manage_reports`, `tbsh_cal_manage_vaults`, `tbsh_cal_view_alerts`, `tbsh_cal_manage_alerts`, `tbsh_cal_view_analytics`, `tbsh_cal_manage_auditor_access` and `tbsh_cal_manage_sessions`. Grant them to other roles with any role editor.
+= How do encrypted off-site vaults work, and how do I restore one? =
+Add a vault (S3-compatible storage, FTP/FTPS, or another WordPress site running this plugin) and choose a passphrase. On its schedule, the plugin packs new log entries, the incident register and new evidence snapshots, encrypts them on your server (XChaCha20-Poly1305) and uploads them. Keep the passphrase safe: without it a package cannot be decrypted. To restore, run `wp tbsh-cal vault-decrypt <file>`, or `php tools/decrypt-vault.php <file>` on any computer with the PHP sodium extension.
 
-= Can I add my own events to the audit log? =
-Yes. After `plugins_loaded`, call `tbsh_cal_log( 'invoice_approved', array( 'title' => 'Invoice approved', 'message' => 'Invoice 1042 approved by finance.', 'severity' => 'notice', 'object_type' => 'invoice', 'object_id' => 1042 ) )` or `do_action( 'tbsh_cal_log', 'invoice_approved', array( ... ) )`. Entries are hash-chained like every other event. Event types used by the detection rules are reserved, and a request can add at most 200 entries.
+= Is AI analysis on by default, and what is sent? =
+No, it is off by default. It works only after an administrator chooses a provider and API key (or a self-hosted endpoint), and only when someone clicks to analyse a specific incident. Only that incident's fields are sent. Log entries, IP hashes and user records are never sent.
 
-= Can I tell changes made by AI agents from changes made by people? =
-Yes. Every entry records who made it: a person, an AI agent, an integration (an application password without an ability), an automated task (cron or WP-CLI) or a visitor, plus the channel and the application password or WordPress ability involved. A request counts as an AI agent when it arrives through an MCP server route or runs an ability with an application password. Filter Activity Logs by "Made by", and see the count in the compliance digest. Abilities that change the site are logged as their own entries (read-only abilities are skipped, and only input field names are kept, never values). Plugins that run their own AI assistant can mark their changes with the `tbsh_cal_request_origin` filter.
+= How long are logs kept, and what happens when I uninstall? =
+You choose the retention period for each type of data in Settings. Old log entries are archived and then deleted, and the hash chain is re-anchored so verification still passes. When you uninstall, your data is kept unless you first set **Data Action on Uninstall** to "Delete All Tables and Settings" in Settings.
 
-= How do I forward logs to my SIEM? =
-In Settings → SIEM & Log Forwarding, choose an HTTPS JSON endpoint, Splunk HTTP Event Collector or syslog over TLS/TCP, enter the destination and save, then click "Send test event". New entries are sent within minutes, in order, with their chain hashes; if the destination is down they are retried automatically and an alert is raised after an hour.
-
-= What does the file integrity scan check? =
-Plugins from WordPress.org are compared with the official checksums for their exact version, including PHP files that should not be there. Other plugins, themes and must-use plugins are compared with a baseline recorded on the first scan and refreshed automatically after updates; if you change files on purpose, use "Accept current files" in the Integrity Center. The uploads folder is searched for PHP files. Any change opens an incident.
-
-= How often does it capture automated snapshots? =
-If enabled in settings, the plugin runs a daily or weekly cron job to capture system configuration archives.
+= Is there a paid version or any limits? =
+No. Every feature is included for free, and there is no limit on logs, incidents, risks, vendors, reports, exports, snapshots or vaults.
 
 = Why are alerts or vault syncs not arriving? =
-They are delivered by WP-Cron. If your site has little traffic or `DISABLE_WP_CRON` is set, make sure a real cron job calls `wp-cron.php`. The Alert Center shows each delivery attempt and its error, and System Health checks that the scheduled tasks exist.
+They are sent by WP-Cron. If your site has little traffic or `DISABLE_WP_CRON` is set, make sure a real cron job calls `wp-cron.php`. The Alert Center shows each delivery attempt and its error, and System Health checks that the scheduled tasks exist.
 
-= Does it support WP GDPR Personal Data Erasure? =
-Yes. When a WordPress data erasure request is completed for a user, the plugin anonymizes their data and automatically rebuilds the hash chain to keep the cryptographic audit trail unbroken.
+= Where is the data stored? =
+In dedicated database tables (such as `wp_tbsh_cal_logs` and `wp_tbsh_cal_evidence`) and, for reports, archives and vault packages, in `wp-content/uploads/tbsh-compliance-private/`. That folder is protected on Apache. On nginx, add a deny rule for it; System Health tells you if it is publicly readable.
 
-= Where is the log data stored? =
-All data is stored locally in dedicated custom database tables (`wp_tbsh_cal_logs`, `wp_tbsh_cal_evidence`, `wp_tbsh_cal_integrity`, plus tables for incidents, risks, vendors, reports, vaults, alert history, auditor links and resilience drills). Generated reports, log archives and vault packages are stored in `wp-content/uploads/tbsh-compliance-private/`, which is protected on Apache. On nginx, add a deny rule for that folder; System Health tells you if it is publicly readable.
-
-= What compliance tags are assigned to events? =
-Events are automatically tagged with compliance categories such as Access Control, Identity Management, Authentication, Change Management, Security Monitoring, and Operational Security.
-
-= Can I use this for security audit readiness? =
-Yes. The Compliance Overview and Executive Dashboard compute a readiness score from your logs, settings, verification history, incidents, registers and drills, and map it to controls in ISO/IEC 27001:2022, SOC 2, NIS2 and DORA.
+= Can developers add their own events? =
+Yes. After `plugins_loaded`, call `tbsh_cal_log( 'invoice_approved', array( 'title' => 'Invoice approved', 'severity' => 'notice', 'object_type' => 'invoice', 'object_id' => 1042 ) )` or `do_action( 'tbsh_cal_log', 'invoice_approved', array( ... ) )`. Custom entries are hash-chained like all others. Event types used by detection rules are reserved, and one request can add at most 200 entries. Plugins with their own AI assistant can mark their changes with the `tbsh_cal_request_origin` filter.
 
 = I used the separate edition. What happens when I upgrade? =
 Back up your database first. Once this version is active, the separate edition is deactivated automatically and its data is migrated: tables are renamed, settings and credentials are re-encrypted, capabilities are renamed, and existing auditor links keep working. Azure and SFTP vaults are no longer supported and are deactivated; migrated Google Cloud Storage and remote-site vaults stay inactive until you enter their new credentials. After the migration, delete the old edition from the Plugins screen while this plugin is still active.
 
 == Screenshots ==
 
-1. Executive compliance dashboard displaying security scores, database integrity states, and framework readiness checkers.
-2. Granular activity log grid displaying event parameters and SHA-256 cryptographic signatures.
-3. Forensic timeline view tracing administrative actions chronologically.
-4. Evidence Vault for capturing and storing technical configuration snapshots as audit evidence.
-5. Integrity Center showing cryptographic hash chain verification scan histories and database status.
-6. Compliance Overview mapping active audit logs and controls to global compliance frameworks (NIS2, DORA, GDPR, ISO 27001).
-7. System Health checkup showcasing technical diagnostics and environment settings logs.
-8. Export Center compiling logs into CSV or JSON exports with customized parameters.
-9. Settings Module configuring retention limits, IP anonymization, and automatic cron triggers.
-10. Help and Technical Reference page containing implementation details and support guidelines.
+1. Dashboard: see today's events, critical events and failed sign-ins at a glance, with the latest activity below.
+2. Activity Logs: search and filter every recorded change, with its SHA-256 chain signature.
+3. Forensic Timeline: follow administrative actions in time order to reconstruct an incident.
+4. Evidence Vault: capture snapshots of plugins, themes, capabilities and configuration as audit evidence.
+5. Integrity Center: verify that the audit log hash chain is unbroken and review past checks.
+6. Compliance Overview: see how your logging and controls map to NIS2, DORA, GDPR and ISO 27001.
+7. System Health: check that logging, scheduled tasks and storage are working correctly.
+8. Export Center: export filtered log entries as CSV or JSON for auditors or a SIEM.
+9. Settings: choose retention periods, IP masking and scheduled checks.
+10. Help & Reference: a guide to every feature and how each figure is calculated.
 
 == Changelog ==
 
 = 2.0.0 =
-* New: Plugin, theme and uploads file integrity scans (WordPress.org checksums plus signed local baselines), manual or scheduled, with incidents on change.
-* New: WooCommerce audit trail for staff order changes, refunds, deleted orders, product price/stock/download changes, coupons and store settings.
-* New: Active Sessions screen to end a login session or sign a user out everywhere (new capability `tbsh_cal_manage_sessions`).
-* New: Real-time SIEM forwarding (HTTPS JSON, Splunk HEC, syslog over TLS/TCP) with retries and failure alerts.
-* New: Weekly or monthly compliance digest email with a signed executive report attached.
-* New: AI agent attribution. Each entry records whether a person, an AI agent, an integration or an automated task made it, through which channel and with which application password or ability; WordPress ability runs (6.9+), refusals and failures (7.1+) are logged. Activity Logs and exports can be filtered by who made the change.
-* Improved: Accessibility and usability across the admin: dialogs keep keyboard focus, status messages are announced, focus is always visible, text and form fields meet WCAG 2.2 AA contrast in light and dark mode, and every filter is labelled.
-* Improved: Every page shows its title and purpose, the menu collapses on small screens, wide tables scroll instead of being cut off, and dark mode follows your system setting until you choose.
-* Improved: The Dashboard shows what needs attention (critical events today, open incidents, file changes, unverified log) and every figure opens the matching filtered activity log.
-* New: PDF reports, generated on the server and signed like the other formats.
-* New: Site Network: one overview of other sites running this plugin, connected with their read-only auditor links.
-* Improved: Activity Logs and exports can show errors and critical events together; the dashboard's "Errors and critical" figure opens exactly those entries.
-* Fixed: Off-site vault sync failed on servers without the PHP sodium extension; packages are now encrypted with WordPress's built-in sodium_compat as well, and stay compatible both ways.
-* Fixed: Score colours, status icons and the integrity check time now meet WCAG AA contrast; long hashes and URLs wrap instead of widening the page on small screens; tab rows wrap.
-* Improved: Leaving Settings with unsaved changes asks first, including with the browser's back and forward buttons.
-* Improved: Activity Logs shows times in your site's date format, lists active filters with one-click removal, and remembers your column choice; Settings shows an unsaved-changes bar with Save and Discard and links to each section.
-* Improved: Accepting the current files of a very large plugin or theme as its integrity baseline now runs in short steps with progress, so it no longer hits server time limits.
-* New: Setup assistant for new installs, logging exclusions for service accounts, roles and event types, and a public `tbsh_cal_log()` developer API.
-* Improved: The admin app now loads each screen on demand, making the first load much smaller.
+The separate edition is merged into this plugin: every feature is now included, with no paid tier. The plugin is renamed "Compliance Audit Log – Tamper-Evident Activity Log"; its folder, settings and data are unchanged.
+
+New: audit trail and monitoring
+
+* New: AI agent attribution. Each entry records whether a person, an AI agent, an integration or an automated task made it, through which channel and with which application password or ability. WordPress ability runs (6.9+), refusals and failures (7.1+) are logged. Activity Logs and exports can be filtered by who made the change.
 * New: Wider activity coverage: theme and plugin file editor edits (with before/after file hashes), roles and capabilities granted outside the role dropdown, Super Admin changes, edits to published content, menus, widgets, theme customisations, Customizer and Site Editor changes, comment moderation, category and tag changes, privacy requests, content exports and multisite network changes.
+* New: WooCommerce audit trail for staff order changes, refunds, deleted orders, product price/stock/download changes, coupons and store settings.
+* New: Plugin, theme and uploads file integrity scans (WordPress.org checksums plus signed local baselines), manual or scheduled, with incidents on change.
 * New: Direct grants of administrator or other sensitive capabilities are flagged as privilege escalation, and file editor changes open an incident under the configuration-change rule.
-* The separate edition is merged into this plugin: every feature is now included, with no paid tier.
+* New: Active Sessions screen to end a login session or sign a user out everywhere (new capability `tbsh_cal_manage_sessions`).
+* New: Setup assistant for new installs, logging exclusions for service accounts, roles and event types, and a public `tbsh_cal_log()` developer API.
+* New: Real-time SIEM forwarding (HTTPS JSON, Splunk HEC, syslog over TLS/TCP) with retries and failure alerts.
+
+New: incidents, governance and evidence
+
 * New: Incident Center with automatic detection rules and NIS2 Article 23 (24h / 72h / 1 month) tracking.
 * New: Alerts via email, Slack, Discord, Microsoft Teams Workflows, Telegram and signed webhooks, queued with retries and a delivery log.
+* New: Optional AI incident analysis (Anthropic, OpenAI, Google Gemini, OpenAI-compatible), off by default.
 * New: Risk register with 5×5 heat map, vendor/ICT third-party register (DORA Art. 28) with reminders, and software supply-chain inventory.
 * New: Operational resilience drill register with RTO/RPO, and opt-in behavioural anomaly detection.
 * New: Executive dashboard and readiness engine with NIS2, DORA, ISO/IEC 27001:2022 and SOC 2 coverage.
-* New: Signed, verifiable compliance reports (print-ready HTML, CSV, JSON).
+* New: Signed, verifiable compliance reports as PDF (generated on the server), print-ready HTML, CSV and JSON.
+* New: Weekly or monthly compliance digest email with a signed executive report attached.
 * New: Encrypted off-site evidence vaults (S3-compatible, FTP/FTPS, another WordPress site) with `wp tbsh-cal vault-decrypt` and a standalone decryptor.
 * New: Expiring, revocable read-only auditor links.
-* New: Optional AI incident analysis (Anthropic, OpenAI, Google Gemini, OpenAI-compatible), off by default.
+* New: Site Network: one overview of other sites running this plugin, connected with their read-only auditor links.
 * New: Unified data retention with log archiving and hash-chain re-anchoring.
 * New: WP-CLI commands `vault-decrypt`, `vault-sync` and `verify-chain`.
 * New: Credentials encrypted at rest, with an optional `TBSH_CAL_ENCRYPTION_KEY` constant.
+
+Improved
+
+* Improved: Accessibility and usability across the admin: dialogs keep keyboard focus, status messages are announced, focus is always visible, text and form fields meet WCAG 2.2 AA contrast in light and dark mode, and every filter is labelled.
+* Improved: Every page shows its title and purpose, the menu collapses on small screens, wide tables scroll instead of being cut off, and dark mode follows your system setting until you choose.
+* Improved: The Dashboard shows what needs attention (critical events today, open incidents, file changes, unverified log) and every figure opens the matching filtered activity log.
+* Improved: Activity Logs shows times in your site's date format, lists active filters with one-click removal, remembers your column choice, and can show errors and critical events together.
+* Improved: Settings shows an unsaved-changes bar with Save and Discard, links to each section, and asks before you leave with unsaved changes, including with the browser's back and forward buttons.
+* Improved: Accepting the current files of a very large plugin or theme as its integrity baseline now runs in short steps with progress, so it no longer hits server time limits.
+* Improved: The admin app now loads each screen on demand, making the first load much smaller.
+* Improved: Clearer plugin description, FAQ and in-plugin help text. The Help page now covers every feature and uses ISO/IEC 27001:2022 control numbers.
+
+Fixed
+
+* Fixed: Off-site vault sync failed on servers without the PHP sodium extension; packages are now encrypted with WordPress's built-in sodium_compat as well, and stay compatible both ways.
+* Fixed: Score colours, status icons and the integrity check time now meet WCAG AA contrast; long hashes and URLs wrap instead of widening the page on small screens; tab rows wrap.
+
+Upgrade
+
 * Automatic migration of data, settings, credentials, capabilities and auditor links from the separate edition, which is deactivated automatically.
 
 = 1.1.0 =
@@ -272,13 +302,13 @@ Back up your database first. Once this version is active, the separate edition i
 * Tested up to WordPress 7.1.
 
 = 1.0.3 =
-* General Bug Fixes and Improvements.
+* General bug fixes and improvements.
 
 = 1.0.2 =
-* General Bug Fixes and Improvements.
+* General bug fixes and improvements.
 
 = 1.0.1 =
-* General Bug Fixes and Improvements.
+* General bug fixes and improvements.
 
 = 1.0.0 =
 * Initial release.
@@ -290,4 +320,4 @@ Back up your database first. Once this version is active, the separate edition i
 == Upgrade Notice ==
 
 = 2.0.0 =
-Major release: back up your database first. All features of the former separate edition are now included. If it is installed, it is deactivated automatically and its data migrated; then delete it while this plugin is active.
+Major release: back up your database first. Every feature of the former separate edition is now included for free. If it is installed, it is deactivated automatically and its data migrated; then delete it while this plugin is active.

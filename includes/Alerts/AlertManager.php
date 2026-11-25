@@ -116,7 +116,7 @@ class AlertManager {
 			'test',
 			'notice',
 			__( 'Test alert', 'tbsh-compliance-audit-logger' ),
-			__( 'This is a test message from Compliance Audit Trail & Evidence Logger. If you can read it, the channel works.', 'tbsh-compliance-audit-logger' ),
+			__( 'This is a test message from Compliance Audit Log. If you can read it, the channel works.', 'tbsh-compliance-audit-logger' ),
 			array()
 		);
 		$result  = Channels::send( $channel, $payload, $settings );

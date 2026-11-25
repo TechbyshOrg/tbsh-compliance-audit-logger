@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Compliance Audit Trail & Evidence Logger Documentation</title>
+  <title>Compliance Audit Log Documentation – Tamper-Evident Activity Log for WordPress</title>
+  <meta name="description" content="How to set up and use Compliance Audit Log, a tamper-evident audit log for WordPress with incident response, signed reports and audit evidence for NIS2, DORA and ISO 27001.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -496,7 +497,7 @@
   <!-- Sticky Sidebar -->
   <aside class="sidebar">
     <div class="logo-section">
-      <div class="logo-title">Compliance Audit Trail & Evidence Logger</div>
+      <div class="logo-title">Compliance Audit Log</div>
       <div class="logo-version">Documentation v2.0.0</div>
     </div>
 
@@ -517,6 +518,7 @@
         <li class="nav-item" data-section="hash-chaining"><a href="#hash-chaining">Cryptographic Chaining</a></li>
         <li class="nav-item" data-section="privacy"><a href="#privacy">Privacy & GDPR</a></li>
         <li class="nav-item" data-section="evidence-vault"><a href="#evidence-vault">Evidence Vault</a></li>
+        <li class="nav-item" data-section="monitoring"><a href="#monitoring">Monitoring Features</a></li>
         <li class="nav-item" data-section="incidents"><a href="#incidents">Incident Center & NIS2</a></li>
         <li class="nav-item" data-section="alerts"><a href="#alerts">Alerts & Channels</a></li>
         <li class="nav-item" data-section="governance"><a href="#governance">Risk, Vendors & Resilience</a></li>
@@ -554,13 +556,13 @@
 
     <!-- Section: Intro -->
     <section id="intro">
-      <h1>Compliance Audit Trail & Evidence Logger</h1>
+      <h1>Compliance Audit Log</h1>
       <p>
-        The <strong>Compliance Audit Trail & Evidence Logger</strong> is an enterprise-grade security monitoring, cryptographic verification, and audit-readiness logging platform designed for WordPress. Aligned with strict cybersecurity regulations (including <strong>NIS2</strong>, <strong>DORA</strong>, <strong>SOC 2</strong>, and <strong>ISO 27001</strong>), this plugin goes beyond typical activity logs by providing legally defensible, tamper-evident audit records.
+        <strong>Compliance Audit Log</strong> (formerly Compliance Audit Trail &amp; Evidence Logger) is a tamper-evident audit log for WordPress. It records who changed what on your site (people, AI agents, integrations and scheduled tasks) and proves that the record has not been edited since. On top of the log it adds incident response, governance registers, signed reports and read-only auditor access, to help you collect evidence for <strong>NIS2</strong>, <strong>DORA</strong>, <strong>ISO/IEC 27001</strong> and <strong>SOC 2</strong>. The plugin supports your compliance work; it does not make a site compliant on its own.
       </p>
       
       <div class="alert alert-info">
-        <h4>Legally Defensible Records</h4>
+        <h4>Tamper-Evident Records</h4>
         Every system transaction is cryptographically chained together using SHA-256 signatures, making unauthorized modifications or deletions immediately evident to security auditors.
       </div>
 
@@ -1116,7 +1118,31 @@ $integrity_hash = hash('sha256', $canonical_string);</code></pre>
       </div>
     </section>
 
-    <!-- Section: Incident Center -->
+    <!-- Section: Monitoring features -->
+    <section id="monitoring">
+      <h2>Monitoring Features</h2>
+      <p>What the plugin watches on your site, in plain terms. Event names and settings are listed in the Core Architecture and Settings Reference sections.</p>
+      <h3>Activity coverage</h3>
+      <p>Sign-ins and failed sign-ins, users, roles and capabilities (including Super Admin grants and capabilities granted outside the role menu), plugins and themes, edits made in the theme and plugin file editor, posts, pages and media, menus, widgets, Customizer and Site Editor changes, comments, categories and tags, settings, privacy requests, content exports, multisite network changes and application passwords. Bulk actions are summarised so the log stays readable.</p>
+      <h3>WooCommerce</h3>
+      <p>When WooCommerce is active, staff order changes, refunds, deleted orders, product price, stock and download changes, coupons and store settings are logged. Customer personal data is not logged.</p>
+      <h3>Who made the change (AI agent attribution)</h3>
+      <p>Every entry records who made it: a person, an AI agent, an integration, an automated task or a visitor, and how it arrived (browser, REST API, MCP, XML-RPC, cron or WP-CLI), with the application password and WordPress ability involved. A request counts as an AI agent when it arrives through an MCP server route or runs an ability with an application password. Ability runs that change the site are logged as their own entries, including refused and failed attempts; only input field names are kept, never values. Filter Activity Logs and exports by "Made by".</p>
+      <h3>File integrity</h3>
+      <p>WordPress core and plugins from WordPress.org are compared with the official checksums for their exact version. Other plugins, themes and must-use plugins are compared with a baseline recorded on the first scan and refreshed after updates. The uploads folder is searched for PHP files. Any change opens an incident. If you changed files on purpose, use "Accept current files" in the Integrity Center; large plugins are accepted in short steps with progress.</p>
+      <h3>Active sessions</h3>
+      <p>See who is signed in and on which device. During an incident, end a single session or sign a user out everywhere.</p>
+      <h3>Logging exclusions</h3>
+      <p>Silence routine activity from service accounts, roles or event types in Settings. Errors, critical events and security-relevant event types are always logged and cannot be excluded.</p>
+      <h3>Setup Assistant</h3>
+      <p>On a new install, a banner offers "Start setup". Pick the frameworks you work with, and the assistant applies recommended alerts, scheduled checks and retention periods in four steps. Every setting can be changed later.</p>
+      <h3>SIEM forwarding and compliance digest</h3>
+      <p>SIEM forwarding sends every new entry with its chain hash to an HTTPS endpoint, Splunk HTTP Event Collector or a syslog server over TLS/TCP, in order and within minutes; if the destination is down, entries are retried and an alert is raised after an hour. The compliance digest is a weekly or monthly email summarising activity, incidents and NIS2 deadlines, integrity and readiness, with a signed report attached as evidence of regular log review.</p>
+      <h3>Site Network</h3>
+      <p>See the readiness score, activity, errors, failed sign-ins, open incidents and log integrity of several sites running this plugin on one page. Connect each site with one of its own read-only auditor links; summaries refresh hourly and when you click "Refresh".</p>
+    </section>
+
+    <!-- Section: Incidents -->
     <section id="incidents">
       <h2>Incident Center & NIS2 Reporting</h2>
       <p>

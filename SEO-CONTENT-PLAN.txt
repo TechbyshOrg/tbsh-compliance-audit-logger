@@ -1,0 +1,236 @@
+COMPLIANCE AUDIT LOG – SEO AND CONTENT PLAN
+Prepared 2026-11-25 for version 2.0.0. Internal notes; excluded from the release package.
+
+Estimates are marked "est.". There was no keyword-volume tool; WordPress.org figures
+come from the public plugin API on 2026-11-25.
+
+
+1. POSITIONING
+--------------
+One sentence (use it everywhere):
+  Compliance Audit Log is a tamper-evident audit log for WordPress that records who
+  changed what and proves the record has not been edited.
+
+Display name:      Compliance Audit Log – Tamper-Evident Activity Log
+Short name:        Compliance Audit Log
+Slug (unchanged):  tbsh-compliance-audit-logger
+Menu (unchanged):  Compliance Logs
+
+Main differentiators (no competitor highlights these):
+  - SHA-256 hash chain with a verifier: proves the log was not changed.
+  - NIS2 Article 23 incident deadlines (24 h / 72 h / 1 month).
+  - Signed, verifiable compliance reports (PDF, HTML, CSV, JSON).
+  - Encrypted off-site evidence copies (S3-compatible, FTP/FTPS, another site).
+  - Read-only, expiring auditor links (no WordPress account needed).
+  - AI agent attribution (person / AI agent / integration / automation / visitor).
+  - Everything free: sessions, alerts, SIEM forwarding and external storage are
+    paid features in several competing plugins.
+
+
+2. KEYWORDS
+-----------
+Primary:    audit log                    (demand High, competition High, est.)
+Secondary:  activity log                 (High / High, est.)
+            audit trail                  (Medium / Medium, est.)
+            tamper-evident log           (Low / Low, est.)
+            NIS2 compliance              (Medium, rising / Low on WordPress.org, est.)
+            audit evidence               (Low / Low, est.)
+
+Problem keywords:  track user activity wordpress; who changed my wordpress site;
+                   prove logs were not tampered with; NIS2 incident reporting deadline;
+                   audit evidence for ISO 27001
+Solution keywords: audit log plugin; activity log plugin; audit trail plugin;
+                   security audit log; compliance logging plugin
+Feature keywords:  file integrity monitoring; SIEM / Splunk forwarding; auditor access;
+                   AI agent activity log; WooCommerce order change log; session management
+
+Long-tail questions (use in FAQ, docs and blog titles):
+  - How do I see who changed a setting in WordPress?
+  - Which WordPress plugin helps with NIS2 compliance?
+  - How can I prove my WordPress logs were not edited?
+  - How do I track changes made by AI agents or MCP servers in WordPress?
+  - What is a good audit log for ISO 27001 on WordPress?
+  - How do I send WordPress logs to Splunk?
+  - How do I log WooCommerce order changes by staff?
+  - How do I give an auditor read-only access to WordPress?
+  - What is the best way to monitor WordPress file changes?
+  - How do I log failed logins in WordPress?
+  - Is there a WordPress incident response plugin?
+  - How do I keep a DORA ICT third-party register?
+  - How do I export the WordPress activity log to CSV?
+  - Does an activity log work on WordPress Multisite?
+  - Is a WordPress activity log GDPR compliant?
+  - How do I sign a user out of all sessions in WordPress?
+  - How do I back up audit logs off-site with encryption?
+  - What evidence does SOC 2 need from a website?
+  - How long should audit logs be kept for NIS2?
+  - Is the WordPress activity log tamper-proof?
+
+
+3. WORDPRESS.ORG TAGS (max 5)
+-----------------------------
+Old:  compliance, audit-trail, security-log, tamper-evident, nis2
+New:  audit-log, activity-log, audit-trail, compliance, nis2
+
+  audit-log     85 plugins on the tag. Main search term; top: Simple History, Activity Log, Stream.
+  activity-log  106 plugins. Highest-demand synonym; top: WP Activity Log (300k).
+  audit-trail   20 plugins. Small, relevant; realistic top-3 position.
+  compliance    194 plugins, mostly cookie-consent plugins. Accurate and broad.
+  nis2          4 plugins. Realistic #1; demand rising with NIS2 enforcement.
+Dropped: security-log (3 plugins) and tamper-evident (1 plugin): almost nobody browses them.
+
+
+4. COMPETITORS (WordPress.org, 2026-11-25)
+------------------------------------------
+WP Activity Log (wp-security-audit-log), 300k installs, 4.7 stars (493 ratings)
+  Name: brand only. Short description: "#1 user-rated" claim.
+  Tags: activity-log, event-log, history, logger, user-tracking.
+  Structure: what it tracks, event details, large Premium sections, third-party support.
+  Puts sessions, notifications and external storage behind Premium.
+
+Simple History, 300k installs, 4.9 stars (494 ratings)
+  Name: "Simple History – Track, Log, and Audit WordPress Changes".
+  Tags: activity, audit-log, event-log, history, user-tracking.
+  Strong benefit-led copy ("How it helps in real situations"), long descriptive
+  screenshot captions, weekly email reports, developer section, add-ons.
+
+Activity Log (aryo-activity-log), 200k installs, 4.3 stars (74 ratings)
+  Name: "Activity Log – Monitor User and Agent Changes": already markets AI agents.
+  Tags: activity-log, audit-log, email-log, security, user-log.
+  FAQ: "Can I see where a change came from?", "Can AI agents read my log?".
+
+Stream, 70k installs, 4.3 stars (76 ratings)
+  Name: "Stream – Activity Log & Audit Trail".
+  Tags: activity-log, audit-log, event-log, security, user-tracking.
+  Long integration lists; FAQ has a single question.
+
+Logify, 10 installs
+  Shows what to avoid: a keyword-stuffed name, emoji headings, a 16 KB description.
+
+Content gaps closed in 2.0.0 readme: will it slow my site, who can view the log,
+how long is data kept, WooCommerce, multisite, uninstall behaviour, where a change
+came from, use cases, "what it does not do".
+
+
+5. BLOG AND DOCUMENTATION TOPICS
+--------------------------------
+ 1. How to prove your WordPress audit log has not been edited
+    Keyword: tamper-evident audit log | Intent: learn/compare
+    Outline: why normal logs can be changed, how a hash chain works, how to verify.
+ 2. NIS2 incident reporting for WordPress sites: the 24 h / 72 h / 1-month checklist
+    Keyword: NIS2 incident reporting | Intent: how-to
+    Outline: who is in scope, what each stage needs, tracking deadlines in the Incident Center.
+ 3. How to see what AI agents changed on your WordPress site
+    Keyword: AI agent activity log WordPress | Intent: how-to
+    Outline: MCP and abilities, why attribution matters, filtering by "Made by".
+ 4. WordPress audit log for ISO 27001: evidence for A.8.15 and A.8.16
+    Keyword: ISO 27001 audit log | Intent: learn
+    Outline: what auditors ask for, which records the plugin produces, signed reports.
+ 5. How to send WordPress logs to Splunk (or any SIEM)
+    Keyword: WordPress Splunk logging | Intent: how-to
+    Outline: HEC token, settings, test event, retries and ordering.
+ 6. Give an auditor read-only access to WordPress without creating a user
+    Keyword: auditor access WordPress | Intent: how-to
+    Outline: risks of shared accounts, expiring links, revocation.
+ 7. WooCommerce staff activity log: who changed this order, price or stock?
+    Keyword: WooCommerce order change log | Intent: problem
+    Outline: what is logged, privacy (no customer data), investigating a change.
+ 8. WordPress file integrity monitoring: core, plugins, themes and uploads
+    Keyword: WordPress file integrity monitoring | Intent: how-to
+    Outline: checksums vs baselines, hidden PHP in uploads, accepting intended changes.
+ 9. Activity log vs audit log vs audit trail: what is the difference?
+    Keyword: activity log vs audit log | Intent: learn
+    Outline: plain definitions, when integrity matters, choosing a plugin.
+10. DORA ICT third-party register for small teams
+    Keyword: DORA third-party register | Intent: how-to
+    Outline: what Article 28 asks, fields to keep, review reminders.
+11. How long should you keep audit logs? (NIS2, ISO 27001, SOC 2, GDPR)
+    Keyword: audit log retention period | Intent: learn
+    Outline: typical periods, balancing GDPR, archive-then-delete with chain re-anchoring.
+12. Encrypted off-site backups of your audit log (S3, R2, FTP)
+    Keyword: off-site audit log backup | Intent: how-to
+    Outline: why off-site copies matter, passphrase handling, restoring a package.
+13. Is your WordPress activity log GDPR compliant?
+    Keyword: GDPR activity log WordPress | Intent: problem
+    Outline: IP hashing, export and erasure, retention.
+14. Responding to a hacked WordPress site: an evidence-first checklist
+    Keyword: WordPress incident response | Intent: problem
+    Outline: preserve the log, verify the chain, sign users out, record the incident.
+
+
+6. SCREENSHOTS TO RE-CAPTURE (.wordpress-org/)
+----------------------------------------------
+The current screenshots 1–10 show the 1.x interface. Re-capture at 1440 px wide
+in light mode with realistic demo data, keeping the numbering and captions in readme.txt:
+ 1. Dashboard with "Needs attention" and recent activity
+ 2. Activity Logs with filters, including "Made by"
+ 3. Forensic Timeline
+ 4. Evidence Vault
+ 5. Integrity Center with a verified chain and file scan results
+ 6. Compliance Overview / readiness by framework
+ 7. System Health
+ 8. Export Center
+ 9. Settings with the unsaved-changes bar
+10. Help & Reference
+Recommended additions (add captions 11–14 to readme.txt when the files exist):
+11. Incident Center with NIS2 deadline stages
+12. Compliance Reports with a signed PDF and "Verify"
+13. Auditor Access link creation
+14. Activity Logs on a phone (360 px) to show the responsive layout
+
+
+7. BANNER AND ICON
+------------------
+Banner text (replace "Enterprise Audit Logging, Incident Response & Compliance Automation"):
+  Title:     Compliance Audit Log
+  Subtitle:  A tamper-evident audit log for WordPress
+  Chips:     Hash-chained log · Incident response · Signed reports · Auditor access · NIS2 & DORA
+Avoid "AI-Assisted Analysis" as a headline feature: it is optional and off by default.
+Icon: the current shield works; keep it.
+
+
+8. STRUCTURED DATA FOR A PRODUCT WEBSITE (when one exists)
+----------------------------------------------------------
+Only add ratings once they are real, and copy them from WordPress.org.
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "Compliance Audit Log",
+  "alternateName": "Compliance Audit Log – Tamper-Evident Activity Log",
+  "applicationCategory": "SecurityApplication",
+  "operatingSystem": "WordPress 6.2 or later, PHP 8.0 or later",
+  "softwareVersion": "2.0.0",
+  "description": "Tamper-evident audit log and activity log for WordPress, with incident response, signed reports and audit evidence for NIS2, DORA and ISO 27001.",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+  "downloadUrl": "https://wordpress.org/plugins/tbsh-compliance-audit-logger/",
+  "author": { "@type": "Organization", "name": "Techbysh", "url": "https://techbysh.com" }
+}
+</script>
+
+FAQPage: reuse the readme FAQ questions and answers word for word, for example:
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [{
+    "@type": "Question",
+    "name": "How is it different from a regular activity log plugin?",
+    "acceptedAnswer": { "@type": "Answer", "text": "A regular activity log shows what happened, but cannot prove that the log itself was not changed. Compliance Audit Log can: each entry includes the hash of the entry before it, and the verifier reports the first entry where the chain breaks." }
+  }]
+}
+</script>
+
+HowTo: use the three "How it works" steps from the readme.
+
+
+9. METRICS TO TRACK
+-------------------
+- WordPress.org search position for: audit log, activity log, audit trail, NIS2.
+- Position on the tag pages: audit-log, activity-log, audit-trail, compliance, nis2.
+- Active installs and downloads per day.
+- Rating and number of reviews.
+- Support threads resolved within 7 days.
+- Website traffic and clicks to the plugin page (once a website exists).
+Recheck positions 2–4 weeks after 2.0.0 is released.

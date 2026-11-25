@@ -1,7 +1,7 @@
 <?php
 /**
- * Plugin Name: Compliance Audit Trail & Evidence Logger
- * Description: Tamper-evident compliance logging, incident response, risk and vendor governance, signed reports, encrypted off-site evidence vaults and read-only auditor access.
+ * Plugin Name: Compliance Audit Log – Tamper-Evident Activity Log
+ * Description: Tamper-evident audit log and activity log for WordPress, with incident response, signed reports and audit evidence for NIS2, DORA and ISO 27001.
  * Version: 2.0.0
  * Author: Techbysh
  * Author URI: https://techbysh.com
@@ -148,7 +148,7 @@ class TBSH_Compliance_Audit_Logger {
 			'plugin_activation',
 			'Operational Security',
 			'info',
-			__( 'Compliance Audit Trail & Evidence Logger plugin was activated.', 'tbsh-compliance-audit-logger' ),
+			__( 'Compliance Audit Log plugin was activated.', 'tbsh-compliance-audit-logger' ),
 			__( 'Plugin was activated successfully.', 'tbsh-compliance-audit-logger' )
 		);
 		\TBSHComplianceAuditLogger\Logging\Logger::flush_now();
@@ -219,7 +219,7 @@ class TBSH_Compliance_Audit_Logger {
 			'plugin_deactivation',
 			'Operational Security',
 			'warning',
-			__( 'Compliance Audit Trail & Evidence Logger plugin was deactivated.', 'tbsh-compliance-audit-logger' ),
+			__( 'Compliance Audit Log plugin was deactivated.', 'tbsh-compliance-audit-logger' ),
 			__( 'Plugin was deactivated successfully.', 'tbsh-compliance-audit-logger' )
 		);
 		\TBSHComplianceAuditLogger\Logging\Logger::flush_now();
